@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "RDN",
+    "slug": "rdn-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "rdn",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rdn.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2563eb"
+      },
+      "package": "com.rdn.mobile"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
