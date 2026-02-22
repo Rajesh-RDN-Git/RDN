@@ -1,0 +1,574 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  RWA_ADMIN
+  DEALER
+  OWNER
+  BUYER_TENANT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FLAGGED
+  REJECTED
+}
+
+enum SocietyStatus {
+  ONBOARDED
+  IN_PROGRESS
+  INACTIVE
+}
+
+enum PropertyType {
+  APARTMENT
+  COMMERCIAL
+  VILLA
+}
+
+enum TransactionType {
+  RENT
+  SALE
+  BOTH
+}
+
+enum FurnishingType {
+  FURNISHED
+  SEMI
+  UNFURNISHED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE_NOW
+  AVAILABLE_FROM
+  UNDER_NOTICE
+  OCCUPIED
+  SOLD
+}
+
+enum PropertyVerificationStatus {
+  PENDING           @map("PROP_PENDING")
+  RWA_APPROVED
+  VERIFIED          @map("PROP_VERIFIED")
+  FLAGGED           @map("PROP_FLAGGED")
+  REJECTED          @map("PROP_REJECTED")
+}
+
+enum PropertyStatus {
+  ACTIVE
+  DELISTED
+  CLOSED
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  VISIT_SCHEDULED
+  VISITED
+  NEGOTIATING
+  CLOSING
+  CLOSED
+  LOST
+}
+
+enum LeadSource {
+  APP_SEARCH
+  REFERRAL
+  WHATSAPP
+  WALK_IN
+}
+
+enum DealTransactionType {
+  RENT    @map("DEAL_RENT")
+  SALE    @map("DEAL_SALE")
+  RENEWAL
+}
+
+enum PaymentStatus {
+  PENDING   @map("PAY_PENDING")
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum CommissionStatus {
+  PENDING   @map("COMM_PENDING")
+  SETTLED
+  CANCELLED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+enum GrievanceCategory {
+  DEALER_CONDUCT
+  PROPERTY_MISMATCH
+  COMMISSION
+  SERVICE
+  SAFETY
+  OTHER
+}
+
+enum GrievanceSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum GrievanceStatus {
+  OPEN
+  IN_PROGRESS
+  ESCALATED
+  RESOLVED
+  CLOSED       @map("GRIEV_CLOSED")
+}
+
+enum ReferralStatus {
+  PENDING     @map("REF_PENDING")
+  SIGNED_UP
+  TRANSACTED
+  REWARDED
+}
+
+enum NotificationType {
+  LEAD
+  VISIT
+  DEAL
+  COMMISSION   @map("NOTIF_COMMISSION")
+  GRIEVANCE    @map("NOTIF_GRIEVANCE")
+  SYSTEM       @map("NOTIF_SYSTEM")
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  WHATSAPP
+  EMAIL
+}
+
+// ─── Models ──────────────────────────────────────────
+
+model User {
+  id        String     @id @default(uuid()) @db.Uuid
+  phone     String     @unique @db.VarChar(255)
+  email     String?    @unique @db.VarChar(255)
+  name      String     @db.VarChar(255)
+  role      Role
+  status    UserStatus @default(ACTIVE)
+  avatarUrl String?    @map("avatar_url") @db.VarChar(512)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  managedSocieties   Society[]      @relation("RwaAdmin")
+  dealer             Dealer[]
+  ownedProperties    Property[]     @relation("PropertyOwner")
+  buyerLeads         Lead[]         @relation("LeadBuyer")
+  sentMessages       Message[]      @relation("MessageSender")
+  receivedMessages   Message[]      @relation("MessageReceiver")
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  filedGrievances    Grievance[]    @relation("GrievanceFiler")
+  againstGrievances  Grievance[]    @relation("GrievanceTarget")
+  assignedGrievances Grievance[]    @relation("GrievanceAssignee")
+  referralsMade      Referral[]     @relation("Referrer")
+  referralsReceived  Referral[]     @relation("Referred")
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model Society {
+  id                 String             @id @default(uuid()) @db.Uuid
+  name               String             @db.VarChar(255)
+  slug               String             @unique @db.VarChar(255)
+  address            String
+  city               String             @db.VarChar(100)
+  state              String             @db.VarChar(100)
+  pincode            String             @db.VarChar(10)
+  lat                Decimal?           @db.Decimal(10, 8)
+  lng                Decimal?           @db.Decimal(11, 8)
+  totalUnits         Int?               @map("total_units")
+  amenities          Json               @default("[]")
+  rwaAdminId         String?            @map("rwa_admin_id") @db.Uuid
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  mandateStartDate   DateTime?          @map("mandate_start_date") @db.Date
+  mandateEndDate     DateTime?          @map("mandate_end_date") @db.Date
+  status             SocietyStatus      @default(IN_PROGRESS)
+  meta               Json               @default("{}")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  rwaAdmin   User?      @relation("RwaAdmin", fields: [rwaAdminId], references: [id])
+  dealers    Dealer[]
+  properties Property[]
+  leads      Lead[]
+  grievances Grievance[]
+
+  @@index([city])
+  @@index([state])
+  @@index([pincode])
+  @@index([verificationStatus])
+  @@index([status])
+  @@map("societies")
+}
+
+model Dealer {
+  id                 String         @id @default(uuid()) @db.Uuid
+  userId             String         @map("user_id") @db.Uuid
+  societyId          String         @map("society_id") @db.Uuid
+  kycStatus          KYCStatus      @default(PENDING) @map("kyc_status")
+  rwaApprovalStatus  ApprovalStatus @default(PENDING) @map("rwa_approval_status")
+  trainingStatus     TrainingStatus @default(PENDING) @map("training_status")
+  isActive           Boolean        @default(false) @map("is_active")
+  bankAccountDetails Json?          @map("bank_account_details")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  user               User         @relation(fields: [userId], references: [id])
+  society            Society      @relation(fields: [societyId], references: [id])
+  assignedProperties Property[]   @relation("AssignedDealer")
+  leads              Lead[]
+  commissions        Commission[]
+
+  @@unique([userId, societyId])
+  @@index([societyId])
+  @@index([isActive])
+  @@index([kycStatus])
+  @@map("dealers")
+}
+
+enum KYCStatus {
+  PENDING   @map("KYC_PENDING")
+  APPROVED  @map("KYC_APPROVED")
+  REJECTED  @map("KYC_REJECTED")
+}
+
+enum ApprovalStatus {
+  PENDING   @map("APPR_PENDING")
+  APPROVED  @map("APPR_APPROVED")
+  REJECTED  @map("APPR_REJECTED")
+}
+
+enum TrainingStatus {
+  PENDING   @map("TRAIN_PENDING")
+  COMPLETED
+}
+
+model Property {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  societyId          String                     @map("society_id") @db.Uuid
+  ownerId            String                     @map("owner_id") @db.Uuid
+  assignedDealerId   String?                    @map("assigned_dealer_id") @db.Uuid
+  flatNumber         String                     @map("flat_number") @db.VarChar(50)
+  towerBlock         String                     @map("tower_block") @db.VarChar(100)
+  type               PropertyType
+  transactionType    TransactionType            @map("transaction_type")
+  bhk                Int?                       @db.SmallInt
+  carpetArea         Decimal?                   @map("carpet_area") @db.Decimal(10, 2)
+  superArea          Decimal?                   @map("super_area") @db.Decimal(10, 2)
+  floor              Int?                       @db.SmallInt
+  totalFloors        Int?                       @map("total_floors") @db.SmallInt
+  facing             String?                    @db.VarChar(20)
+  furnishing         FurnishingType?
+  priceRent          Decimal?                   @map("price_rent") @db.Decimal(12, 2)
+  priceSale          Decimal?                   @map("price_sale") @db.Decimal(14, 2)
+  securityDeposit    Decimal?                   @map("security_deposit") @db.Decimal(12, 2)
+  availabilityStatus AvailabilityStatus         @default(AVAILABLE_NOW) @map("availability_status")
+  availableFrom      DateTime?                  @map("available_from") @db.Date
+  verificationStatus PropertyVerificationStatus @default(PENDING) @map("verification_status")
+  restrictions       Json                       @default("{}")
+  amenities          Json                       @default("{}")
+  status             PropertyStatus             @default(ACTIVE)
+  viewsCount         Int                        @default(0) @map("views_count")
+  createdAt          DateTime                   @default(now()) @map("created_at")
+  updatedAt          DateTime                   @updatedAt @map("updated_at")
+
+  // Relations
+  society        Society         @relation(fields: [societyId], references: [id])
+  owner          User            @relation("PropertyOwner", fields: [ownerId], references: [id])
+  assignedDealer Dealer?         @relation("AssignedDealer", fields: [assignedDealerId], references: [id])
+  media          PropertyMedia[]
+  leads          Lead[]
+  transactions   Transaction[]
+
+  @@unique([societyId, flatNumber, towerBlock])
+  @@index([societyId])
+  @@index([ownerId])
+  @@index([assignedDealerId])
+  @@index([transactionType])
+  @@index([bhk])
+  @@index([priceRent])
+  @@index([priceSale])
+  @@index([availabilityStatus])
+  @@index([verificationStatus])
+  @@index([status])
+  @@map("properties")
+}
+
+model PropertyMedia {
+  id         String    @id @default(uuid()) @db.Uuid
+  propertyId String    @map("property_id") @db.Uuid
+  url        String    @db.VarChar(512)
+  type       MediaType
+  order      Int       @default(0) @db.SmallInt
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@map("property_media")
+}
+
+model Lead {
+  id                   String     @id @default(uuid()) @db.Uuid
+  propertyId           String     @map("property_id") @db.Uuid
+  buyerId              String     @map("buyer_id") @db.Uuid
+  dealerId             String     @map("dealer_id") @db.Uuid
+  societyId            String     @map("society_id") @db.Uuid
+  source               LeadSource
+  status               LeadStatus @default(NEW)
+  visitDate            DateTime?  @map("visit_date")
+  visitApprovedByOwner Boolean    @default(false) @map("visit_approved_by_owner")
+  notes                Json       @default("[]")
+  autoReassigned       Boolean    @default(false) @map("auto_reassigned")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  property      Property       @relation(fields: [propertyId], references: [id])
+  buyer         User           @relation("LeadBuyer", fields: [buyerId], references: [id])
+  dealer        Dealer         @relation(fields: [dealerId], references: [id])
+  society       Society        @relation(fields: [societyId], references: [id])
+  transactions  Transaction[]
+  conversations Conversation[]
+
+  @@index([propertyId])
+  @@index([buyerId])
+  @@index([dealerId])
+  @@index([societyId])
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@map("leads")
+}
+
+model Transaction {
+  id               String              @id @default(uuid()) @db.Uuid
+  leadId           String              @map("lead_id") @db.Uuid
+  propertyId       String              @map("property_id") @db.Uuid
+  type             DealTransactionType
+  dealValue        Decimal             @map("deal_value") @db.Decimal(14, 2)
+  buyerCommission  Decimal             @map("buyer_commission") @db.Decimal(12, 2)
+  sellerCommission Decimal             @map("seller_commission") @db.Decimal(12, 2)
+  gstAmount        Decimal             @map("gst_amount") @db.Decimal(10, 2)
+  rdnShare         Decimal?            @map("rdn_share") @db.Decimal(12, 2)
+  dealerShare      Decimal?            @map("dealer_share") @db.Decimal(12, 2)
+  rwaShare         Decimal?            @map("rwa_share") @db.Decimal(12, 2)
+  paymentStatus    PaymentStatus       @default(PENDING) @map("payment_status")
+  invoiceUrls      Json                @default("{}") @map("invoice_urls")
+  closedAt         DateTime            @map("closed_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  lead        Lead         @relation(fields: [leadId], references: [id])
+  property    Property     @relation(fields: [propertyId], references: [id])
+  commissions Commission[]
+  grievances  Grievance[]
+
+  @@index([leadId])
+  @@index([propertyId])
+  @@index([type])
+  @@index([paymentStatus])
+  @@index([closedAt])
+  @@map("transactions")
+}
+
+model Commission {
+  id              String           @id @default(uuid()) @db.Uuid
+  dealerId        String           @map("dealer_id") @db.Uuid
+  transactionId   String           @map("transaction_id") @db.Uuid
+  amount          Decimal          @db.Decimal(12, 2)
+  gst             Decimal          @db.Decimal(10, 2)
+  status          CommissionStatus @default(PENDING)
+  settlementDate  DateTime?        @map("settlement_date") @db.Date
+  payoutReference String?          @map("payout_reference") @db.VarChar(255)
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  dealer      Dealer      @relation(fields: [dealerId], references: [id])
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@index([dealerId])
+  @@index([transactionId])
+  @@index([status])
+  @@index([settlementDate])
+  @@map("commissions")
+}
+
+model Conversation {
+  id            String    @id @default(uuid()) @db.Uuid
+  leadId        String?   @map("lead_id") @db.Uuid
+  participants  Json
+  lastMessageAt DateTime? @map("last_message_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  lead     Lead?     @relation(fields: [leadId], references: [id])
+  messages Message[]
+
+  @@index([leadId])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  senderId       String      @map("sender_id") @db.Uuid
+  receiverId     String      @map("receiver_id") @db.Uuid
+  content        String
+  type           MessageType @default(TEXT)
+  readAt         DateTime?   @map("read_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+  receiver     User         @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model Grievance {
+  id              String            @id @default(uuid()) @db.Uuid
+  filedBy         String            @map("filed_by") @db.Uuid
+  againstUserId   String?           @map("against_user_id") @db.Uuid
+  societyId       String?           @map("society_id") @db.Uuid
+  transactionId   String?           @map("transaction_id") @db.Uuid
+  category        GrievanceCategory
+  severity        GrievanceSeverity
+  description     String
+  evidenceUrls    Json              @default("[]") @map("evidence_urls")
+  status          GrievanceStatus   @default(OPEN)
+  escalationLevel Int               @default(1) @map("escalation_level") @db.SmallInt
+  assignedTo      String?           @map("assigned_to") @db.Uuid
+  slaDeadline     DateTime          @map("sla_deadline")
+  resolutionNotes String?           @map("resolution_notes")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  resolvedAt      DateTime?         @map("resolved_at")
+
+  // Relations
+  filer       User         @relation("GrievanceFiler", fields: [filedBy], references: [id])
+  againstUser User?        @relation("GrievanceTarget", fields: [againstUserId], references: [id])
+  society     Society?     @relation(fields: [societyId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+  assignee    User?        @relation("GrievanceAssignee", fields: [assignedTo], references: [id])
+
+  @@index([filedBy])
+  @@index([againstUserId])
+  @@index([societyId])
+  @@index([status])
+  @@index([severity])
+  @@index([escalationLevel])
+  @@index([assignedTo])
+  @@index([slaDeadline])
+  @@map("grievances")
+}
+
+model Referral {
+  id           String         @id @default(uuid()) @db.Uuid
+  referrerId   String         @map("referrer_id") @db.Uuid
+  referredId   String?        @map("referred_id") @db.Uuid
+  referralCode String         @unique @map("referral_code") @db.VarChar(20)
+  status       ReferralStatus @default(PENDING)
+  rewardAmount Decimal?       @map("reward_amount") @db.Decimal(10, 2)
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  referrer User  @relation("Referrer", fields: [referrerId], references: [id])
+  referred User? @relation("Referred", fields: [referredId], references: [id])
+
+  @@index([referrerId])
+  @@index([referredId])
+  @@index([status])
+  @@map("referrals")
+}
+
+model Notification {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String              @db.VarChar(255)
+  body      String
+  data      Json                @default("{}")
+  channel   NotificationChannel
+  readAt    DateTime?           @map("read_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([channel])
+  @@index([readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String   @map("entity_id") @db.Uuid
+  changes    Json     @default("{}")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
+}
