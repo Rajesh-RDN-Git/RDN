@@ -1,28 +1,79 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth';
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-apiClient.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token!);
+  });
+  failedQueue = [];
+}
+
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getAccessToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // TODO: Refresh token logic
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) {
+      clearTokens();
+      if (typeof window !== 'undefined') window.location.href = '/login';
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({
+          resolve: (token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(apiClient(originalRequest));
+          },
+          reject,
+        });
+      });
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const { data } = await axios.post(`${apiClient.defaults.baseURL}/auth/refresh`, {
+        refreshToken,
+      });
+      setTokens(data.accessToken, data.refreshToken);
+      processQueue(null, data.accessToken);
+      originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      clearTokens();
+      if (typeof window !== 'undefined') window.location.href = '/login';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   },
 );

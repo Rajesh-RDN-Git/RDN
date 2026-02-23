@@ -1,21 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-
-interface User {
-  id: string;
-  name: string;
-  role: string;
-}
+import { useCallback } from 'react';
+import { useAuthStore } from '@/stores/auth-store';
+import { authApi, usersApi } from '@/lib/api';
+import { setTokens, clearTokens } from '@/lib/auth';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, isLoading } = useAuthStore();
 
-  useEffect(() => {
-    // TODO: Check auth state from token
-    setLoading(false);
+  const login = useCallback(async (phone: string, otp: string) => {
+    const { data } = await authApi.verifyOtp(phone, otp);
+    setTokens(data.accessToken, data.refreshToken);
+    useAuthStore.getState().login(data.user);
+    return data.user;
   }, []);
 
-  return { user, loading, isAuthenticated: !!user };
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignore logout API errors
+    } finally {
+      clearTokens();
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+    }
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    try {
+      const { data } = await usersApi.getProfile();
+      useAuthStore.getState().setUser(data);
+      return data;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  return { user, isAuthenticated, isLoading, login, logout, refreshProfile };
 }
