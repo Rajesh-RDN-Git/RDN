@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import type { SearchService } from './search.service';
+import { SearchService } from './search.service';
+import { SearchPropertiesDto } from './dto/search-properties.dto';
 
 @ApiTags('Search')
 @Controller('search')
@@ -9,7 +10,7 @@ export class SearchController {
 
   @Get('properties')
   @ApiOperation({ summary: 'Search properties with filters and query params' })
-  searchProperties(@Query() query: any) {
+  async searchProperties(@Query() query: SearchPropertiesDto): Promise<any> {
     return this.searchService.searchProperties(query);
   }
 }

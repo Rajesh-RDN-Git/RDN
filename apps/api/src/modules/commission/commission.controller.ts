@@ -1,27 +1,56 @@
-import { Controller, Get, Post, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import type { CommissionService } from './commission.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { CommissionService } from './commission.service';
+import { QueryCommissionsDto } from './dto/query-commissions.dto';
+import { SettleCommissionDto } from './dto/settle-commission.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 @ApiTags('Commission')
 @Controller('commissions')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class CommissionController {
   constructor(private readonly commissionService: CommissionService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all commissions' })
-  findAll(@Query() query: any) {
+  @Roles('SUPER_ADMIN', 'DEALER')
+  @ApiOperation({ summary: 'List commissions' })
+  async findAll(@Query() query: QueryCommissionsDto): Promise<any> {
     return this.commissionService.findAll(query);
   }
 
   @Get(':id')
+  @Roles('SUPER_ADMIN', 'DEALER')
   @ApiOperation({ summary: 'Get commission by ID' })
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
     return this.commissionService.findOne(id);
   }
 
   @Post(':id/settle')
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Settle a commission payment' })
-  settle(@Param('id') id: string) {
-    return this.commissionService.settle(id);
+  async settle(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SettleCommissionDto,
+  ): Promise<any> {
+    return this.commissionService.settle(id, body);
+  }
+
+  @Post(':id/cancel')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Cancel a commission' })
+  async cancel(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
+    return this.commissionService.cancel(id);
   }
 }

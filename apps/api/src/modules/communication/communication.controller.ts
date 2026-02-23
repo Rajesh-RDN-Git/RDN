@@ -1,27 +1,64 @@
-import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import type { CommunicationService } from './communication.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { CommunicationService } from './communication.service';
+import { SendMessageDto } from './dto/send-message.dto';
+import { CreateConversationDto } from './dto/create-conversation.dto';
+import { QueryConversationsDto } from './dto/query-conversations.dto';
+import { QueryMessagesDto } from './dto/query-messages.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Communication')
 @Controller('communication')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class CommunicationController {
   constructor(private readonly communicationService: CommunicationService) {}
 
   @Get('conversations')
-  @ApiOperation({ summary: 'List all conversations' })
-  findAllConversations(@Query() query: any) {
-    return this.communicationService.findAllConversations(query);
+  @ApiOperation({ summary: 'List all conversations for current user' })
+  async findAllConversations(
+    @Query() query: QueryConversationsDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
+    return this.communicationService.findAllConversations(query, userId);
+  }
+
+  @Post('conversations')
+  @ApiOperation({ summary: 'Create a conversation (linked to a lead)' })
+  async createConversation(
+    @Body() body: CreateConversationDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
+    return this.communicationService.createConversation(body, userId);
   }
 
   @Get('conversations/:id')
-  @ApiOperation({ summary: 'Get conversation by ID with messages' })
-  findConversation(@Param('id') id: string) {
-    return this.communicationService.findConversation(id);
+  @ApiOperation({ summary: 'Get conversation with paginated messages' })
+  async findConversation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: QueryMessagesDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
+    return this.communicationService.findConversation(id, query, userId);
   }
 
   @Post('conversations/:id/messages')
   @ApiOperation({ summary: 'Send a message in a conversation' })
-  sendMessage(@Param('id') id: string, @Body() body: any) {
-    return this.communicationService.sendMessage(id, body);
+  async sendMessage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SendMessageDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
+    return this.communicationService.sendMessage(id, body, userId);
   }
 }

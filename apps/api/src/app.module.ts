@@ -1,8 +1,18 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './database/prisma.module';
+import {
+  appConfig,
+  databaseConfig,
+  redisConfig,
+  awsConfig,
+  jwtConfig,
+  msg91Config,
+} from './config';
+import { SocietyScopeMiddleware } from './common/middleware/society-scope.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { SocietiesModule } from './modules/societies/societies.module';
@@ -22,7 +32,11 @@ import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [appConfig, databaseConfig, redisConfig, awsConfig, jwtConfig, msg91Config],
+    }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -44,4 +58,8 @@ import { AdminModule } from './modules/admin/admin.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SocietyScopeMiddleware).forRoutes('v1/properties', 'v1/leads', 'v1/dealers');
+  }
+}

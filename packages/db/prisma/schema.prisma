@@ -181,8 +181,11 @@ model User {
   name      String     @db.VarChar(255)
   role      Role
   status    UserStatus @default(ACTIVE)
-  avatarUrl String?    @map("avatar_url") @db.VarChar(512)
-  createdAt DateTime   @default(now()) @map("created_at")
+  avatarUrl    String?    @map("avatar_url") @db.VarChar(512)
+  otpHash      String?   @map("otp_hash") @db.VarChar(255)
+  otpExpiresAt DateTime? @map("otp_expires_at")
+  refreshToken String?   @map("refresh_token") @db.VarChar(512)
+  createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt DateTime   @updatedAt @map("updated_at")
 
   // Relations

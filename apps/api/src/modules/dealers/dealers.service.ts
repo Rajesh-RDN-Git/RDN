@@ -1,32 +1,129 @@
-import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '../../database/prisma.service';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import type { QueryDealersDto } from './dto/query-dealers.dto';
+import type { ApplyDealerDto } from './dto/apply-dealer.dto';
+import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class DealersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: any) {
-    // TODO: Implement pagination, filtering by status/area
-    return { data: [], total: 0 };
+  async findAll(query: QueryDealersDto) {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 20, 50);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.DealerWhereInput = {};
+    if (query.societyId) where.societyId = query.societyId;
+    if (query.isActive !== undefined) where.isActive = query.isActive === 'true';
+    if (query.kycStatus) where.kycStatus = query.kycStatus as any;
+
+    const [data, total] = await Promise.all([
+      this.prisma.dealer.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          society: { select: { id: true, name: true, slug: true } },
+          _count: { select: { leads: true, commissions: true } },
+        },
+      }),
+      this.prisma.dealer.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string) {
-    // TODO: Find dealer by ID with profile, stats, leads
-    return { id };
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        society: { select: { id: true, name: true, slug: true, city: true } },
+        _count: { select: { leads: true, commissions: true, assignedProperties: true } },
+      },
+    });
+
+    if (!dealer) throw new NotFoundException('Dealer not found');
+    return dealer;
   }
 
-  async apply(data: any) {
-    // TODO: Submit dealer application with documents
-    return { id: 'TODO', status: 'pending', ...data };
+  async apply(data: ApplyDealerDto, userId: string) {
+    // Check society exists
+    const society = await this.prisma.society.findUnique({ where: { id: data.societyId } });
+    if (!society) throw new NotFoundException('Society not found');
+
+    // Check not already a dealer for this society
+    const existing = await this.prisma.dealer.findUnique({
+      where: { userId_societyId: { userId, societyId: data.societyId } },
+    });
+    if (existing) throw new ConflictException('Already applied as dealer for this society');
+
+    return this.prisma.dealer.create({
+      data: {
+        userId,
+        societyId: data.societyId,
+        bankAccountDetails: (data.bankAccountDetails ?? undefined) as any,
+      },
+      include: {
+        user: { select: { id: true, name: true } },
+        society: { select: { id: true, name: true } },
+      },
+    });
   }
 
   async approve(id: string) {
-    // TODO: Approve dealer and update status
-    return { id, status: 'approved' };
+    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+
+    return this.prisma.dealer.update({
+      where: { id },
+      data: {
+        rwaApprovalStatus: 'APPROVED',
+        isActive: dealer.kycStatus === 'APPROVED' && dealer.trainingStatus === 'COMPLETED',
+      },
+    });
   }
 
   async reject(id: string) {
-    // TODO: Reject dealer application with reason
-    return { id, status: 'rejected' };
+    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+
+    return this.prisma.dealer.update({
+      where: { id },
+      data: { rwaApprovalStatus: 'REJECTED', isActive: false },
+    });
+  }
+
+  async updateKyc(id: string, status: 'APPROVED' | 'REJECTED') {
+    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+
+    const kycStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
+    return this.prisma.dealer.update({
+      where: { id },
+      data: {
+        kycStatus: kycStatus as any,
+        isActive:
+          kycStatus === 'APPROVED' &&
+          dealer.rwaApprovalStatus === 'APPROVED' &&
+          dealer.trainingStatus === 'COMPLETED',
+      },
+    });
+  }
+
+  async completeTraining(id: string) {
+    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+
+    return this.prisma.dealer.update({
+      where: { id },
+      data: {
+        trainingStatus: 'COMPLETED',
+        isActive: dealer.kycStatus === 'APPROVED' && dealer.rwaApprovalStatus === 'APPROVED',
+      },
+    });
   }
 }

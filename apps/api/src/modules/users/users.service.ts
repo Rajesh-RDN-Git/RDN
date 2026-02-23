@@ -1,27 +1,123 @@
-import { Injectable } from '@nestjs/common';
-import type { PrismaService } from '../../database/prisma.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
+import { formatPhone } from '@rdn/shared';
+import type { QueryUsersDto } from './dto/query-users.dto';
+import type { UpdateUserDto } from './dto/update-user.dto';
+import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: any) {
-    // TODO: Implement pagination, filtering
-    return { data: [], total: 0 };
+  async findAll(query: QueryUsersDto) {
+    const page = Number(query.page) || 1;
+    const limit = Math.min(Number(query.limit) || 20, 50);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.UserWhereInput = {};
+    if (query.role) where.role = query.role as Prisma.EnumRoleFilter['equals'];
+    if (query.status) where.status = query.status as Prisma.EnumUserStatusFilter['equals'];
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          role: true,
+          status: true,
+          email: true,
+          avatarUrl: true,
+          createdAt: true,
+          updatedAt: true,
+          // phone intentionally excluded from list view
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   async findOne(id: string) {
-    // TODO: Find user by ID with relations
-    return { id };
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        status: true,
+        email: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+        // phone intentionally excluded from detail view
+      },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
-  async update(id: string, data: any) {
-    // TODO: Update user profile
-    return { id, ...data };
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        phone: true,
+        name: true,
+        role: true,
+        status: true,
+        email: true,
+        avatarUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return {
+      ...user,
+      phone: formatPhone(user.phone),
+    };
   }
 
-  async remove(id: string) {
-    // TODO: Soft delete user
-    return { id, deleted: true };
+  async update(id: string, data: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        status: true,
+        email: true,
+        avatarUrl: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  async deactivate(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { status: 'INACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
   }
 }
