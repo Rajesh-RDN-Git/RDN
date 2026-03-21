@@ -14,6 +14,7 @@ import {
   awsConfig,
   jwtConfig,
   msg91Config,
+  exotelConfig,
 } from './config';
 import { SocietyScopeMiddleware } from './common/middleware/society-scope.middleware';
 import { AuthModule } from './modules/auth/auth.module';
@@ -38,7 +39,15 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, databaseConfig, redisConfig, awsConfig, jwtConfig, msg91Config],
+      load: [
+        appConfig,
+        databaseConfig,
+        redisConfig,
+        awsConfig,
+        jwtConfig,
+        msg91Config,
+        exotelConfig,
+      ],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     PrismaModule,
