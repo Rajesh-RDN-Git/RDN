@@ -5,7 +5,7 @@ export const leadsApi = {
   getById: (id: string) => apiClient.get(`/leads/${id}`),
   create: (data: Record<string, unknown>) => apiClient.post('/leads', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.patch(`/leads/${id}`, data),
-  approveVisit: (id: string) => apiClient.post(`/leads/${id}/approve-visit`),
+  approveVisit: (id: string) => apiClient.patch(`/leads/${id}/approve-visit`),
   closeDeal: (id: string, data: { type: string; dealValue: number }) =>
     apiClient.post(`/leads/${id}/close-deal`, data),
 };

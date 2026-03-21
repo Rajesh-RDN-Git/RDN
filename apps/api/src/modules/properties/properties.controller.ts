@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
-  UsePipes,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { createPropertySchema, updatePropertySchema } from '@rdn/shared';
@@ -45,8 +44,10 @@ export class PropertiesController {
   @Roles('OWNER', 'SUPER_ADMIN', 'RWA_ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new property listing' })
-  @UsePipes(new ZodValidationPipe(createPropertySchema))
-  async create(@Body() body: CreatePropertyDto, @CurrentUser('id') userId: string): Promise<any> {
+  async create(
+    @Body(new ZodValidationPipe(createPropertySchema)) body: CreatePropertyDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
     return this.propertiesService.create(body, userId);
   }
 
@@ -55,10 +56,9 @@ export class PropertiesController {
   @Roles('OWNER', 'SUPER_ADMIN', 'RWA_ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update property by ID' })
-  @UsePipes(new ZodValidationPipe(updatePropertySchema))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: UpdatePropertyDto,
+    @Body(new ZodValidationPipe(updatePropertySchema)) body: UpdatePropertyDto,
     @CurrentUser() user: { id: string; role: string },
   ): Promise<any> {
     return this.propertiesService.update(id, body, user.id, user.role);

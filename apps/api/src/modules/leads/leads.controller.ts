@@ -48,8 +48,10 @@ export class LeadsController {
   @Post()
   @Roles('BUYER_TENANT', 'SUPER_ADMIN')
   @ApiOperation({ summary: 'Create a lead (buyer enquiry)' })
-  @UsePipes(new ZodValidationPipe(createLeadSchema))
-  async create(@Body() body: CreateLeadDto, @CurrentUser('id') userId: string): Promise<any> {
+  async create(
+    @Body(new ZodValidationPipe(createLeadSchema)) body: CreateLeadDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
     return this.leadsService.create(body, userId);
   }
 

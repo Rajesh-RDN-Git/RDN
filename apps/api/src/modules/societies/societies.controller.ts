@@ -54,10 +54,9 @@ export class SocietiesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update society by ID' })
-  @UsePipes(new ZodValidationPipe(updateSocietySchema))
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: UpdateSocietyDto,
+    @Body(new ZodValidationPipe(updateSocietySchema)) body: UpdateSocietyDto,
     @CurrentUser() user: { id: string; role: string; societyId?: string },
   ): Promise<any> {
     // SUPER_ADMIN can update any; RWA_ADMIN can update their own society only

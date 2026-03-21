@@ -29,7 +29,18 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Unwrap the TransformInterceptor { data, meta } envelope
+    if (
+      response.data &&
+      typeof response.data === 'object' &&
+      'meta' in response.data &&
+      'data' in response.data
+    ) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
@@ -60,12 +71,13 @@ apiClient.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await axios.post(`${apiClient.defaults.baseURL}/auth/refresh`, {
+      const res = await axios.post(`${apiClient.defaults.baseURL}/auth/refresh`, {
         refreshToken,
       });
-      setTokens(data.accessToken, data.refreshToken);
-      processQueue(null, data.accessToken);
-      originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+      const refreshData = res.data?.data ?? res.data;
+      setTokens(refreshData.accessToken, refreshData.refreshToken);
+      processQueue(null, refreshData.accessToken);
+      originalRequest.headers.Authorization = `Bearer ${refreshData.accessToken}`;
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);

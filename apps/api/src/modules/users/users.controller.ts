@@ -8,7 +8,6 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
-  UsePipes,
   ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -49,12 +48,20 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Patch('me')
+  @ApiOperation({ summary: 'Update current user profile' })
+  updateMe(
+    @Body(new ZodValidationPipe(updateUserSchema)) body: UpdateUserDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.usersService.update(userId, body);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Update user by ID' })
-  @UsePipes(new ZodValidationPipe(updateUserSchema))
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: UpdateUserDto,
+    @Body(new ZodValidationPipe(updateUserSchema)) body: UpdateUserDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
     // Self-edit allowed; admin can edit anyone

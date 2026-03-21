@@ -60,10 +60,10 @@ export default function ChatPage() {
     const fetchMessages = async () => {
       setLoadingMessages(true);
       try {
-        const { data } = await communicationApi.messages(selectedId, { limit: 50 });
-        setMessages(data.data || []);
+        const { data } = await communicationApi.getConversation(selectedId, { limit: 50 });
+        setMessages(data.messages || []);
       } catch {
-        /\* ignore \*/;
+        /* ignore */
       }
       setLoadingMessages(false);
     };
@@ -80,8 +80,8 @@ export default function ChatPage() {
     try {
       await communicationApi.sendMessage(selectedId, { content: newMessage.trim() });
       setNewMessage('');
-      const { data } = await communicationApi.messages(selectedId, { limit: 50 });
-      setMessages(data.data || []);
+      const { data } = await communicationApi.getConversation(selectedId, { limit: 50 });
+      setMessages(data.messages || []);
     } catch {
       /\* ignore \*/;
     }

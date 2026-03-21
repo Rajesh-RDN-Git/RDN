@@ -9,7 +9,8 @@ async function getSociety(slug: string) {
   try {
     const res = await fetch(`${API_URL}/societies/${slug}`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
-    return res.json();
+    const json = await res.json();
+    return json.data ?? json;
   } catch {
     return null;
   }
@@ -21,8 +22,9 @@ async function getSocietyProperties(societyId: string) {
       next: { revalidate: 60 },
     });
     if (!res.ok) return [];
-    const data = await res.json();
-    return data.data || [];
+    const json = await res.json();
+    const payload = json.data ?? json;
+    return payload.data || [];
   } catch {
     return [];
   }
