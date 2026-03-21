@@ -1,13 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { RedisService } from '../../../common/redis/redis.service';
 import * as bcrypt from 'bcrypt';
+
+const OTP_PREFIX = 'otp:';
+const OTP_TTL_SECONDS = 300; // 5 minutes
 
 @Injectable()
 export class OtpService {
   private readonly logger = new Logger(OtpService.name);
   private readonly isDev: boolean;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
+  ) {
     this.isDev = configService.get('app.environment') === 'development';
   }
 
@@ -16,6 +23,13 @@ export class OtpService {
     const hash = await bcrypt.hash(otp, 10);
     const expiresAt = new Date(
       Date.now() + (this.configService.get<number>('msg91.otpExpiry') || 5) * 60 * 1000,
+    );
+
+    // Store OTP hash in Redis with TTL
+    await this.redisService.set(
+      `${OTP_PREFIX}${phone}`,
+      JSON.stringify({ hash, expiresAt: expiresAt.toISOString() }),
+      OTP_TTL_SECONDS,
     );
 
     if (this.isDev) {
@@ -38,6 +52,23 @@ export class OtpService {
     }
 
     return bcrypt.compare(otp, hash);
+  }
+
+  async verifyOtpFromRedis(phone: string, otp: string): Promise<boolean> {
+    const stored = await this.redisService.get(`${OTP_PREFIX}${phone}`);
+    if (!stored) return false;
+
+    try {
+      const { hash, expiresAt } = JSON.parse(stored);
+      const valid = await this.verifyOtp(otp, hash, new Date(expiresAt));
+      if (valid) {
+        // Remove OTP after successful verification
+        await this.redisService.del(`${OTP_PREFIX}${phone}`);
+      }
+      return valid;
+    } catch {
+      return false;
+    }
   }
 
   private generateOtp(): string {

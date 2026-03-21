@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryCommissionsDto } from './dto/query-commissions.dto';
 import type { SettleCommissionDto } from './dto/settle-commission.dto';
 import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class CommissionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(query: QueryCommissionsDto): Promise<any> {
     const page = Number(query.page) || 1;
@@ -73,13 +77,16 @@ export class CommissionService {
   }
 
   async settle(id: string, data: SettleCommissionDto): Promise<any> {
-    const commission = await this.prisma.commission.findUnique({ where: { id } });
+    const commission = await this.prisma.commission.findUnique({
+      where: { id },
+      include: { dealer: true },
+    });
     if (!commission) throw new NotFoundException('Commission not found');
     if (commission.status !== 'PENDING') {
       throw new BadRequestException(`Commission is already ${commission.status}`);
     }
 
-    return this.prisma.commission.update({
+    const updated = await this.prisma.commission.update({
       where: { id },
       data: {
         status: 'SETTLED',
@@ -87,6 +94,19 @@ export class CommissionService {
         settlementDate: data.settlementDate ? new Date(data.settlementDate) : new Date(),
       },
     });
+
+    this.notificationsService
+      .create({
+        userId: commission.dealer.userId,
+        type: 'COMMISSION',
+        title: 'Commission Settled',
+        body: `Your commission of Rs ${Number(commission.amount).toLocaleString('en-IN')} has been settled. Ref: ${data.payoutReference || 'N/A'}`,
+        channel: 'IN_APP',
+        data: { commissionId: id },
+      })
+      .catch(() => {});
+
+    return updated;
   }
 
   async cancel(id: string): Promise<any> {

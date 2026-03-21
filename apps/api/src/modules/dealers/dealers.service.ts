@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryDealersDto } from './dto/query-dealers.dto';
 import type { ApplyDealerDto } from './dto/apply-dealer.dto';
 import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class DealersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(query: QueryDealersDto) {
     const page = Number(query.page) || 1;
@@ -78,23 +82,49 @@ export class DealersService {
     const dealer = await this.prisma.dealer.findUnique({ where: { id } });
     if (!dealer) throw new NotFoundException('Dealer not found');
 
-    return this.prisma.dealer.update({
+    const updated = await this.prisma.dealer.update({
       where: { id },
       data: {
         rwaApprovalStatus: 'APPROVED',
         isActive: dealer.kycStatus === 'APPROVED' && dealer.trainingStatus === 'COMPLETED',
       },
     });
+
+    this.notificationsService
+      .create({
+        userId: dealer.userId,
+        type: 'SYSTEM',
+        title: 'Dealer Application Approved',
+        body: 'Your dealer application has been approved by the RWA.',
+        channel: 'IN_APP',
+        data: { dealerId: id },
+      })
+      .catch(() => {});
+
+    return updated;
   }
 
   async reject(id: string) {
     const dealer = await this.prisma.dealer.findUnique({ where: { id } });
     if (!dealer) throw new NotFoundException('Dealer not found');
 
-    return this.prisma.dealer.update({
+    const updated = await this.prisma.dealer.update({
       where: { id },
       data: { rwaApprovalStatus: 'REJECTED', isActive: false },
     });
+
+    this.notificationsService
+      .create({
+        userId: dealer.userId,
+        type: 'SYSTEM',
+        title: 'Dealer Application Rejected',
+        body: 'Your dealer application has been rejected. Please contact the RWA for details.',
+        channel: 'IN_APP',
+        data: { dealerId: id },
+      })
+      .catch(() => {});
+
+    return updated;
   }
 
   async updateKyc(id: string, status: 'APPROVED' | 'REJECTED') {

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { REFERRAL_REWARD_PERCENTAGE } from '@rdn/shared';
 import type { QueryReferralsDto } from './dto/query-referrals.dto';
 import type { Prisma } from '@rdn/db';
 
@@ -87,6 +88,32 @@ export class ReferralService {
       data: {
         referredId: referredUserId,
         status: 'SIGNED_UP',
+      },
+    });
+  }
+
+  async processReferralReward(
+    referredUserId: string,
+    dealerCommissionAmount: number,
+  ): Promise<any> {
+    // Find referral where this user was referred
+    const referral = await this.prisma.referral.findFirst({
+      where: {
+        referredId: referredUserId,
+        status: { in: ['SIGNED_UP', 'TRANSACTED'] },
+      },
+    });
+
+    if (!referral) return null;
+
+    const rewardAmount =
+      Math.round(dealerCommissionAmount * REFERRAL_REWARD_PERCENTAGE * 100) / 100;
+
+    return this.prisma.referral.update({
+      where: { id: referral.id },
+      data: {
+        status: 'REWARDED',
+        rewardAmount,
       },
     });
   }

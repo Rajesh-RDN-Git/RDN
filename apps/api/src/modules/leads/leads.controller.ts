@@ -16,6 +16,7 @@ import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
+import { CloseDealDto } from './dto/close-deal.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -68,5 +69,15 @@ export class LeadsController {
     @CurrentUser('id') userId: string,
   ): Promise<any> {
     return this.leadsService.approveVisit(id, userId);
+  }
+
+  @Post(':id/close-deal')
+  @Roles('SUPER_ADMIN', 'DEALER')
+  @ApiOperation({ summary: 'Close a deal on a lead (creates transaction + commission)' })
+  async closeDeal(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: CloseDealDto,
+  ): Promise<any> {
+    return this.leadsService.closeDeal(id, body);
   }
 }

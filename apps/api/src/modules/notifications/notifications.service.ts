@@ -1,12 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsGateway } from './notifications.gateway';
 import type { QueryNotificationsDto } from './dto/query-notifications.dto';
 import type { CreateNotificationDto } from './dto/create-notification.dto';
 import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly gateway?: NotificationsGateway,
+  ) {}
 
   async findAll(query: QueryNotificationsDto, userId: string): Promise<any> {
     const page = Number(query.page) || 1;
@@ -52,7 +56,7 @@ export class NotificationsService {
   }
 
   async create(data: CreateNotificationDto): Promise<any> {
-    return this.prisma.notification.create({
+    const notification = await this.prisma.notification.create({
       data: {
         userId: data.userId,
         type: data.type as any,
@@ -62,5 +66,12 @@ export class NotificationsService {
         data: (data.data || {}) as any,
       },
     });
+
+    // Emit real-time notification via WebSocket
+    if (this.gateway) {
+      this.gateway.emitNotification(data.userId, notification);
+    }
+
+    return notification;
   }
 }

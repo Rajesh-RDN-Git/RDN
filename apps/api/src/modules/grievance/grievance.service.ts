@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { CreateGrievanceDto } from './dto/create-grievance.dto';
 import type { UpdateGrievanceDto } from './dto/update-grievance.dto';
 import type { QueryGrievancesDto } from './dto/query-grievances.dto';
@@ -7,7 +8,10 @@ import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class GrievanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(query: QueryGrievancesDto, userId: string, userRole: string): Promise<any> {
     const page = Number(query.page) || 1;
@@ -71,7 +75,7 @@ export class GrievanceService {
     const hours = slaHours[data.severity] || 72;
     const slaDeadline = new Date(Date.now() + hours * 60 * 60 * 1000);
 
-    return this.prisma.grievance.create({
+    const grievance = await this.prisma.grievance.create({
       data: {
         filedBy: userId,
         category: data.category as any,
@@ -87,6 +91,26 @@ export class GrievanceService {
         filer: { select: { id: true, name: true } },
       },
     });
+
+    // Notify super admins about new grievance
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
+      select: { id: true },
+    });
+    for (const admin of admins) {
+      this.notificationsService
+        .create({
+          userId: admin.id,
+          type: 'GRIEVANCE',
+          title: `New Grievance: ${data.category}`,
+          body: `A ${data.severity} severity grievance has been filed.`,
+          channel: 'IN_APP',
+          data: { grievanceId: grievance.id },
+        })
+        .catch(() => {});
+    }
+
+    return grievance;
   }
 
   async update(id: string, data: UpdateGrievanceDto): Promise<any> {
@@ -103,10 +127,26 @@ export class GrievanceService {
     if (data.resolutionNotes) updateData.resolutionNotes = data.resolutionNotes;
     if (data.assignedTo) updateData.assignedTo = data.assignedTo;
 
-    return this.prisma.grievance.update({
+    const updated = await this.prisma.grievance.update({
       where: { id },
       data: updateData,
     });
+
+    // Notify filer on status change
+    if (data.status) {
+      this.notificationsService
+        .create({
+          userId: grievance.filedBy,
+          type: 'GRIEVANCE',
+          title: 'Grievance Status Updated',
+          body: `Your grievance has been updated to: ${data.status}`,
+          channel: 'IN_APP',
+          data: { grievanceId: id, status: data.status },
+        })
+        .catch(() => {});
+    }
+
+    return updated;
   }
 
   async escalate(id: string): Promise<any> {

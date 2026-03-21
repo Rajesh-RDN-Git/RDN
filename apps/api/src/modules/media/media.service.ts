@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import type { PresignedUrlDto } from './dto/presigned-url.dto';
@@ -6,10 +6,36 @@ import type { AddMediaDto } from './dto/add-media.dto';
 
 @Injectable()
 export class MediaService {
+  private readonly logger = new Logger(MediaService.name);
+  private s3Client: any = null;
+  private readonly bucket: string;
+  private readonly cdnUrl: string;
+  private readonly region: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.bucket = this.configService.get<string>('aws.s3Bucket') || 'rdn-dev-uploads';
+    this.cdnUrl = this.configService.get<string>('aws.cloudFrontUrl') || '';
+    this.region = this.configService.get<string>('aws.region') || 'ap-south-1';
+    this.initS3Client();
+  }
+
+  private async initS3Client() {
+    try {
+      const { S3Client } = await import('@aws-sdk/client-s3');
+      this.s3Client = new S3Client({
+        region: this.region,
+        credentials: {
+          accessKeyId: this.configService.get<string>('aws.accessKeyId') || '',
+          secretAccessKey: this.configService.get<string>('aws.secretAccessKey') || '',
+        },
+      });
+    } catch {
+      this.logger.warn('AWS SDK not available. S3 operations will use mock URLs.');
+    }
+  }
 
   async getPresignedUrl(data: PresignedUrlDto) {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'];
@@ -19,45 +45,52 @@ export class MediaService {
       );
     }
 
-    const bucket = this.configService.get<string>('aws.s3Bucket') || 'rdn-dev-uploads';
-    const cdnUrl = this.configService.get<string>('aws.cloudFrontUrl') || '';
     const ext = data.fileName.split('.').pop() || 'jpg';
     const key = `properties/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
-    // In development, return a mock presigned URL
-    // In production, this would use @aws-sdk/s3-request-presigner
-    const isDev = this.configService.get<string>('NODE_ENV') !== 'production';
+    if (this.s3Client) {
+      try {
+        const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+        const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
-    if (isDev) {
-      return {
-        uploadUrl: `https://${bucket}.s3.ap-south-1.amazonaws.com/${key}?X-Amz-Algorithm=mock-dev`,
-        key,
-        cdnUrl: cdnUrl
-          ? `${cdnUrl}/${key}`
-          : `https://${bucket}.s3.ap-south-1.amazonaws.com/${key}`,
-        expiresIn: 300,
-      };
+        const command = new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ContentType: data.contentType,
+        });
+
+        const uploadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
+
+        return {
+          uploadUrl,
+          key,
+          cdnUrl: this.cdnUrl
+            ? `${this.cdnUrl}/${key}`
+            : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`,
+          expiresIn: 300,
+        };
+      } catch (err) {
+        this.logger.error(`S3 presigned URL generation failed: ${err}`);
+      }
     }
 
-    // Production: Generate real presigned URL
-    // This requires @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner
-    // to be installed. Leaving as a placeholder that returns the same shape.
+    // Fallback: mock presigned URL for development
     return {
-      uploadUrl: `https://${bucket}.s3.ap-south-1.amazonaws.com/${key}`,
+      uploadUrl: `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}?X-Amz-Algorithm=mock-dev`,
       key,
-      cdnUrl: cdnUrl ? `${cdnUrl}/${key}` : `https://${bucket}.s3.ap-south-1.amazonaws.com/${key}`,
+      cdnUrl: this.cdnUrl
+        ? `${this.cdnUrl}/${key}`
+        : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`,
       expiresIn: 300,
     };
   }
 
   async addMedia(data: AddMediaDto) {
-    // Verify property exists
     const property = await this.prisma.property.findUnique({
       where: { id: data.propertyId },
     });
     if (!property) throw new NotFoundException('Property not found');
 
-    // Check max media count (10 per property)
     const existingCount = await this.prisma.propertyMedia.count({
       where: { propertyId: data.propertyId },
     });
@@ -86,7 +119,19 @@ export class MediaService {
     const media = await this.prisma.propertyMedia.findUnique({ where: { id } });
     if (!media) throw new NotFoundException('Media not found');
 
-    // In production, also delete from S3 here
+    // Delete from S3 if client available
+    if (this.s3Client) {
+      try {
+        const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+        // Extract key from URL
+        const url = new URL(media.url);
+        const key = url.pathname.slice(1); // Remove leading /
+        await this.s3Client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+      } catch (err) {
+        this.logger.warn(`Failed to delete S3 object: ${err}`);
+      }
+    }
+
     return this.prisma.propertyMedia.delete({ where: { id } });
   }
 }

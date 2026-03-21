@@ -10,11 +10,14 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommunicationService } from './communication.service';
+import { CallService } from './services/call.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { QueryConversationsDto } from './dto/query-conversations.dto';
 import { QueryMessagesDto } from './dto/query-messages.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Communication')
@@ -22,7 +25,10 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class CommunicationController {
-  constructor(private readonly communicationService: CommunicationService) {}
+  constructor(
+    private readonly communicationService: CommunicationService,
+    private readonly callService: CallService,
+  ) {}
 
   @Get('conversations')
   @ApiOperation({ summary: 'List all conversations for current user' })
@@ -60,5 +66,16 @@ export class CommunicationController {
     @CurrentUser('id') userId: string,
   ): Promise<any> {
     return this.communicationService.sendMessage(id, body, userId);
+  }
+
+  @Post('call')
+  @UseGuards(RolesGuard)
+  @Roles('DEALER')
+  @ApiOperation({ summary: 'Initiate masked call (dealer only)' })
+  async initiateCall(
+    @Body() body: { leadId: string },
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
+    return this.callService.initiateCall(userId, body.leadId);
   }
 }

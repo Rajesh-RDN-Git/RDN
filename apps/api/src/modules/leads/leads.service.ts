@@ -1,13 +1,20 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { TransactionsService } from '../transactions/transactions.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryLeadsDto } from './dto/query-leads.dto';
 import type { CreateLeadDto } from './dto/create-lead.dto';
 import type { UpdateLeadDto } from './dto/update-lead.dto';
+import type { CloseDealDto } from './dto/close-deal.dto';
 import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class LeadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly transactionsService: TransactionsService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(query: QueryLeadsDto, userId: string, userRole: string) {
     const page = Number(query.page) || 1;
@@ -110,7 +117,7 @@ export class LeadsService {
       dealerId = dealer.id;
     }
 
-    return this.prisma.lead.create({
+    const lead = await this.prisma.lead.create({
       data: {
         propertyId: data.propertyId,
         buyerId,
@@ -120,9 +127,37 @@ export class LeadsService {
       },
       include: {
         property: { select: { id: true, flatNumber: true, towerBlock: true } },
-        dealer: { select: { id: true, user: { select: { name: true } } } },
+        dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
       },
     });
+
+    // Notify dealer about new lead
+    if (lead.dealer?.user?.id) {
+      this.notificationsService
+        .create({
+          userId: lead.dealer.user.id,
+          type: 'LEAD',
+          title: 'New Lead Assigned',
+          body: `New enquiry for ${lead.property.flatNumber}, ${lead.property.towerBlock}`,
+          channel: 'IN_APP',
+          data: { leadId: lead.id, propertyId: data.propertyId },
+        })
+        .catch(() => {});
+    }
+
+    // Notify owner about visit request
+    this.notificationsService
+      .create({
+        userId: property.ownerId,
+        type: 'LEAD',
+        title: 'New Enquiry on Your Property',
+        body: `Someone is interested in your property at ${lead.property.flatNumber}, ${lead.property.towerBlock}`,
+        channel: 'IN_APP',
+        data: { leadId: lead.id, propertyId: data.propertyId },
+      })
+      .catch(() => {});
+
+    return lead;
   }
 
   async update(id: string, data: UpdateLeadDto) {
@@ -158,6 +193,30 @@ export class LeadsService {
     return this.prisma.lead.update({
       where: { id },
       data: { visitApprovedByOwner: true },
+    });
+  }
+
+  async closeDeal(id: string, data: CloseDealDto) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    if (lead.status !== 'NEGOTIATING' && lead.status !== 'CLOSING') {
+      throw new BadRequestException(
+        'Lead must be in NEGOTIATING or CLOSING status to close a deal',
+      );
+    }
+
+    // Update lead status to CLOSED
+    await this.prisma.lead.update({
+      where: { id },
+      data: { status: 'CLOSED' },
+    });
+
+    // Create transaction (which also creates commission and updates property)
+    return this.transactionsService.create({
+      leadId: id,
+      type: data.type,
+      dealValue: data.dealValue,
     });
   }
 }

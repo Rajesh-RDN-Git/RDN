@@ -9,3 +9,7 @@ export { mediaApi } from './media.api';
 export { notificationsApi } from './notifications.api';
 export { communicationApi } from './communication.api';
 export { reportsApi } from './reports.api';
+export { transactionsApi } from './transactions.api';
+export { grievancesApi } from './grievances.api';
+export { referralsApi } from './referrals.api';
+export { verificationApi } from './verification.api';
