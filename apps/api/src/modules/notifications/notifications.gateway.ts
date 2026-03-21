@@ -13,7 +13,7 @@ import { JwtService } from '@nestjs/jwt';
   cors: { origin: '*' },
 })
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
   private readonly logger = new Logger(NotificationsGateway.name);
 
   constructor(private readonly jwtService: JwtService) {}

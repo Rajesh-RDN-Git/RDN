@@ -21,7 +21,7 @@ function SearchContent() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
         <aside className="rounded-lg border border-gray-200 bg-white p-4">
           <SearchFilters
-            filters={filters}
+            filters={filters as Record<string, string | undefined>}
             onChange={(newFilters) => search(newFilters as Record<string, string | undefined>)}
           />
         </aside>

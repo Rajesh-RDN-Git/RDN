@@ -17,7 +17,7 @@ import { JwtService } from '@nestjs/jwt';
   cors: { origin: '*' },
 })
 export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
   private readonly logger = new Logger(CommunicationGateway.name);
   private userSockets = new Map<string, string[]>();
 
@@ -76,11 +76,13 @@ export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisco
     if (!userId) return;
 
     try {
-      const message = await this.communicationService.sendMessage(data.conversationId, {
-        senderId: userId,
-        receiverId: data.receiverId,
-        content: data.content,
-      });
+      const message = await this.communicationService.sendMessage(
+        data.conversationId,
+        {
+          content: data.content,
+        } as any,
+        userId,
+      );
 
       // Emit to both sender and receiver
       this.server.to(`user:${userId}`).emit('new_message', message);
