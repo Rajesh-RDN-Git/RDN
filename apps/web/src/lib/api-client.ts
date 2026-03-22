@@ -4,6 +4,7 @@ import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth'
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1',
   headers: { 'Content-Type': 'application/json' },
+  timeout: 10000,
 });
 
 let isRefreshing = false;

@@ -7,6 +7,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
 
 type TabKey = 'dashboard' | 'leads' | 'transactions' | 'commissions';
 
@@ -15,34 +16,41 @@ export default function ReportsPage() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [reportData, setReportData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        if (activeTab === 'dashboard') {
-          const { data } = await reportsApi.dashboard();
-          setDashboardData(data);
-        } else {
-          const params: Record<string, unknown> = {};
-          if (dateFrom) params.from = dateFrom;
-          if (dateTo) params.to = dateTo;
-          const api =
-            activeTab === 'leads'
-              ? reportsApi.leads
-              : activeTab === 'transactions'
-                ? reportsApi.transactions
-                : reportsApi.commissions;
-          const { data } = await api(params);
-          setReportData(data.data || data || []);
-        }
-      } catch {
-        /\* ignore \*/;
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (activeTab === 'dashboard') {
+        const { data } = await reportsApi.dashboard();
+        setDashboardData(data);
+      } else {
+        const params: Record<string, unknown> = {};
+        if (dateFrom) params.from = dateFrom;
+        if (dateTo) params.to = dateTo;
+        const api =
+          activeTab === 'leads'
+            ? reportsApi.leads
+            : activeTab === 'transactions'
+              ? reportsApi.transactions
+              : reportsApi.commissions;
+        const { data } = await api(params);
+        setReportData(data.data || data || []);
       }
-      setLoading(false);
-    };
+    } catch (err: any) {
+      setError(
+        err?.code === 'ERR_NETWORK'
+          ? 'Network error. Please check your connection.'
+          : 'Failed to load report data.',
+      );
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchData();
   }, [activeTab, dateFrom, dateTo]);
 
@@ -126,6 +134,29 @@ export default function ReportsPage() {
       {loading ? (
         <div className="flex justify-center py-12">
           <Spinner />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+            <svg
+              className="h-7 w-7 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-heading-md text-gray-900">Failed to load reports</h3>
+          <p className="mt-2 max-w-sm text-body-md text-gray-500">{error}</p>
+          <Button onClick={fetchData} className="mt-6">
+            Try Again
+          </Button>
         </div>
       ) : activeTab === 'dashboard' ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">

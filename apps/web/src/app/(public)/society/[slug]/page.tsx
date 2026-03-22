@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
+import { PropertyCard } from '@/components/search/property-card';
+import { HomeIcon, BuildingIcon, ShieldIcon, StarIcon, CheckIcon } from '@/components/ui/icons';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
 
@@ -54,6 +55,13 @@ export default async function SocietyPage({ params }: { params: { slug: string }
 
   const properties = await getSocietyProperties(society.id);
 
+  const saleProperties = properties.filter(
+    (p: any) => p.transactionType === 'SALE' || p.transactionType === 'BOTH',
+  );
+  const rentProperties = properties.filter(
+    (p: any) => p.transactionType === 'RENT' || p.transactionType === 'BOTH',
+  );
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ResidentialComplex',
@@ -73,13 +81,28 @@ export default async function SocietyPage({ params }: { params: { slug: string }
     })),
   };
 
-  const formatPrice = (price: string | null) => {
-    if (!price) return null;
-    const num = Number(price);
-    if (num >= 10000000) return `${(num / 10000000).toFixed(2)} Cr`;
-    if (num >= 100000) return `${(num / 100000).toFixed(1)} L`;
-    return num.toLocaleString('en-IN');
-  };
+  const stats = [
+    {
+      label: 'Total Units',
+      value: society.totalUnits || '—',
+      icon: <HomeIcon size={20} className="text-primary-600" />,
+    },
+    {
+      label: 'Active Listings',
+      value: properties.length,
+      icon: <BuildingIcon size={20} className="text-primary-600" />,
+    },
+    {
+      label: 'Verified',
+      value: society.verificationStatus === 'VERIFIED' ? 'Yes' : 'Pending',
+      icon: <ShieldIcon size={20} className="text-primary-600" />,
+    },
+    {
+      label: 'Amenities',
+      value: (society.amenities as string[])?.length || 0,
+      icon: <StarIcon size={20} className="text-primary-600" />,
+    },
+  ];
 
   return (
     <>
@@ -87,97 +110,115 @@ export default async function SocietyPage({ params }: { params: { slug: string }
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Society Header */}
-        <div className="mb-8 rounded-xl border bg-white p-8">
-          <div className="flex items-start justify-between">
+
+      {/* Hero banner */}
+      <div className="relative h-64 overflow-hidden bg-gray-900 md:h-80">
+        {society.media?.[0]?.url ? (
+          <img
+            src={society.media[0].url}
+            alt={society.name}
+            className="h-full w-full object-cover opacity-60"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-900 to-gray-900" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-content px-4 pb-8">
+          <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{society.name}</h1>
-              <p className="mt-1 text-gray-600">{society.address}</p>
-              <p className="text-sm text-gray-500">
-                {society.city}, {society.state} - {society.pincode}
-              </p>
-            </div>
-            <Badge variant={society.status === 'ONBOARDED' ? 'success' : 'warning'}>
-              {society.status}
-            </Badge>
-          </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-lg bg-gray-50 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{society.totalUnits || '-'}</p>
-              <p className="text-sm text-gray-500">Total Units</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{properties.length}</p>
-              <p className="text-sm text-gray-500">Active Listings</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">
-                {society.verificationStatus === 'VERIFIED' ? 'Yes' : 'Pending'}
-              </p>
-              <p className="text-sm text-gray-500">Verified</p>
-            </div>
-            <div className="rounded-lg bg-gray-50 p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">
-                {(society.amenities as string[])?.length || 0}
-              </p>
-              <p className="text-sm text-gray-500">Amenities</p>
-            </div>
-          </div>
-
-          {(society.amenities as string[])?.length > 0 && (
-            <div className="mt-6">
-              <h2 className="mb-3 font-semibold text-gray-900">Amenities</h2>
-              <div className="flex flex-wrap gap-2">
-                {(society.amenities as string[]).map((a: string) => (
-                  <Badge key={a} variant="info">
-                    {a}
-                  </Badge>
-                ))}
+              <div className="mb-2 flex items-center gap-2">
+                <Badge variant={society.status === 'ONBOARDED' ? 'success' : 'warning'}>
+                  {society.status}
+                </Badge>
+                {society.verificationStatus === 'VERIFIED' && (
+                  <Badge variant="success">Verified</Badge>
+                )}
               </div>
+              <h1 className="text-display-md text-white md:text-display-lg">{society.name}</h1>
+              <p className="mt-1 text-body-lg text-gray-300">
+                {society.address}, {society.city}, {society.state} - {society.pincode}
+              </p>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-content px-4 py-8">
+        {/* Stats grid */}
+        <div className="-mt-12 relative z-10 mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-5 shadow-elevation-1"
+            >
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50">
+                {stat.icon}
+              </div>
+              <p className="text-display-sm text-gray-900">{stat.value}</p>
+              <p className="mt-1 text-label-sm text-gray-500">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs implementation (SSR-safe) */}
+        <div className="mb-8">
+          {/* Properties section */}
+          <h2 className="mb-6 text-heading-xl text-gray-900">Properties</h2>
+
+          {properties.length === 0 ? (
+            <p className="text-body-md text-gray-500">
+              No properties currently listed in this society.
+            </p>
+          ) : (
+            <>
+              {/* For Sale */}
+              {saleProperties.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="mb-4 text-heading-md text-gray-700">
+                    For Sale ({saleProperties.length})
+                  </h3>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {saleProperties.map((prop: any) => (
+                      <PropertyCard key={prop.id} property={prop} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* For Rent */}
+              {rentProperties.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="mb-4 text-heading-md text-gray-700">
+                    For Rent ({rentProperties.length})
+                  </h3>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {rentProperties.map((prop: any) => (
+                      <PropertyCard key={prop.id} property={prop} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* Available Properties */}
-        <h2 className="mb-4 text-2xl font-bold text-gray-900">Available Properties</h2>
-        {properties.length === 0 ? (
-          <p className="text-gray-500">No properties currently listed in this society.</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {properties.map((prop: any) => (
-              <Link
-                key={prop.id}
-                href={`/property/${prop.id}`}
-                className="block rounded-xl border bg-white p-4 transition-shadow hover:shadow-lg"
-              >
-                {prop.media?.[0]?.url && (
-                  <img
-                    src={prop.media[0].url}
-                    alt={`${prop.bhk} BHK`}
-                    className="mb-3 aspect-[4/3] w-full rounded-lg object-cover"
-                  />
-                )}
-                <div className="flex items-center gap-2">
-                  <Badge variant={prop.transactionType === 'SALE' ? 'success' : 'info'}>
-                    {prop.transactionType}
-                  </Badge>
-                  <Badge variant="default">{prop.furnishing?.replace('_', '-') || 'N/A'}</Badge>
+        {/* About & Amenities */}
+        {(society.amenities as string[])?.length > 0 && (
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="mb-4 text-heading-lg text-gray-900">Amenities</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {(society.amenities as string[]).map((a: string) => (
+                <div
+                  key={a}
+                  className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5 text-body-sm text-gray-700"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-100 text-primary-600">
+                    <CheckIcon size={14} />
+                  </span>
+                  {a}
                 </div>
-                <p className="mt-2 text-lg font-bold text-gray-900">
-                  {prop.transactionType === 'SALE'
-                    ? formatPrice(prop.priceSale)
-                    : `${formatPrice(prop.priceRent)}/mo`}
-                </p>
-                <p className="font-medium text-gray-700">
-                  {prop.bhk} BHK &middot; {prop.carpetArea} sq.ft.
-                </p>
-                <p className="text-sm text-gray-500">
-                  {prop.flatNumber}, {prop.towerBlock}
-                </p>
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

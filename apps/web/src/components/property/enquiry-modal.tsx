@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal } from '../ui/modal';
 import { Button } from '../ui/button';
 import { Select } from '../ui/select';
+import { CheckIcon, ChatIcon } from '../ui/icons';
 import { leadsApi } from '../../lib/api/leads.api';
 import { useAuthStore } from '../../stores/auth-store';
 
@@ -48,40 +49,33 @@ export function EnquiryModal({ isOpen, onClose, propertyId, propertyName }: Enqu
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Enquire Now">
       {success ? (
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-            <svg
-              className="h-6 w-6 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+        <div className="py-4 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+            <CheckIcon size={28} className="text-green-600" />
           </div>
-          <h3 className="text-lg font-semibold">Enquiry Submitted!</h3>
-          <p className="mt-2 text-sm text-gray-500">
-            A dealer will contact you shortly about {propertyName}.
+          <h3 className="text-heading-md text-gray-900">Enquiry Submitted!</h3>
+          <p className="mx-auto mt-2 max-w-xs text-body-md text-gray-500">
+            A community dealer will contact you shortly about {propertyName}.
           </p>
-          <Button onClick={handleClose} className="mt-4">
+          <Button onClick={handleClose} className="mt-6">
             Done
           </Button>
         </div>
       ) : (
         <div>
-          <p className="mb-4 text-sm text-gray-600">
-            Submit an enquiry for <strong>{propertyName}</strong>. A community dealer will reach out
-            to you.
-          </p>
+          <div className="mb-5 flex items-start gap-3 rounded-lg bg-primary-50 p-4">
+            <ChatIcon size={20} className="mt-0.5 flex-shrink-0 text-primary-600" />
+            <div>
+              <p className="text-label-md text-gray-900">{propertyName}</p>
+              <p className="mt-0.5 text-body-sm text-gray-500">
+                A verified community dealer will reach out to you
+              </p>
+            </div>
+          </div>
 
-          <div className="mb-4">
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              How did you find this?
+          <div className="mb-5">
+            <label className="mb-1.5 block text-label-sm text-gray-700">
+              How did you find this property?
             </label>
             <Select value={source} onChange={(e) => setSource(e.target.value)}>
               <option value="APP_SEARCH">App Search</option>
@@ -91,18 +85,18 @@ export function EnquiryModal({ isOpen, onClose, propertyId, propertyName }: Enqu
             </Select>
           </div>
 
-          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {error && (
+            <div className="mb-4 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-body-sm text-error-text">
+              {error}
+            </div>
+          )}
 
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={handleClose} className="flex-1">
+            <Button variant="outline" onClick={handleClose} className="flex-1">
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={submitting} className="flex-1">
-              {submitting
-                ? 'Submitting...'
-                : isAuthenticated
-                  ? 'Submit Enquiry'
-                  : 'Login to Enquire'}
+            <Button onClick={handleSubmit} isLoading={submitting} className="flex-1">
+              {isAuthenticated ? 'Submit Enquiry' : 'Login to Enquire'}
             </Button>
           </div>
         </div>

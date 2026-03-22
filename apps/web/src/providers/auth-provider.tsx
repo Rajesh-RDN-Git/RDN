@@ -6,7 +6,7 @@ import { getAccessToken } from '@/lib/auth';
 import { usersApi } from '@/lib/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { isLoading, setLoading, login, logout } = useAuthStore();
+  const { setLoading, login, logout } = useAuthStore();
 
   useEffect(() => {
     async function hydrate() {
@@ -24,14 +24,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     hydrate();
   }, [login, logout, setLoading]);
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-      </div>
-    );
-  }
 
   return <>{children}</>;
 }

@@ -26,18 +26,26 @@ export default function DealersPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('');
 
   const fetchDealers = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, unknown> = { page, limit: 20 };
       if (activeFilter) params.isActive = activeFilter;
       const { data } = await dealersApi.list(params);
       setDealers(data.data || []);
       setTotal(data.total || 0);
-    } catch {
+    } catch (err: any) {
       setDealers([]);
+      setError(
+        err?.code === 'ERR_NETWORK'
+          ? 'Network error. Please check your connection.'
+          : 'Failed to load dealers.',
+      );
     }
     setLoading(false);
   };
@@ -47,20 +55,22 @@ export default function DealersPage() {
   }, [page, activeFilter]);
 
   const handleApprove = async (id: string) => {
+    setActionError(null);
     try {
       await dealersApi.approve(id);
       fetchDealers();
-    } catch {
-      /\* ignore \*/;
+    } catch (err: any) {
+      setActionError(err?.response?.data?.message || 'Failed to approve dealer.');
     }
   };
 
   const handleReject = async (id: string) => {
+    setActionError(null);
     try {
       await dealersApi.reject(id);
       fetchDealers();
-    } catch {
-      /\* ignore \*/;
+    } catch (err: any) {
+      setActionError(err?.response?.data?.message || 'Failed to reject dealer.');
     }
   };
 
@@ -148,15 +158,46 @@ export default function DealersPage() {
         </Select>
       </div>
 
-      <div className="rounded-lg border bg-white">
-        <DataTable
-          columns={columns}
-          data={dealers}
-          isLoading={loading}
-          keyExtractor={(item: any) => item.id}
-          emptyMessage="No dealers found"
-        />
-      </div>
+      {actionError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-body-sm text-red-700">
+          {actionError}
+        </div>
+      )}
+
+      {error ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+            <svg
+              className="h-7 w-7 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-heading-md text-gray-900">Failed to load dealers</h3>
+          <p className="mt-2 max-w-sm text-body-md text-gray-500">{error}</p>
+          <Button onClick={fetchDealers} className="mt-6">
+            Try Again
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-white">
+          <DataTable
+            columns={columns}
+            data={dealers}
+            isLoading={loading}
+            keyExtractor={(item: any) => item.id}
+            emptyMessage="No dealers found"
+          />
+        </div>
+      )}
 
       <Pagination
         currentPage={page}

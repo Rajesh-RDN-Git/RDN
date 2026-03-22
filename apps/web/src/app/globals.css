@@ -2,8 +2,196 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * RDN Design System — CSS Custom Properties
+ *
+ * Semantic tokens consumed by Tailwind via var() references.
+ * Light mode is default; dark mode overrides via .dark class.
+ */
+
 @layer base {
+  :root {
+    /* Backgrounds */
+    --color-bg-primary: #FFFFFF;
+    --color-bg-secondary: #F9FAFB;
+    --color-bg-tertiary: #F3F4F6;
+    --color-bg-inverse: #111827;
+
+    /* Surfaces */
+    --color-surface: #FFFFFF;
+    --color-surface-raised: #FFFFFF;
+    --color-surface-overlay: #FFFFFF;
+
+    /* Text */
+    --color-text-primary: #111827;
+    --color-text-secondary: #4B5563;
+    --color-text-tertiary: #9CA3AF;
+    --color-text-inverse: #FFFFFF;
+    --color-text-placeholder: #9CA3AF;
+    --color-text-disabled: #D1D5DB;
+
+    /* Brand */
+    --color-brand: #2563EB;
+    --color-brand-hover: #1D4ED8;
+    --color-brand-active: #1E40AF;
+    --color-brand-subtle: #EFF6FF;
+    --color-brand-subtle-hover: #DBEAFE;
+    --color-brand-text: #1D4ED8;
+
+    /* Border */
+    --color-border: #E5E7EB;
+    --color-border-strong: #D1D5DB;
+    --color-border-focus: #3B82F6;
+    --color-border-error: #EF4444;
+
+    /* Status — Success */
+    --color-success-bg: #F0FDF4;
+    --color-success-border: #BBF7D0;
+    --color-success-text: #166534;
+    --color-success-icon: #16A34A;
+
+    /* Status — Warning */
+    --color-warning-bg: #FFFBEB;
+    --color-warning-border: #FDE68A;
+    --color-warning-text: #92400E;
+    --color-warning-icon: #D97706;
+
+    /* Status — Error */
+    --color-error-bg: #FEF2F2;
+    --color-error-border: #FECACA;
+    --color-error-text: #991B1B;
+    --color-error-icon: #DC2626;
+
+    /* Status — Info */
+    --color-info-bg: #EFF6FF;
+    --color-info-border: #BFDBFE;
+    --color-info-text: #1E40AF;
+    --color-info-icon: #2563EB;
+
+    /* Overlay */
+    --color-overlay-backdrop: rgba(0, 0, 0, 0.5);
+    --color-overlay-scrim: rgba(0, 0, 0, 0.2);
+
+    /* Skeleton */
+    --color-skeleton-base: #E5E7EB;
+    --color-skeleton-shimmer: #F3F4F6;
+  }
+
+  .dark {
+    /* Backgrounds */
+    --color-bg-primary: #030712;
+    --color-bg-secondary: #111827;
+    --color-bg-tertiary: #1F2937;
+    --color-bg-inverse: #F9FAFB;
+
+    /* Surfaces */
+    --color-surface: #111827;
+    --color-surface-raised: #1F2937;
+    --color-surface-overlay: #1F2937;
+
+    /* Text */
+    --color-text-primary: #F9FAFB;
+    --color-text-secondary: #9CA3AF;
+    --color-text-tertiary: #6B7280;
+    --color-text-inverse: #111827;
+    --color-text-placeholder: #6B7280;
+    --color-text-disabled: #4B5563;
+
+    /* Brand */
+    --color-brand: #3B82F6;
+    --color-brand-hover: #60A5FA;
+    --color-brand-active: #93C5FD;
+    --color-brand-subtle: #1E293B;
+    --color-brand-subtle-hover: #1E3A5F;
+    --color-brand-text: #60A5FA;
+
+    /* Border */
+    --color-border: #374151;
+    --color-border-strong: #4B5563;
+    --color-border-focus: #3B82F6;
+    --color-border-error: #EF4444;
+
+    /* Status — Success */
+    --color-success-bg: #052E16;
+    --color-success-border: #15803D;
+    --color-success-text: #BBF7D0;
+    --color-success-icon: #22C55E;
+
+    /* Status — Warning */
+    --color-warning-bg: #451A03;
+    --color-warning-border: #B45309;
+    --color-warning-text: #FDE68A;
+    --color-warning-icon: #F59E0B;
+
+    /* Status — Error */
+    --color-error-bg: #450A0A;
+    --color-error-border: #B91C1C;
+    --color-error-text: #FECACA;
+    --color-error-icon: #EF4444;
+
+    /* Status — Info */
+    --color-info-bg: #172554;
+    --color-info-border: #1D4ED8;
+    --color-info-text: #BFDBFE;
+    --color-info-icon: #3B82F6;
+
+    /* Overlay */
+    --color-overlay-backdrop: rgba(0, 0, 0, 0.7);
+    --color-overlay-scrim: rgba(0, 0, 0, 0.4);
+
+    /* Skeleton */
+    --color-skeleton-base: #374151;
+    --color-skeleton-shimmer: #4B5563;
+  }
+
   body {
     @apply bg-white text-gray-900 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  .dark body {
+    @apply bg-gray-950 text-gray-50;
+  }
+
+  /* Focus-visible for keyboard navigation */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  .dark *:focus-visible {
+    @apply ring-offset-gray-900;
+  }
+}
+
+@layer utilities {
+  /* Text rendering optimizations for Inter */
+  .text-optimize {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Hide scrollbar for carousel and horizontal scroll areas */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Animate-in for dropdown/popover entrance */
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  .animate-in {
+    animation: animate-in 150ms ease-out;
   }
 }

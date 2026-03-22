@@ -1,13 +1,52 @@
 'use client';
 
+import { useState } from 'react';
 import { Select } from '../ui/select';
-import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { RangeSlider } from '../ui/range-slider';
+import { ChevronIcon } from '../ui/icons';
 
 interface SearchFiltersProps {
   filters: Record<string, string | undefined>;
   onChange: (filters: Record<string, string | undefined>) => void;
 }
+
+function FilterSection({
+  title,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-gray-100 pb-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between py-2 text-label-md text-gray-900"
+      >
+        {title}
+        <ChevronIcon size={16} direction={open ? 'up' : 'down'} className="text-gray-400" />
+      </button>
+      {open && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
+
+const AMENITY_OPTIONS = [
+  'Swimming Pool',
+  'Gym',
+  'Clubhouse',
+  'Park',
+  'Playground',
+  'Security',
+  'Power Backup',
+  'Parking',
+  'Lift',
+  'Tennis Court',
+];
 
 export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
   const update = (key: string, value: string) => {
@@ -18,12 +57,19 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
     onChange({});
   };
 
-  return (
-    <div className="space-y-4">
-      <h2 className="font-semibold text-gray-900">Filters</h2>
+  const priceMin = Number(filters.priceMin || 0);
+  const priceMax = Number(filters.priceMax || 50000000);
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">City</label>
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-heading-sm text-gray-900">Filters</h2>
+        <Button variant="ghost" size="sm" onClick={reset} className="text-body-sm text-gray-500">
+          Reset
+        </Button>
+      </div>
+
+      <FilterSection title="Location">
         <Select value={filters.city || ''} onChange={(e) => update('city', e.target.value)}>
           <option value="">All Cities</option>
           <option value="Gurugram">Gurugram</option>
@@ -32,10 +78,9 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           <option value="Mumbai">Mumbai</option>
           <option value="Bangalore">Bangalore</option>
         </Select>
-      </div>
+      </FilterSection>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Transaction Type</label>
+      <FilterSection title="Transaction Type">
         <Select
           value={filters.transactionType || ''}
           onChange={(e) => update('transactionType', e.target.value)}
@@ -45,10 +90,9 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           <option value="SALE">Sale</option>
           <option value="BOTH">Both</option>
         </Select>
-      </div>
+      </FilterSection>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Property Type</label>
+      <FilterSection title="Property Type">
         <Select
           value={filters.propertyType || ''}
           onChange={(e) => update('propertyType', e.target.value)}
@@ -58,53 +102,69 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           <option value="VILLA">Villa</option>
           <option value="COMMERCIAL">Commercial</option>
         </Select>
-      </div>
+      </FilterSection>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">BHK</label>
-        <Select value={filters.bhk || ''} onChange={(e) => update('bhk', e.target.value)}>
-          <option value="">Any</option>
-          <option value="1">1 BHK</option>
-          <option value="2">2 BHK</option>
-          <option value="3">3 BHK</option>
-          <option value="4">4 BHK</option>
-          <option value="5">5+ BHK</option>
-        </Select>
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Price Range</label>
-        <div className="flex gap-2">
-          <Input
-            type="number"
-            placeholder="Min"
-            value={filters.priceMin || ''}
-            onChange={(e) => update('priceMin', e.target.value)}
-          />
-          <Input
-            type="number"
-            placeholder="Max"
-            value={filters.priceMax || ''}
-            onChange={(e) => update('priceMax', e.target.value)}
-          />
+      <FilterSection title="BHK">
+        <div className="flex flex-wrap gap-2">
+          {['', '1', '2', '3', '4', '5'].map((val) => (
+            <button
+              key={val}
+              onClick={() => update('bhk', val)}
+              className={`rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
+                (filters.bhk || '') === val
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              {val ? `${val} BHK` : 'Any'}
+            </button>
+          ))}
         </div>
-      </div>
+      </FilterSection>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Furnishing</label>
-        <Select
-          value={filters.furnishing || ''}
-          onChange={(e) => update('furnishing', e.target.value)}
-        >
-          <option value="">Any</option>
-          <option value="FURNISHED">Furnished</option>
-          <option value="SEMI">Semi-Furnished</option>
-          <option value="UNFURNISHED">Unfurnished</option>
-        </Select>
-      </div>
+      <FilterSection title="Budget">
+        <RangeSlider
+          min={0}
+          max={50000000}
+          step={500000}
+          value={[priceMin, priceMax]}
+          onChange={([min, max]) => {
+            onChange({
+              ...filters,
+              priceMin: min > 0 ? String(min) : undefined,
+              priceMax: max < 50000000 ? String(max) : undefined,
+              page: undefined,
+            });
+          }}
+        />
+      </FilterSection>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Availability</label>
+      <FilterSection title="Furnishing">
+        <div className="space-y-2">
+          {[
+            { value: '', label: 'Any' },
+            { value: 'FURNISHED', label: 'Furnished' },
+            { value: 'SEMI', label: 'Semi-Furnished' },
+            { value: 'UNFURNISHED', label: 'Unfurnished' },
+          ].map((opt) => (
+            <label
+              key={opt.value}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-gray-700 hover:bg-gray-50"
+            >
+              <input
+                type="radio"
+                name="furnishing"
+                checked={(filters.furnishing || '') === opt.value}
+                onChange={() => update('furnishing', opt.value)}
+                className="h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Availability" defaultOpen={false}>
         <Select
           value={filters.availability || ''}
           onChange={(e) => update('availability', e.target.value)}
@@ -114,21 +174,24 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           <option value="AVAILABLE_FROM">Available Soon</option>
           <option value="UNDER_NOTICE">Under Notice</option>
         </Select>
-      </div>
+      </FilterSection>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Sort By</label>
-        <Select value={filters.sort || ''} onChange={(e) => update('sort', e.target.value)}>
-          <option value="">Newest First</option>
-          <option value="price_asc">Price: Low to High</option>
-          <option value="price_desc">Price: High to Low</option>
-          <option value="area_desc">Area: Largest First</option>
-        </Select>
-      </div>
-
-      <Button variant="secondary" className="w-full" onClick={reset}>
-        Clear Filters
-      </Button>
+      <FilterSection title="Amenities" defaultOpen={false}>
+        <div className="grid grid-cols-1 gap-1">
+          {AMENITY_OPTIONS.map((amenity) => (
+            <label
+              key={amenity}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-gray-700 hover:bg-gray-50"
+            >
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              {amenity}
+            </label>
+          ))}
+        </div>
+      </FilterSection>
     </div>
   );
 }

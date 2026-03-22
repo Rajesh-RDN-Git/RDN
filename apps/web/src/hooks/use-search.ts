@@ -40,6 +40,7 @@ export function useSearch() {
   const [results, setResults] = useState<PropertyResult[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
 
   const getFiltersFromParams = useCallback((): SearchFilters => {
@@ -60,13 +61,20 @@ export function useSearch() {
       router.replace(`/search?${params.toString()}`, { scroll: false });
 
       setLoading(true);
+      setError(null);
       try {
         const { data } = await searchApi.searchProperties(newFilters as Record<string, unknown>);
         setResults(data.data || []);
         setTotal(data.total || 0);
-      } catch {
+      } catch (err: any) {
         setResults([]);
         setTotal(0);
+        const message =
+          err?.response?.data?.message ||
+          (err?.code === 'ERR_NETWORK'
+            ? 'Network error. Please check your connection and try again.'
+            : 'Failed to load properties. Please try again.');
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -94,5 +102,5 @@ export function useSearch() {
   const page = Number(filters.page) || 1;
   const totalPages = Math.ceil(total / 20);
 
-  return { filters, results, total, loading, search, debouncedSearch, page, totalPages };
+  return { filters, results, total, loading, error, search, debouncedSearch, page, totalPages };
 }

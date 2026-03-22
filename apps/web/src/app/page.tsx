@@ -1,26 +1,52 @@
-import Link from 'next/link';
+import { Metadata } from 'next';
+import { HeroSection } from '@/components/home/hero-section';
+import { TrustIndicators } from '@/components/home/trust-indicators';
+import { FeaturedSocieties } from '@/components/home/featured-societies';
+import { RecentListings } from '@/components/home/recent-listings';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+
+export const metadata: Metadata = {
+  title: 'RDN — Community-Driven Real Estate for Residential Societies',
+  description:
+    'Find verified properties for rent and sale in residential societies. No external brokers — connect directly with community dealers.',
+  openGraph: {
+    title: 'RDN — Community-Driven Real Estate',
+    description:
+      "India's first community-driven real estate platform. Browse verified properties from trusted society dealers.",
+  },
+};
 
 export default function HomePage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'RDN - Residential Dealer Network',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://rdn.in',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rdn.in'}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <h1 className="mb-4 text-4xl font-bold">RDN</h1>
-      <p className="mb-8 text-lg text-gray-600">
-        Residential Dealer Network — Community-driven real estate for societies
-      </p>
-      <div className="flex gap-4">
-        <Link
-          href="/search"
-          className="rounded-lg bg-primary-600 px-6 py-3 text-white hover:bg-primary-700"
-        >
-          Browse Properties
-        </Link>
-        <Link
-          href="/dashboard"
-          className="rounded-lg border border-gray-300 px-6 py-3 hover:bg-gray-50"
-        >
-          Dashboard
-        </Link>
-      </div>
-    </main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Header />
+      <main>
+        <HeroSection />
+        <TrustIndicators />
+        <FeaturedSocieties />
+        <RecentListings />
+      </main>
+      <Footer />
+    </>
   );
 }
