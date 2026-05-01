@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import type { QuerySocietiesDto } from './dto/query-societies.dto';
 import type { CreateSocietyDto } from './dto/create-society.dto';
@@ -83,7 +88,7 @@ export class SocietiesService {
     });
   }
 
-  async update(id: string, data: UpdateSocietyDto) {
+  async update(id: string, data: UpdateSocietyDto, callerRole?: string) {
     const society = await this.prisma.society.findUnique({ where: { id } });
     if (!society) throw new NotFoundException('Society not found');
 
@@ -99,6 +104,27 @@ export class SocietiesService {
     if (data.amenities !== undefined) updateData.amenities = data.amenities;
     if (data.status !== undefined)
       updateData.status = data.status as Prisma.EnumSocietyStatusFieldUpdateOperationsInput['set'];
+
+    // Assigning the RWA admin is SUPER_ADMIN-only.
+    if (data.rwaAdminId !== undefined) {
+      if (callerRole !== 'SUPER_ADMIN') {
+        throw new ForbiddenException('Only SUPER_ADMIN can assign an RWA admin to a society');
+      }
+      if (data.rwaAdminId === null) {
+        updateData.rwaAdmin = { disconnect: true };
+      } else {
+        // Verify the user exists and promote them to RWA_ADMIN if they aren't already.
+        const user = await this.prisma.user.findUnique({ where: { id: data.rwaAdminId } });
+        if (!user) throw new NotFoundException('User to assign as RWA admin not found');
+        if (user.role !== 'RWA_ADMIN') {
+          await this.prisma.user.update({
+            where: { id: data.rwaAdminId },
+            data: { role: 'RWA_ADMIN' },
+          });
+        }
+        updateData.rwaAdmin = { connect: { id: data.rwaAdminId } };
+      }
+    }
 
     return this.prisma.society.update({
       where: { id },
