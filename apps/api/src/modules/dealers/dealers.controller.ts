@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { applyDealerSchema, updateDealerKycSchema } from '@rdn/shared';
 import { DealersService } from './dealers.service';
 import { ApplyDealerDto } from './dto/apply-dealer.dto';
 import { QueryDealersDto } from './dto/query-dealers.dto';
@@ -17,6 +18,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 @ApiTags('Dealers')
 @Controller('dealers')
@@ -27,9 +29,12 @@ export class DealersController {
 
   @Get()
   @Roles('SUPER_ADMIN', 'RWA_ADMIN')
-  @ApiOperation({ summary: 'List dealers' })
-  async findAll(@Query() query: QueryDealersDto): Promise<any> {
-    return this.dealersService.findAll(query);
+  @ApiOperation({ summary: 'List dealers (society-scoped for RWA_ADMIN)' })
+  async findAll(
+    @Query() query: QueryDealersDto,
+    @CurrentUser() user: { id: string; role: string },
+  ): Promise<any> {
+    return this.dealersService.findAll(query, user.id, user.role);
   }
 
   @Get(':id')
@@ -41,7 +46,10 @@ export class DealersController {
 
   @Post('apply')
   @ApiOperation({ summary: 'Apply to become a dealer' })
-  async apply(@Body() body: ApplyDealerDto, @CurrentUser('id') userId: string): Promise<any> {
+  async apply(
+    @Body(new ZodValidationPipe(applyDealerSchema)) body: ApplyDealerDto,
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
     return this.dealersService.apply(body, userId);
   }
 
@@ -64,9 +72,10 @@ export class DealersController {
   @ApiOperation({ summary: 'Update dealer KYC status' })
   async updateKyc(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { status: 'APPROVED' | 'REJECTED' },
+    @Body(new ZodValidationPipe(updateDealerKycSchema))
+    body: { kycStatus: 'APPROVED' | 'REJECTED' },
   ): Promise<any> {
-    return this.dealersService.updateKyc(id, body.status);
+    return this.dealersService.updateKyc(id, body.kycStatus);
   }
 
   @Patch(':id/training-complete')
