@@ -10,8 +10,9 @@ export const STEP_ORDER: WizardStep[] = [
 ];
 
 export type PhotoState = {
-  id: string;
-  url: string;
+  id: string; // S3 key (also used as React key)
+  key: string; // S3 key (explicit field for clarity in submission)
+  url: string; // local blob URL for in-wizard preview
   isCover: boolean;
   order: number;
   uploadProgress?: number;
