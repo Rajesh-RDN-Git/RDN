@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { useAuthStore } from '@/stores/auth-store';
 import { DataTable } from '@/components/ui/data-table';
@@ -9,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { EyeIcon, SearchIcon } from '@/components/ui/icons';
-import { CreatePropertyModal } from '@/components/property/create-property-modal';
 import Link from 'next/link';
 
 const statusVariant = (s: string) => {
@@ -39,6 +39,7 @@ const verificationVariant = (s: string) => {
 };
 
 export default function PropertiesPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const [properties, setProperties] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -48,7 +49,6 @@ export default function PropertiesPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
 
   const canCreate = user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN';
 
@@ -178,19 +178,14 @@ export default function PropertiesPage() {
           )}
         </div>
         {canCreate && (
-          <Button leftIcon={<span aria-hidden="true">+</span>} onClick={() => setCreateOpen(true)}>
+          <Button
+            leftIcon={<span aria-hidden="true">+</span>}
+            onClick={() => router.push('/dashboard/properties/new')}
+          >
             Add Property
           </Button>
         )}
       </div>
-
-      {canCreate && (
-        <CreatePropertyModal
-          isOpen={createOpen}
-          onClose={() => setCreateOpen(false)}
-          onCreated={fetchProperties}
-        />
-      )}
 
       {/* Search + Filters bar */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row">

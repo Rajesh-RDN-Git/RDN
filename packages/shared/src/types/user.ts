@@ -21,6 +21,7 @@ export interface IUser {
   role: Role;
   status: UserStatus;
   avatarUrl: string | null;
+  primarySocietyId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -73,6 +73,7 @@ export class UsersService {
         status: true,
         email: true,
         avatarUrl: true,
+        primarySocietyId: true,
         createdAt: true,
         updatedAt: true,
       },

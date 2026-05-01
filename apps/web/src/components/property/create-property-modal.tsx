@@ -1,5 +1,7 @@
 'use client';
 
+// Deprecated: superseded by PropertyWizard at /dashboard/properties/new (Path B). Kept for reference; remove once PR merged.
+
 import { useEffect, useState } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

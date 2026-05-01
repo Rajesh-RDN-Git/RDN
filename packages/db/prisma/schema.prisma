@@ -64,11 +64,11 @@ enum AvailabilityStatus {
 }
 
 enum PropertyVerificationStatus {
-  PENDING           @map("PROP_PENDING")
+  PENDING      @map("PROP_PENDING")
   RWA_APPROVED
-  VERIFIED          @map("PROP_VERIFIED")
-  FLAGGED           @map("PROP_FLAGGED")
-  REJECTED          @map("PROP_REJECTED")
+  VERIFIED     @map("PROP_VERIFIED")
+  FLAGGED      @map("PROP_FLAGGED")
+  REJECTED     @map("PROP_REJECTED")
 }
 
 enum PropertyStatus {
@@ -107,7 +107,7 @@ enum DealTransactionType {
 }
 
 enum PaymentStatus {
-  PENDING   @map("PAY_PENDING")
+  PENDING @map("PAY_PENDING")
   PARTIAL
   PAID
   OVERDUE
@@ -146,11 +146,11 @@ enum GrievanceStatus {
   IN_PROGRESS
   ESCALATED
   RESOLVED
-  CLOSED       @map("GRIEV_CLOSED")
+  CLOSED      @map("GRIEV_CLOSED")
 }
 
 enum ReferralStatus {
-  PENDING     @map("REF_PENDING")
+  PENDING    @map("REF_PENDING")
   SIGNED_UP
   TRANSACTED
   REWARDED
@@ -160,9 +160,9 @@ enum NotificationType {
   LEAD
   VISIT
   DEAL
-  COMMISSION   @map("NOTIF_COMMISSION")
-  GRIEVANCE    @map("NOTIF_GRIEVANCE")
-  SYSTEM       @map("NOTIF_SYSTEM")
+  COMMISSION @map("NOTIF_COMMISSION")
+  GRIEVANCE  @map("NOTIF_GRIEVANCE")
+  SYSTEM     @map("NOTIF_SYSTEM")
 }
 
 enum NotificationChannel {
@@ -175,18 +175,19 @@ enum NotificationChannel {
 // ─── Models ──────────────────────────────────────────
 
 model User {
-  id        String     @id @default(uuid()) @db.Uuid
-  phone     String     @unique @db.VarChar(255)
-  email     String?    @unique @db.VarChar(255)
-  name      String     @db.VarChar(255)
-  role      Role
-  status    UserStatus @default(ACTIVE)
-  avatarUrl    String?    @map("avatar_url") @db.VarChar(512)
-  otpHash      String?   @map("otp_hash") @db.VarChar(255)
-  otpExpiresAt DateTime? @map("otp_expires_at")
-  refreshToken String?   @map("refresh_token") @db.VarChar(512)
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  id               String     @id @default(uuid()) @db.Uuid
+  phone            String     @unique @db.VarChar(255)
+  email            String?    @unique @db.VarChar(255)
+  name             String     @db.VarChar(255)
+  role             Role
+  status           UserStatus @default(ACTIVE)
+  avatarUrl        String?    @map("avatar_url") @db.VarChar(512)
+  otpHash          String?    @map("otp_hash") @db.VarChar(255)
+  otpExpiresAt     DateTime?  @map("otp_expires_at")
+  refreshToken     String?    @map("refresh_token") @db.VarChar(512)
+  primarySocietyId String?    @map("primary_society_id") @db.Uuid
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
 
   // Relations
   managedSocieties   Society[]      @relation("RwaAdmin")
@@ -205,6 +206,7 @@ model User {
 
   @@index([role])
   @@index([status])
+  @@index([primarySocietyId])
   @@map("users")
 }
 
@@ -230,7 +232,7 @@ model Society {
   updatedAt          DateTime           @updatedAt @map("updated_at")
 
   // Relations
-  rwaAdmin   User?      @relation("RwaAdmin", fields: [rwaAdminId], references: [id])
+  rwaAdmin   User?       @relation("RwaAdmin", fields: [rwaAdminId], references: [id])
   dealers    Dealer[]
   properties Property[]
   leads      Lead[]
@@ -271,15 +273,15 @@ model Dealer {
 }
 
 enum KYCStatus {
-  PENDING   @map("KYC_PENDING")
-  APPROVED  @map("KYC_APPROVED")
-  REJECTED  @map("KYC_REJECTED")
+  PENDING  @map("KYC_PENDING")
+  APPROVED @map("KYC_APPROVED")
+  REJECTED @map("KYC_REJECTED")
 }
 
 enum ApprovalStatus {
-  PENDING   @map("APPR_PENDING")
-  APPROVED  @map("APPR_APPROVED")
-  REJECTED  @map("APPR_REJECTED")
+  PENDING  @map("APPR_PENDING")
+  APPROVED @map("APPR_APPROVED")
+  REJECTED @map("APPR_REJECTED")
 }
 
 enum TrainingStatus {
