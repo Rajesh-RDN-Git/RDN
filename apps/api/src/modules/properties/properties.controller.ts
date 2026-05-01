@@ -33,10 +33,36 @@ export class PropertiesController {
     return this.propertiesService.findAll(query);
   }
 
+  @Get('verification-queue')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('RWA_ADMIN', 'SUPER_ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List PENDING properties for the current admin to review' })
+  async getVerificationQueue(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+  ): Promise<any> {
+    return this.propertiesService.getVerificationQueue(userId, role);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get property by ID' })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
     return this.propertiesService.findOne(id);
+  }
+
+  @Patch(':id/verification')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('RWA_ADMIN', 'SUPER_ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve or reject a pending property listing' })
+  async updateVerification(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { decision: 'RWA_APPROVED' | 'REJECTED'; reason?: string },
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+  ): Promise<any> {
+    return this.propertiesService.updateVerification(id, body.decision, body.reason, userId, role);
   }
 
   @Post()

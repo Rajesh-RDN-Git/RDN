@@ -17,6 +17,7 @@ import {
   FileTextIcon,
   CloseIcon,
   BriefcaseIcon,
+  CheckIcon,
 } from '@/components/ui/icons';
 
 type IconComponent = ComponentType<{ size?: number; className?: string }>;
@@ -31,6 +32,7 @@ const navByRole: Record<string, NavItem[]> = {
   [Role.SUPER_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
+    { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
@@ -40,6 +42,7 @@ const navByRole: Record<string, NavItem[]> = {
   [Role.RWA_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
+    { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },

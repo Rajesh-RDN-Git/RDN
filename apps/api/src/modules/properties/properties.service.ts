@@ -161,6 +161,59 @@ export class PropertiesService {
     });
   }
 
+  async getVerificationQueue(userId: string, role: string) {
+    // SUPER_ADMIN: all PENDING. RWA_ADMIN: PENDING within own societies.
+    const where: Prisma.PropertyWhereInput = { verificationStatus: 'PENDING' };
+    if (role === 'RWA_ADMIN') {
+      const societies = await this.prisma.society.findMany({
+        where: { rwaAdminId: userId },
+        select: { id: true },
+      });
+      where.societyId = { in: societies.map((s) => s.id) };
+    } else if (role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+    return this.prisma.property.findMany({
+      where,
+      include: { society: { select: { id: true, name: true, slug: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async updateVerification(
+    id: string,
+    decision: 'RWA_APPROVED' | 'REJECTED',
+    reason: string | undefined,
+    userId: string,
+    role: string,
+  ) {
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+      include: { society: { select: { rwaAdminId: true } } },
+    });
+    if (!property) throw new NotFoundException('Property not found');
+
+    if (role === 'RWA_ADMIN' && property.society.rwaAdminId !== userId) {
+      throw new ForbiddenException('Not your society');
+    }
+
+    return this.prisma.property.update({
+      where: { id },
+      data: {
+        verificationStatus: decision,
+        // Track reason in restrictions JSON if rejected
+        ...(decision === 'REJECTED' && reason
+          ? {
+              restrictions: {
+                ...((property.restrictions as object) || {}),
+                rejectionReason: reason,
+              },
+            }
+          : {}),
+      },
+    });
+  }
+
   async delist(id: string, userId: string, userRole: string) {
     const property = await this.prisma.property.findUnique({ where: { id } });
     if (!property) throw new NotFoundException('Property not found');
