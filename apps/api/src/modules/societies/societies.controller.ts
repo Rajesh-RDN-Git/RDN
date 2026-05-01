@@ -66,6 +66,6 @@ export class SocietiesController {
     if (user.role !== 'SUPER_ADMIN' && user.role !== 'RWA_ADMIN') {
       throw new ForbiddenException('Insufficient permissions');
     }
-    return this.societiesService.update(id, body);
+    return this.societiesService.update(id, body, user.role);
   }
 }

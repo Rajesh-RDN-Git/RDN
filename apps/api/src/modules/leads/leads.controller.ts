@@ -58,19 +58,21 @@ export class LeadsController {
   @Patch(':id')
   @Roles('DEALER', 'SUPER_ADMIN', 'RWA_ADMIN')
   @ApiOperation({ summary: 'Update lead status' })
-  @UsePipes(new ZodValidationPipe(updateLeadSchema))
-  async update(@Param('id', ParseUUIDPipe) id: string, @Body() body: UpdateLeadDto): Promise<any> {
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(updateLeadSchema)) body: UpdateLeadDto,
+  ): Promise<any> {
     return this.leadsService.update(id, body);
   }
 
   @Patch(':id/approve-visit')
   @Roles('OWNER', 'SUPER_ADMIN')
-  @ApiOperation({ summary: 'Owner approves a visit request' })
+  @ApiOperation({ summary: 'Owner approves a visit request (SUPER_ADMIN can act on behalf)' })
   async approveVisit(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser('id') userId: string,
+    @CurrentUser() user: { id: string; role: string },
   ): Promise<any> {
-    return this.leadsService.approveVisit(id, userId);
+    return this.leadsService.approveVisit(id, user.id, user.role);
   }
 
   @Post(':id/close-deal')

@@ -17,7 +17,11 @@ export const createSocietySchema = z.object({
   amenities: z.array(z.string()).optional(),
 });
 
-export const updateSocietySchema = createSocietySchema.partial().omit({ slug: true });
+export const updateSocietySchema = createSocietySchema.partial().omit({ slug: true }).extend({
+  // SUPER_ADMIN-only — assigning the RWA admin for the society. Service-layer
+  // enforces the role check; schema simply allows the field.
+  rwaAdminId: z.string().uuid().nullable().optional(),
+});
 
 export type CreateSocietyInput = z.infer<typeof createSocietySchema>;
 export type UpdateSocietyInput = z.infer<typeof updateSocietySchema>;

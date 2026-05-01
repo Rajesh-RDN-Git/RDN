@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { createConversationSchema, sendMessageSchema, initiateCallSchema } from '@rdn/shared';
 import { CommunicationService } from './communication.service';
 import { CallService } from './services/call.service';
 import { SendMessageDto } from './dto/send-message.dto';
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
 @ApiTags('Communication')
 @Controller('communication')
@@ -42,7 +44,7 @@ export class CommunicationController {
   @Post('conversations')
   @ApiOperation({ summary: 'Create a conversation (linked to a lead)' })
   async createConversation(
-    @Body() body: CreateConversationDto,
+    @Body(new ZodValidationPipe(createConversationSchema)) body: CreateConversationDto,
     @CurrentUser('id') userId: string,
   ): Promise<any> {
     return this.communicationService.createConversation(body, userId);
@@ -62,7 +64,7 @@ export class CommunicationController {
   @ApiOperation({ summary: 'Send a message in a conversation' })
   async sendMessage(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: SendMessageDto,
+    @Body(new ZodValidationPipe(sendMessageSchema)) body: SendMessageDto,
     @CurrentUser('id') userId: string,
   ): Promise<any> {
     return this.communicationService.sendMessage(id, body, userId);
@@ -73,7 +75,7 @@ export class CommunicationController {
   @Roles('DEALER')
   @ApiOperation({ summary: 'Initiate masked call (dealer only)' })
   async initiateCall(
-    @Body() body: { leadId: string },
+    @Body(new ZodValidationPipe(initiateCallSchema)) body: { leadId: string },
     @CurrentUser('id') userId: string,
   ): Promise<any> {
     return this.callService.initiateCall(userId, body.leadId);

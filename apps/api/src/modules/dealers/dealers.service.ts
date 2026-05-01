@@ -12,7 +12,7 @@ export class DealersService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async findAll(query: QueryDealersDto) {
+  async findAll(query: QueryDealersDto, currentUserId?: string, currentUserRole?: string) {
     const page = Number(query.page) || 1;
     const limit = Math.min(Number(query.limit) || 20, 50);
     const skip = (page - 1) * limit;
@@ -21,6 +21,14 @@ export class DealersService {
     if (query.societyId) where.societyId = query.societyId;
     if (query.isActive !== undefined) where.isActive = query.isActive === 'true';
     if (query.kycStatus) where.kycStatus = query.kycStatus as any;
+
+    // Role-based scoping. SUPER_ADMIN sees all; RWA_ADMIN scoped to their societies;
+    // DEALER can only see their own dealer record.
+    if (currentUserRole === 'RWA_ADMIN' && currentUserId) {
+      where.society = { rwaAdminId: currentUserId };
+    } else if (currentUserRole === 'DEALER' && currentUserId) {
+      where.userId = currentUserId;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.dealer.findMany({

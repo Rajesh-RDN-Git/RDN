@@ -30,4 +30,11 @@ export class UpdateSocietyDto {
 
   @ApiPropertyOptional({ enum: ['ONBOARDED', 'IN_PROGRESS', 'INACTIVE'] })
   status?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'SUPER_ADMIN-only: UUID of the user to assign as RWA admin. Pass null to disconnect.',
+    nullable: true,
+  })
+  rwaAdminId?: string | null;
 }

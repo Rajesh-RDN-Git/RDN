@@ -5,22 +5,27 @@ export const createLeadSchema = z.object({
   source: z.enum(['APP_SEARCH', 'REFERRAL', 'WHATSAPP', 'WALK_IN']),
 });
 
-export const updateLeadSchema = z.object({
-  status: z
-    .enum([
-      'NEW',
-      'CONTACTED',
-      'VISIT_SCHEDULED',
-      'VISITED',
-      'NEGOTIATING',
-      'CLOSING',
-      'CLOSED',
-      'LOST',
-    ])
-    .optional(),
-  visitDate: z.string().datetime().optional(),
-  notes: z.record(z.unknown()).optional(),
-});
+export const updateLeadSchema = z
+  .object({
+    status: z
+      .enum([
+        'NEW',
+        'CONTACTED',
+        'VISIT_SCHEDULED',
+        'VISITED',
+        'NEGOTIATING',
+        'CLOSING',
+        'CLOSED',
+        'LOST',
+      ])
+      .optional(),
+    visitDate: z.string().datetime().optional(),
+    notes: z.record(z.unknown()).optional(),
+  })
+  .refine((v) => v.status !== 'VISIT_SCHEDULED' || !!v.visitDate, {
+    message: 'visitDate is required when status is VISIT_SCHEDULED',
+    path: ['visitDate'],
+  });
 
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
 export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;

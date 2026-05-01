@@ -179,14 +179,16 @@ export class LeadsService {
     });
   }
 
-  async approveVisit(id: string, ownerId: string) {
+  async approveVisit(id: string, callerId: string, callerRole?: string) {
     const lead = await this.prisma.lead.findUnique({
       where: { id },
       include: { property: true },
     });
 
     if (!lead) throw new NotFoundException('Lead not found');
-    if (lead.property.ownerId !== ownerId) {
+    // SUPER_ADMIN can approve on behalf of any owner; OWNER can only approve their own.
+    const isSuperAdmin = callerRole === 'SUPER_ADMIN';
+    if (!isSuperAdmin && lead.property.ownerId !== callerId) {
       throw new BadRequestException('Only the property owner can approve visits');
     }
 

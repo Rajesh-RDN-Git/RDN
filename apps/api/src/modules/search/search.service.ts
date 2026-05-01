@@ -14,6 +14,9 @@ export class SearchService {
 
     const where: Prisma.PropertyWhereInput = {
       status: 'ACTIVE',
+      // Only surface listings that have at least RWA approval. Final SUPER_ADMIN
+      // verification (VERIFIED) is required only for the "Verified" filter chip.
+      verificationStatus: { in: ['RWA_APPROVED', 'VERIFIED'] },
     };
 
     // Filter by city (through society relation)

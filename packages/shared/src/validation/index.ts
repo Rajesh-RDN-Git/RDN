@@ -4,3 +4,6 @@ export * from './lead.schema';
 export * from './search.schema';
 export * from './society.schema';
 export * from './transaction.schema';
+export * from './dealer.schema';
+export * from './grievance.schema';
+export * from './communication.schema';
