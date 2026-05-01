@@ -14,6 +14,9 @@ import {
   LocationIcon,
   BuildingIcon,
   HomeIcon,
+  DashboardIcon,
+  SettingsIcon,
+  LogoutIcon,
 } from '@/components/ui/icons';
 
 const CITIES = ['Delhi', 'Mumbai', 'Bangalore', 'Gurugram', 'Noida', 'Pune', 'Hyderabad'];
@@ -40,7 +43,6 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (mobileOpen) {
       document.body.style.overflow = 'hidden';
@@ -52,36 +54,42 @@ export function Header() {
     };
   }, [mobileOpen]);
 
+  const navLink =
+    'rounded-md px-3 py-2 text-sm font-medium text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground';
+  const iconBtn =
+    'inline-flex h-9 w-9 items-center justify-center rounded-md text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground';
+
   return (
-    <header className="sticky top-0 z-header border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-header max-w-content items-center justify-between px-4">
-        {/* Left section: Logo + City */}
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold text-white">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600">
-              <HomeIcon size={18} className="text-white" />
-            </div>
+    <header className="sticky top-0 z-header border-b border-chrome-border bg-chrome">
+      <div className="mx-auto flex h-header max-w-content items-center justify-between gap-4 px-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-lg font-bold text-chrome-foreground"
+          >
+            <span className="grid h-8 w-8 place-items-center rounded-md bg-brand text-brand-foreground">
+              <HomeIcon size={18} />
+            </span>
             <span>RDN</span>
           </Link>
 
-          {/* City Selector - desktop */}
           <div ref={cityRef} className="relative hidden md:block">
             <button
               onClick={() => setCityOpen(!cityOpen)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-md text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
+              className="flex h-9 items-center gap-1.5 rounded-md px-3 text-sm text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground"
             >
               <LocationIcon size={16} />
               <span>{selectedCity || 'All Cities'}</span>
               <ChevronIcon size={14} direction={cityOpen ? 'up' : 'down'} />
             </button>
             {cityOpen && (
-              <div className="absolute left-0 top-full mt-1 w-48 rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-elevation-3">
+              <div className="absolute left-0 top-full mt-1 w-48 rounded-md border border-chrome-border bg-chrome py-1 shadow-elevation-3">
                 <button
                   onClick={() => {
                     setSelectedCity('');
                     setCityOpen(false);
                   }}
-                  className={`flex w-full items-center px-4 py-2 text-sm transition-colors hover:bg-gray-700 ${!selectedCity ? 'text-primary-400' : 'text-gray-300'}`}
+                  className={`flex w-full items-center px-3 py-2 text-sm transition-colors duration-fast hover:bg-chrome-hover ${!selectedCity ? 'text-chrome-foreground' : 'text-chrome-muted'}`}
                 >
                   All Cities
                 </button>
@@ -92,7 +100,7 @@ export function Header() {
                       setSelectedCity(city);
                       setCityOpen(false);
                     }}
-                    className={`flex w-full items-center px-4 py-2 text-sm transition-colors hover:bg-gray-700 ${selectedCity === city ? 'text-primary-400' : 'text-gray-300'}`}
+                    className={`flex w-full items-center px-3 py-2 text-sm transition-colors duration-fast hover:bg-chrome-hover ${selectedCity === city ? 'text-chrome-foreground' : 'text-chrome-muted'}`}
                   >
                     {city}
                   </button>
@@ -102,123 +110,84 @@ export function Header() {
           </div>
         </div>
 
-        {/* Center: Nav links - desktop */}
         <nav className="hidden items-center gap-1 md:flex">
           <Link
             href={`/search?transactionType=SALE${selectedCity ? `&city=${selectedCity}` : ''}`}
-            className="rounded-lg px-4 py-2 text-body-md font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
+            className={navLink}
           >
             Buy
           </Link>
           <Link
             href={`/search?transactionType=RENT${selectedCity ? `&city=${selectedCity}` : ''}`}
-            className="rounded-lg px-4 py-2 text-body-md font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
+            className={navLink}
           >
             Rent
           </Link>
-          <Link
-            href="/societies"
-            className="rounded-lg px-4 py-2 text-body-md font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-          >
+          <Link href="/societies" className={navLink}>
             Societies
           </Link>
         </nav>
 
-        {/* Right section */}
-        <div className="flex items-center gap-3">
-          <Link
-            href="/search"
-            className="hidden rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white md:flex"
-            aria-label="Search"
-          >
-            <SearchIcon size={20} />
+        <div className="flex items-center gap-2">
+          <Link href="/search" className={`${iconBtn} hidden md:inline-flex`} aria-label="Search">
+            <SearchIcon size={18} />
           </Link>
-
           <Link
             href="/dashboard/properties"
-            className="relative hidden rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white md:flex"
+            className={`${iconBtn} hidden md:inline-flex`}
             aria-label="Shortlist"
           >
-            <HeartIcon size={20} />
+            <HeartIcon size={18} />
           </Link>
 
-          {/* User menu - desktop */}
           {isAuthenticated && user ? (
             <div className="relative hidden md:block" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-gray-800"
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-fast hover:bg-chrome-hover"
               >
                 <Avatar src={user.avatarUrl} name={user.name} size="sm" />
                 <div className="hidden items-start lg:flex lg:flex-col">
-                  <span className="text-sm font-medium text-white">{user.name}</span>
-                  <Badge variant="info" className="mt-0.5 text-[10px]">
+                  <span className="text-sm font-medium leading-tight text-chrome-foreground">
+                    {user.name}
+                  </span>
+                  <span className="mt-0.5 text-[10px] uppercase tracking-wider text-chrome-muted">
                     {user.role?.replace('_', ' ')}
-                  </Badge>
+                  </span>
                 </div>
-                <ChevronIcon size={14} className="text-gray-400" />
+                <ChevronIcon size={14} className="text-chrome-muted" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-elevation-3">
-                  <div className="border-b border-gray-700 px-4 py-3">
-                    <p className="text-sm font-medium text-white">{user.name}</p>
-                    <p className="text-xs text-gray-400">{user.email || user.phone}</p>
+                <div className="absolute right-0 z-dropdown mt-2 w-60 overflow-hidden rounded-md border border-chrome-border bg-chrome py-1 shadow-elevation-3">
+                  <div className="border-b border-chrome-border px-3 py-3">
+                    <p className="text-sm font-medium text-chrome-foreground">{user.name}</p>
+                    <p className="mt-0.5 truncate text-xs text-chrome-muted">
+                      {user.email || user.phone}
+                    </p>
                   </div>
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground"
                     onClick={() => setMenuOpen(false)}
                   >
-                    <BuildingIcon size={16} />
-                    Dashboard
+                    <DashboardIcon size={16} /> Dashboard
                   </Link>
                   <Link
                     href="/dashboard/settings"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground"
                     onClick={() => setMenuOpen(false)}
                   >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    Settings
+                    <SettingsIcon size={16} /> Settings
                   </Link>
-                  <div className="my-1 border-t border-gray-700" />
+                  <div className="my-1 border-t border-chrome-border" />
                   <button
                     onClick={() => {
                       setMenuOpen(false);
                       logout();
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-400 transition-colors hover:bg-gray-700"
+                    className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-error-icon transition-colors duration-fast hover:bg-chrome-hover"
                   >
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                      />
-                    </svg>
-                    Logout
+                    <LogoutIcon size={16} /> Logout
                   </button>
                 </div>
               )}
@@ -226,41 +195,38 @@ export function Header() {
           ) : (
             <Link
               href="/login"
-              className="hidden rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 md:block"
+              className="hidden h-9 items-center justify-center rounded-md bg-brand px-4 text-sm font-medium text-brand-foreground transition-colors duration-fast hover:bg-brand-hover md:inline-flex"
             >
               Login
             </Link>
           )}
 
-          {/* Mobile hamburger */}
           <button
-            className="rounded-lg p-2 text-gray-300 hover:bg-gray-800 md:hidden"
+            className={`${iconBtn} md:hidden`}
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Menu"
+            aria-expanded={mobileOpen}
           >
-            {mobileOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
+            {mobileOpen ? <CloseIcon size={22} /> : <MenuIcon size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile slide-in overlay */}
       {mobileOpen && (
         <>
           <div
-            className="fixed inset-0 top-header z-overlay bg-black/50 md:hidden"
+            className="fixed inset-0 top-header z-overlay bg-[var(--color-overlay-backdrop)] md:hidden"
             onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
           />
-          <div className="fixed inset-y-0 right-0 top-header z-sidebar w-72 bg-gray-900 shadow-elevation-4 md:hidden">
-            <div className="flex flex-col overflow-y-auto p-4">
-              {/* City selector mobile */}
-              <div className="mb-4 rounded-lg border border-gray-700 bg-gray-800 p-3">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
-                  City
-                </p>
+          <div className="fixed inset-y-0 right-0 top-header z-sidebar w-72 overflow-y-auto bg-chrome shadow-elevation-4 md:hidden">
+            <div className="flex flex-col p-4">
+              <div className="mb-4 rounded-md border border-chrome-border bg-chrome-hover p-3">
+                <p className="mb-2 text-overline text-chrome-muted">City</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCity('')}
-                    className={`rounded-full px-3 py-1 text-xs ${!selectedCity ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                    className={`rounded-full px-3 py-1 text-xs ${!selectedCity ? 'bg-brand text-brand-foreground' : 'bg-chrome-border text-chrome-muted'}`}
                   >
                     All
                   </button>
@@ -268,7 +234,7 @@ export function Header() {
                     <button
                       key={city}
                       onClick={() => setSelectedCity(city)}
-                      className={`rounded-full px-3 py-1 text-xs ${selectedCity === city ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                      className={`rounded-full px-3 py-1 text-xs ${selectedCity === city ? 'bg-brand text-brand-foreground' : 'bg-chrome-border text-chrome-muted'}`}
                     >
                       {city}
                     </button>
@@ -276,79 +242,75 @@ export function Header() {
                 </div>
               </div>
 
-              {/* Nav links */}
               <nav className="space-y-1">
-                <Link
-                  href={`/search?transactionType=SALE${selectedCity ? `&city=${selectedCity}` : ''}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <HomeIcon size={20} /> Buy Property
-                </Link>
-                <Link
-                  href={`/search?transactionType=RENT${selectedCity ? `&city=${selectedCity}` : ''}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <HomeIcon size={20} /> Rent Property
-                </Link>
-                <Link
-                  href="/societies"
-                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <BuildingIcon size={20} /> Societies
-                </Link>
-                <Link
-                  href="/search"
-                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <SearchIcon size={20} /> Search
-                </Link>
+                {[
+                  {
+                    label: 'Buy Property',
+                    href: `/search?transactionType=SALE${selectedCity ? `&city=${selectedCity}` : ''}`,
+                    icon: HomeIcon,
+                  },
+                  {
+                    label: 'Rent Property',
+                    href: `/search?transactionType=RENT${selectedCity ? `&city=${selectedCity}` : ''}`,
+                    icon: HomeIcon,
+                  },
+                  { label: 'Societies', href: '/societies', icon: BuildingIcon },
+                  { label: 'Search', href: '/search', icon: SearchIcon },
+                ].map(({ label, href, icon: Icon }) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    className="flex items-center gap-3 rounded-md px-3 py-3 text-sm text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon size={18} /> {label}
+                  </Link>
+                ))}
               </nav>
 
-              <div className="my-4 border-t border-gray-700" />
+              <div className="my-4 border-t border-chrome-border" />
 
               {isAuthenticated && user ? (
                 <>
                   <div className="mb-3 flex items-center gap-3 px-3">
                     <Avatar src={user.avatarUrl} name={user.name} size="md" />
-                    <div>
-                      <p className="font-medium text-white">{user.name}</p>
-                      <Badge variant="info" className="mt-0.5 text-[10px]">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-chrome-foreground">
+                        {user.name}
+                      </p>
+                      <Badge variant="info" size="sm" className="mt-0.5">
                         {user.role?.replace('_', ' ')}
                       </Badge>
                     </div>
                   </div>
                   <Link
                     href="/dashboard"
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-gray-300 hover:bg-gray-800 hover:text-white"
+                    className="flex items-center gap-3 rounded-md px-3 py-3 text-sm text-chrome-muted hover:bg-chrome-hover hover:text-chrome-foreground"
                     onClick={() => setMobileOpen(false)}
                   >
-                    Dashboard
+                    <DashboardIcon size={18} /> Dashboard
                   </Link>
                   <Link
                     href="/dashboard/settings"
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-gray-300 hover:bg-gray-800 hover:text-white"
+                    className="flex items-center gap-3 rounded-md px-3 py-3 text-sm text-chrome-muted hover:bg-chrome-hover hover:text-chrome-foreground"
                     onClick={() => setMobileOpen(false)}
                   >
-                    Settings
+                    <SettingsIcon size={18} /> Settings
                   </Link>
                   <button
                     onClick={() => {
                       setMobileOpen(false);
                       logout();
                     }}
-                    className="mt-2 flex items-center gap-3 rounded-lg px-3 py-3 text-red-400 hover:bg-gray-800"
+                    className="mt-2 flex items-center gap-3 rounded-md px-3 py-3 text-sm text-error-icon hover:bg-chrome-hover"
                   >
-                    Logout
+                    <LogoutIcon size={18} /> Logout
                   </button>
                 </>
               ) : (
                 <Link
                   href="/login"
-                  className="rounded-lg bg-primary-600 px-4 py-3 text-center font-medium text-white hover:bg-primary-700"
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-brand px-4 text-sm font-medium text-brand-foreground hover:bg-brand-hover"
                   onClick={() => setMobileOpen(false)}
                 >
                   Login / Register

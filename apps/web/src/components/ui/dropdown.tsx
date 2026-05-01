@@ -73,7 +73,7 @@ export function Dropdown({ trigger, children, align = 'left', className = '' }: 
           createPortal(
             <div
               ref={menuRef}
-              className="fixed z-dropdown animate-in fade-in-0 zoom-in-95"
+              className="fixed z-dropdown animate-in"
               style={{
                 top: position.top,
                 ...(align === 'right'
@@ -82,7 +82,7 @@ export function Dropdown({ trigger, children, align = 'left', className = '' }: 
                 minWidth: position.width,
               }}
             >
-              <div className="rounded-lg border border-gray-200 bg-white py-1 shadow-elevation-2">
+              <div className="rounded-md border border-border bg-popover py-1 text-popover-foreground shadow-elevation-2">
                 {children}
               </div>
             </div>,
@@ -113,8 +113,8 @@ export function DropdownItem({
         onClick?.();
         close();
       }}
-      className={`flex w-full items-center px-4 py-2 text-left text-body-md transition-colors hover:bg-gray-50 ${
-        destructive ? 'text-red-600 hover:bg-red-50' : 'text-gray-700'
+      className={`flex w-full items-center px-4 py-2 text-left text-body-md transition-colors duration-fast ${
+        destructive ? 'text-error-text hover:bg-error-bg' : 'text-foreground hover:bg-muted'
       } ${className}`}
     >
       {children}
@@ -123,7 +123,7 @@ export function DropdownItem({
 }
 
 export function DropdownDivider() {
-  return <div className="my-1 border-t border-gray-100" />;
+  return <div className="my-1 border-t border-border" />;
 }
 
 interface DropdownSelectProps {
@@ -147,11 +147,11 @@ export function DropdownSelect({
     <Dropdown
       className={className}
       trigger={
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-body-md hover:border-gray-400">
-          <span className={selected ? 'text-gray-900' : 'text-gray-400'}>
+        <div className="flex h-10 items-center justify-between gap-2 rounded-md border border-border bg-card px-3 text-sm transition-colors duration-fast hover:border-border-strong">
+          <span className={selected ? 'text-foreground' : 'text-muted-foreground'}>
             {selected?.label || placeholder}
           </span>
-          <ChevronIcon size={16} className="text-gray-400" />
+          <ChevronIcon size={16} className="text-muted-foreground" />
         </div>
       }
     >
@@ -159,7 +159,7 @@ export function DropdownSelect({
         <DropdownItem
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={opt.value === value ? 'bg-primary-50 text-primary-700' : ''}
+          className={opt.value === value ? 'bg-brand-subtle text-brand-text' : ''}
         >
           {opt.label}
         </DropdownItem>

@@ -22,13 +22,13 @@ function FilterSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-gray-100 pb-4">
+    <div className="border-b border-border pb-4">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between py-2 text-label-md text-gray-900"
+        className="flex w-full items-center justify-between py-2 text-label-md text-foreground"
       >
         {title}
-        <ChevronIcon size={16} direction={open ? 'up' : 'down'} className="text-gray-400" />
+        <ChevronIcon size={16} direction={open ? 'up' : 'down'} className="text-muted-foreground" />
       </button>
       {open && <div className="mt-2">{children}</div>}
     </div>
@@ -60,13 +60,26 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
   const priceMin = Number(filters.priceMin || 0);
   const priceMax = Number(filters.priceMax || 50000000);
 
+  const activeCount = Object.entries(filters).filter(
+    ([k, v]) => v && k !== 'page' && k !== 'sort',
+  ).length;
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h2 className="text-heading-sm text-gray-900">Filters</h2>
-        <Button variant="ghost" size="sm" onClick={reset} className="text-body-sm text-gray-500">
-          Reset
-        </Button>
+    <div className="space-y-1">
+      <div className="flex items-center justify-between pb-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-heading-sm text-foreground">Filters</h2>
+          {activeCount > 0 && (
+            <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-brand-foreground">
+              {activeCount}
+            </span>
+          )}
+        </div>
+        {activeCount > 0 && (
+          <Button variant="ghost" size="sm" onClick={reset} className="-mr-2 h-8 px-2">
+            Reset
+          </Button>
+        )}
       </div>
 
       <FilterSection title="Location">
@@ -112,8 +125,8 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
               onClick={() => update('bhk', val)}
               className={`rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
                 (filters.bhk || '') === val
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  ? 'border-brand bg-brand-subtle text-brand-text'
+                  : 'border-border text-muted-foreground hover:border-border-strong'
               }`}
             >
               {val ? `${val} BHK` : 'Any'}
@@ -149,14 +162,14 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           ].map((opt) => (
             <label
               key={opt.value}
-              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-gray-700 hover:bg-gray-50"
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-foreground hover:bg-muted"
             >
               <input
                 type="radio"
                 name="furnishing"
                 checked={(filters.furnishing || '') === opt.value}
                 onChange={() => update('furnishing', opt.value)}
-                className="h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="h-4 w-4 border-border-strong text-brand focus:ring-ring"
               />
               {opt.label}
             </label>
@@ -181,11 +194,11 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           {AMENITY_OPTIONS.map((amenity) => (
             <label
               key={amenity}
-              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-gray-700 hover:bg-gray-50"
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-body-sm text-foreground hover:bg-muted"
             >
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="h-4 w-4 rounded border-border-strong text-brand focus:ring-ring"
               />
               {amenity}
             </label>

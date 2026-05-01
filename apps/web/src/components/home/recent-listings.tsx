@@ -27,18 +27,18 @@ export function RecentListings() {
   if (!error && properties.length === 0) return null;
 
   return (
-    <section className="bg-gray-50 py-16">
+    <section className="bg-muted py-16">
       <div className="mx-auto max-w-content px-4">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h2 className="text-heading-xl text-gray-900">Recent Listings</h2>
-            <p className="mt-1 text-body-md text-gray-500">
+            <h2 className="text-heading-xl text-foreground">Recent Listings</h2>
+            <p className="mt-1 text-body-md text-muted-foreground">
               Newly listed properties across societies
             </p>
           </div>
           <Link
             href="/search"
-            className="hidden items-center gap-1 text-label-md text-primary-600 hover:text-primary-700 md:flex"
+            className="hidden items-center gap-1 text-label-md text-brand hover:text-brand-text md:flex"
           >
             View All <ArrowRightIcon size={16} />
           </Link>
@@ -46,10 +46,10 @@ export function RecentListings() {
 
         {error ? (
           <div className="flex flex-col items-center py-12 text-center">
-            <p className="text-body-md text-gray-500">Failed to load recent listings.</p>
+            <p className="text-body-md text-muted-foreground">Failed to load recent listings.</p>
             <button
               onClick={fetchListings}
-              className="mt-2 text-label-md text-primary-600 hover:text-primary-700"
+              className="mt-2 text-label-md text-brand hover:text-brand-text"
             >
               Try Again
             </button>
@@ -64,7 +64,7 @@ export function RecentListings() {
 
         <Link
           href="/search"
-          className="mt-8 flex items-center justify-center gap-1 text-label-md text-primary-600 hover:text-primary-700 md:hidden"
+          className="mt-8 flex items-center justify-center gap-1 text-label-md text-brand hover:text-brand-text md:hidden"
         >
           View All Properties <ArrowRightIcon size={16} />
         </Link>

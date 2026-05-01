@@ -17,9 +17,9 @@ export default function PublicError({
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-content flex-col items-center justify-center px-4 text-center">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-error-bg">
         <svg
-          className="h-8 w-8 text-red-500"
+          className="h-8 w-8 text-error-icon"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -32,8 +32,8 @@ export default function PublicError({
           />
         </svg>
       </div>
-      <h2 className="text-heading-xl text-gray-900">Failed to load this page</h2>
-      <p className="mt-2 max-w-md text-body-md text-gray-500">
+      <h2 className="text-heading-xl text-foreground">Failed to load this page</h2>
+      <p className="mt-2 max-w-md text-body-md text-muted-foreground">
         We couldn&apos;t load the content you were looking for. This might be a temporary issue.
       </p>
       <div className="mt-8 flex gap-3">
@@ -43,7 +43,7 @@ export default function PublicError({
         </Link>
       </div>
       {error.digest && (
-        <p className="mt-6 text-caption-md text-gray-400">Error ID: {error.digest}</p>
+        <p className="mt-6 text-caption-md text-muted-foreground">Error ID: {error.digest}</p>
       )}
     </div>
   );

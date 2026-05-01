@@ -38,13 +38,13 @@ export function TrustIndicators() {
       <div className="mx-auto grid max-w-content grid-cols-2 gap-4 px-4 py-10 md:grid-cols-4 md:gap-8">
         {indicators.map(({ key, label, icon: Icon, fallback }) => (
           <div key={key} className="flex flex-col items-center gap-2 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-100">
-              <Icon size={24} className="text-primary-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-subtle">
+              <Icon size={24} className="text-brand" />
             </div>
-            <p className="text-display-sm text-gray-900">
+            <p className="text-display-sm text-foreground">
               {(stats[key] ?? fallback).toLocaleString('en-IN')}+
             </p>
-            <p className="text-label-sm text-gray-500">{label}</p>
+            <p className="text-label-sm text-muted-foreground">{label}</p>
           </div>
         ))}
       </div>

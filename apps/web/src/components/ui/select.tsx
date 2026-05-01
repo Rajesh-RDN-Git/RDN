@@ -3,20 +3,31 @@ import { SelectHTMLAttributes, forwardRef, ReactNode } from 'react';
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  hint?: string;
   options?: { value: string; label: string }[];
   placeholder?: string;
   children?: ReactNode;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, placeholder, className = '', children, ...props }, ref) => {
+  ({ label, error, hint, options, placeholder, className = '', children, id, ...props }, ref) => {
+    const inputId = id || props.name;
     return (
       <div>
-        {label && <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>}
+        {label && (
+          <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-foreground">
+            {label}
+          </label>
+        )}
         <select
           ref={ref}
-          className={`w-full rounded-lg border px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${
-            error ? 'border-red-500' : 'border-gray-300'
+          id={inputId}
+          aria-invalid={!!error}
+          aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+          className={`block h-10 w-full rounded-md border bg-card px-3 text-sm text-foreground transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50 ${
+            error
+              ? 'border-error focus-visible:border-error'
+              : 'border-border focus-visible:border-ring'
           } ${className}`}
           {...props}
         >
@@ -33,7 +44,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               ))
             : children}
         </select>
-        {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+        {error ? (
+          <p id={`${inputId}-error`} className="mt-1.5 text-sm text-error-text">
+            {error}
+          </p>
+        ) : hint ? (
+          <p id={`${inputId}-hint`} className="mt-1.5 text-sm text-muted-foreground">
+            {hint}
+          </p>
+        ) : null}
       </div>
     );
   },

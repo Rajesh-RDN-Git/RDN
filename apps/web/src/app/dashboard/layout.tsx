@@ -1,43 +1,47 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Sidebar } from '@/components/layout/sidebar';
+import { MenuIcon, HomeIcon } from '@/components/ui/icons';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
-      {/* Desktop sidebar */}
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
 
-      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white">
+        <div className="fixed inset-0 z-overlay lg:hidden" role="dialog" aria-modal="true">
+          <div
+            className="fixed inset-0 bg-[var(--color-overlay-backdrop)]"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-y-0 left-0 z-modal w-72 bg-muted shadow-elevation-4">
             <Sidebar mobile onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* Main content */}
-      <main className="flex-1">
-        {/* Mobile header bar */}
-        <div className="flex items-center border-b p-4 lg:hidden">
-          <button onClick={() => setSidebarOpen(true)}>
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+      <main className="flex min-w-0 flex-1 flex-col">
+        <div className="flex h-header items-center gap-3 border-b border-border bg-card px-4 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+            className="grid h-9 w-9 place-items-center rounded-md text-foreground transition-colors duration-fast hover:bg-muted"
+          >
+            <MenuIcon size={20} />
           </button>
-          <span className="ml-4 text-lg font-bold text-primary-600">RDN</span>
+          <Link href="/" className="flex items-center gap-2 text-base font-bold text-foreground">
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-brand text-brand-foreground">
+              <HomeIcon size={16} />
+            </span>
+            <span>RDN</span>
+          </Link>
         </div>
-        <div className="p-6 lg:p-8">{children}</div>
+        <div className="flex-1 p-4 lg:p-8">{children}</div>
       </main>
     </div>
   );

@@ -81,7 +81,7 @@ export default function DealersPage() {
       render: (item: any) => (
         <div>
           <p className="font-medium">{item.user?.name}</p>
-          <p className="text-sm text-gray-500">{item.user?.email}</p>
+          <p className="text-sm text-muted-foreground">{item.user?.email}</p>
         </div>
       ),
     },
@@ -159,16 +159,16 @@ export default function DealersPage() {
       </div>
 
       {actionError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-body-sm text-red-700">
+        <div className="mb-4 rounded-lg border border-error-border bg-error-bg px-4 py-3 text-body-sm text-error-text">
           {actionError}
         </div>
       )}
 
       {error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-error-bg">
             <svg
-              className="h-7 w-7 text-red-500"
+              className="h-7 w-7 text-error-icon"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -181,14 +181,14 @@ export default function DealersPage() {
               />
             </svg>
           </div>
-          <h3 className="text-heading-md text-gray-900">Failed to load dealers</h3>
-          <p className="mt-2 max-w-sm text-body-md text-gray-500">{error}</p>
+          <h3 className="text-heading-md text-foreground">Failed to load dealers</h3>
+          <p className="mt-2 max-w-sm text-body-md text-muted-foreground">{error}</p>
           <Button onClick={fetchDealers} className="mt-6">
             Try Again
           </Button>
         </div>
       ) : (
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-lg border bg-card">
           <DataTable
             columns={columns}
             data={dealers}

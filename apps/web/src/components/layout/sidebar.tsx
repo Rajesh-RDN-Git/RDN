@@ -2,50 +2,67 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { ComponentType } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Role } from '@rdn/shared';
+import {
+  DashboardIcon,
+  HomeIcon,
+  BuildingIcon,
+  UsersIcon,
+  ChatIcon,
+  SettingsIcon,
+  HeartIcon,
+  BarChartIcon,
+  FileTextIcon,
+  CloseIcon,
+  BriefcaseIcon,
+} from '@/components/ui/icons';
+
+type IconComponent = ComponentType<{ size?: number; className?: string }>;
 
 interface NavItem {
   href: string;
   label: string;
+  icon: IconComponent;
 }
 
 const navByRole: Record<string, NavItem[]> = {
   [Role.SUPER_ADMIN]: [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/properties', label: 'Properties' },
-    { href: '/dashboard/dealers', label: 'Dealers' },
-    { href: '/dashboard/leads', label: 'Leads' },
-    { href: '/dashboard/reports', label: 'Reports' },
-    { href: '/dashboard/chat', label: 'Chat' },
-    { href: '/dashboard/settings', label: 'Settings' },
+    { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
+    { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
+    { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
+    { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
+    { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.RWA_ADMIN]: [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/properties', label: 'Properties' },
-    { href: '/dashboard/dealers', label: 'Dealers' },
-    { href: '/dashboard/leads', label: 'Leads' },
-    { href: '/dashboard/reports', label: 'Reports' },
-    { href: '/dashboard/settings', label: 'Settings' },
+    { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
+    { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
+    { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
+    { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
+    { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.DEALER]: [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/leads', label: 'Leads' },
-    { href: '/dashboard/properties', label: 'Properties' },
-    { href: '/dashboard/chat', label: 'Chat' },
-    { href: '/dashboard/settings', label: 'Settings' },
+    { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
+    { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
+    { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.OWNER]: [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/properties', label: 'My Properties' },
-    { href: '/dashboard/leads', label: 'Leads' },
-    { href: '/dashboard/settings', label: 'Settings' },
+    { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/properties', label: 'My Properties', icon: HomeIcon },
+    { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
+    { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.BUYER_TENANT]: [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/dashboard/properties', label: 'Saved' },
-    { href: '/dashboard/leads', label: 'My Inquiries' },
-    { href: '/dashboard/settings', label: 'Settings' },
+    { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/properties', label: 'Saved', icon: HeartIcon },
+    { href: '/dashboard/leads', label: 'My Inquiries', icon: FileTextIcon },
+    { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
 };
 
@@ -67,39 +84,52 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
   };
 
   return (
-    <aside className={`${mobile ? 'w-full' : 'hidden w-64 lg:block'} border-r bg-gray-50`}>
-      <div className="flex items-center justify-between p-4">
-        <Link href="/" className="text-xl font-bold text-primary-600">
-          RDN
+    <aside
+      className={`${
+        mobile ? 'w-full' : 'hidden w-64 lg:flex'
+      } h-full flex-col border-r border-border bg-muted`}
+    >
+      <div className="flex items-center justify-between border-b border-border px-4 py-4">
+        <Link href="/" className="flex items-center gap-2 text-base font-bold text-foreground">
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-brand text-brand-foreground">
+            <HomeIcon size={18} />
+          </span>
+          <span>RDN</span>
         </Link>
         {mobile && onClose && (
-          <button onClick={onClose} className="text-gray-500 lg:hidden">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+          <button
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-subtle hover:text-foreground lg:hidden"
+            aria-label="Close menu"
+          >
+            <CloseIcon size={18} />
           </button>
         )}
       </div>
-      <nav className="mt-4 space-y-1 px-2">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onClose}
-            className={`block rounded-lg px-3 py-2 text-sm font-medium ${
-              isActive(item.href)
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
+      {role && (
+        <div className="px-4 pb-2 pt-4">
+          <p className="text-overline text-muted-foreground">{role.replace('_', ' ')}</p>
+        </div>
+      )}
+      <nav className="flex-1 space-y-0.5 px-2 pb-4">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              aria-current={active ? 'page' : undefined}
+              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-fast ${
+                active ? 'bg-brand-subtle text-brand-text' : 'text-foreground hover:bg-subtle'
+              }`}
+            >
+              <Icon size={18} className={active ? 'text-brand' : 'text-muted-foreground'} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );

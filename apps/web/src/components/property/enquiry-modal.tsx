@@ -24,7 +24,7 @@ export function EnquiryModal({ isOpen, onClose, propertyId, propertyName }: Enqu
 
   const handleSubmit = async () => {
     if (!isAuthenticated) {
-      window.location.href = `/login?redirect=/property/${propertyId}`;
+      window.location.href = `/login?from=/property/${propertyId}`;
       return;
     }
 
@@ -50,11 +50,11 @@ export function EnquiryModal({ isOpen, onClose, propertyId, propertyName }: Enqu
     <Modal isOpen={isOpen} onClose={handleClose} title="Enquire Now">
       {success ? (
         <div className="py-4 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-            <CheckIcon size={28} className="text-green-600" />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-success-bg">
+            <CheckIcon size={28} className="text-success-icon" />
           </div>
-          <h3 className="text-heading-md text-gray-900">Enquiry Submitted!</h3>
-          <p className="mx-auto mt-2 max-w-xs text-body-md text-gray-500">
+          <h3 className="text-heading-md text-foreground">Enquiry Submitted!</h3>
+          <p className="mx-auto mt-2 max-w-xs text-body-md text-muted-foreground">
             A community dealer will contact you shortly about {propertyName}.
           </p>
           <Button onClick={handleClose} className="mt-6">
@@ -63,18 +63,18 @@ export function EnquiryModal({ isOpen, onClose, propertyId, propertyName }: Enqu
         </div>
       ) : (
         <div>
-          <div className="mb-5 flex items-start gap-3 rounded-lg bg-primary-50 p-4">
-            <ChatIcon size={20} className="mt-0.5 flex-shrink-0 text-primary-600" />
+          <div className="mb-5 flex items-start gap-3 rounded-lg bg-brand-subtle p-4">
+            <ChatIcon size={20} className="mt-0.5 flex-shrink-0 text-brand" />
             <div>
-              <p className="text-label-md text-gray-900">{propertyName}</p>
-              <p className="mt-0.5 text-body-sm text-gray-500">
+              <p className="text-label-md text-foreground">{propertyName}</p>
+              <p className="mt-0.5 text-body-sm text-muted-foreground">
                 A verified community dealer will reach out to you
               </p>
             </div>
           </div>
 
           <div className="mb-5">
-            <label className="mb-1.5 block text-label-sm text-gray-700">
+            <label className="mb-1.5 block text-label-sm text-foreground">
               How did you find this property?
             </label>
             <Select value={source} onChange={(e) => setSource(e.target.value)}>

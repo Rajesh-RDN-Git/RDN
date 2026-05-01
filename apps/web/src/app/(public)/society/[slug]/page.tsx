@@ -85,22 +85,22 @@ export default async function SocietyPage({ params }: { params: { slug: string }
     {
       label: 'Total Units',
       value: society.totalUnits || '—',
-      icon: <HomeIcon size={20} className="text-primary-600" />,
+      icon: <HomeIcon size={20} className="text-brand" />,
     },
     {
       label: 'Active Listings',
       value: properties.length,
-      icon: <BuildingIcon size={20} className="text-primary-600" />,
+      icon: <BuildingIcon size={20} className="text-brand" />,
     },
     {
       label: 'Verified',
       value: society.verificationStatus === 'VERIFIED' ? 'Yes' : 'Pending',
-      icon: <ShieldIcon size={20} className="text-primary-600" />,
+      icon: <ShieldIcon size={20} className="text-brand" />,
     },
     {
       label: 'Amenities',
       value: (society.amenities as string[])?.length || 0,
-      icon: <StarIcon size={20} className="text-primary-600" />,
+      icon: <StarIcon size={20} className="text-brand" />,
     },
   ];
 
@@ -112,7 +112,7 @@ export default async function SocietyPage({ params }: { params: { slug: string }
       />
 
       {/* Hero banner */}
-      <div className="relative h-64 overflow-hidden bg-gray-900 md:h-80">
+      <div className="relative h-64 overflow-hidden bg-chrome md:h-80">
         {society.media?.[0]?.url ? (
           <img
             src={society.media[0].url}
@@ -120,9 +120,9 @@ export default async function SocietyPage({ params }: { params: { slug: string }
             className="h-full w-full object-cover opacity-60"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-900 to-gray-900" />
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-active to-chrome" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-chrome/90 via-chrome/50 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-content px-4 pb-8">
           <div className="flex items-end justify-between">
             <div>
@@ -134,8 +134,10 @@ export default async function SocietyPage({ params }: { params: { slug: string }
                   <Badge variant="success">Verified</Badge>
                 )}
               </div>
-              <h1 className="text-display-md text-white md:text-display-lg">{society.name}</h1>
-              <p className="mt-1 text-body-lg text-gray-300">
+              <h1 className="text-display-md text-chrome-foreground md:text-display-lg">
+                {society.name}
+              </h1>
+              <p className="mt-1 text-body-lg text-chrome-muted">
                 {society.address}, {society.city}, {society.state} - {society.pincode}
               </p>
             </div>
@@ -149,13 +151,13 @@ export default async function SocietyPage({ params }: { params: { slug: string }
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-5 shadow-elevation-1"
+              className="flex flex-col items-center rounded-xl border border-border bg-card p-5 shadow-elevation-1"
             >
-              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50">
+              <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-subtle">
                 {stat.icon}
               </div>
-              <p className="text-display-sm text-gray-900">{stat.value}</p>
-              <p className="mt-1 text-label-sm text-gray-500">{stat.label}</p>
+              <p className="text-display-sm text-foreground">{stat.value}</p>
+              <p className="mt-1 text-label-sm text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -163,10 +165,10 @@ export default async function SocietyPage({ params }: { params: { slug: string }
         {/* Tabs implementation (SSR-safe) */}
         <div className="mb-8">
           {/* Properties section */}
-          <h2 className="mb-6 text-heading-xl text-gray-900">Properties</h2>
+          <h2 className="mb-6 text-heading-xl text-foreground">Properties</h2>
 
           {properties.length === 0 ? (
-            <p className="text-body-md text-gray-500">
+            <p className="text-body-md text-muted-foreground">
               No properties currently listed in this society.
             </p>
           ) : (
@@ -174,7 +176,7 @@ export default async function SocietyPage({ params }: { params: { slug: string }
               {/* For Sale */}
               {saleProperties.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="mb-4 text-heading-md text-gray-700">
+                  <h3 className="mb-4 text-heading-md text-foreground">
                     For Sale ({saleProperties.length})
                   </h3>
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -188,7 +190,7 @@ export default async function SocietyPage({ params }: { params: { slug: string }
               {/* For Rent */}
               {rentProperties.length > 0 && (
                 <div className="mb-8">
-                  <h3 className="mb-4 text-heading-md text-gray-700">
+                  <h3 className="mb-4 text-heading-md text-foreground">
                     For Rent ({rentProperties.length})
                   </h3>
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -204,15 +206,15 @@ export default async function SocietyPage({ params }: { params: { slug: string }
 
         {/* About & Amenities */}
         {(society.amenities as string[])?.length > 0 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-heading-lg text-gray-900">Amenities</h2>
+          <div className="rounded-xl border border-border bg-card p-6">
+            <h2 className="mb-4 text-heading-lg text-foreground">Amenities</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
               {(society.amenities as string[]).map((a: string) => (
                 <div
                   key={a}
-                  className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5 text-body-sm text-gray-700"
+                  className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-body-sm text-foreground"
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary-100 text-primary-600">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-subtle text-brand">
                     <CheckIcon size={14} />
                   </span>
                   {a}

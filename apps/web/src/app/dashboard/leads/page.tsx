@@ -10,6 +10,8 @@ import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
+import { CheckIcon } from '@/components/ui/icons';
+import { showToast } from '@/stores/toast-store';
 
 const statusVariant = (s: string) => {
   switch (s) {
@@ -32,14 +34,14 @@ const statusVariant = (s: string) => {
 };
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
-  NEW: { label: 'HOT', color: 'bg-red-100 text-red-700' },
-  CONTACTED: { label: 'WARM', color: 'bg-amber-100 text-amber-700' },
-  VISIT_SCHEDULED: { label: 'WARM', color: 'bg-amber-100 text-amber-700' },
-  NEGOTIATING: { label: 'HOT', color: 'bg-red-100 text-red-700' },
-  CLOSING: { label: 'URGENT', color: 'bg-red-100 text-red-800 font-bold' },
-  VISITED: { label: 'FOLLOW UP', color: 'bg-blue-100 text-blue-700' },
-  CLOSED: { label: 'DONE', color: 'bg-green-100 text-green-700' },
-  LOST: { label: 'COLD', color: 'bg-gray-100 text-gray-500' },
+  NEW: { label: 'HOT', color: 'bg-error-bg text-error-text' },
+  CONTACTED: { label: 'WARM', color: 'bg-warning-bg text-warning-text' },
+  VISIT_SCHEDULED: { label: 'WARM', color: 'bg-warning-bg text-warning-text' },
+  NEGOTIATING: { label: 'HOT', color: 'bg-error-bg text-error-text' },
+  CLOSING: { label: 'URGENT', color: 'bg-error-bg text-error-text font-bold' },
+  VISITED: { label: 'FOLLOW UP', color: 'bg-info-bg text-info-text' },
+  CLOSED: { label: 'DONE', color: 'bg-success-bg text-success-text' },
+  LOST: { label: 'COLD', color: 'bg-subtle text-muted-foreground' },
 };
 
 export default function LeadsPage() {
@@ -101,10 +103,10 @@ export default function LeadsPage() {
       header: 'Property',
       render: (item: any) => (
         <div>
-          <p className="text-label-md text-gray-900">
+          <p className="text-label-md text-foreground">
             {item.property?.flatNumber}, {item.property?.towerBlock}
           </p>
-          <p className="text-caption-md text-gray-500">
+          <p className="text-caption-md text-muted-foreground">
             {item.property?.bhk || '-'} BHK {item.property?.type || ''}
           </p>
         </div>
@@ -129,7 +131,10 @@ export default function LeadsPage() {
       key: 'priority',
       header: 'Priority',
       render: (item: any) => {
-        const p = priorityConfig[item.status] || { label: '-', color: 'bg-gray-100 text-gray-500' };
+        const p = priorityConfig[item.status] || {
+          label: '-',
+          color: 'bg-subtle text-muted-foreground',
+        };
         return (
           <span
             className={`inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${p.color}`}
@@ -149,7 +154,7 @@ export default function LeadsPage() {
       key: 'date',
       header: 'Created',
       render: (item: any) => (
-        <span className="text-body-sm text-gray-500">
+        <span className="text-body-sm text-muted-foreground">
           {new Date(item.createdAt).toLocaleDateString('en-IN')}
         </span>
       ),
@@ -165,6 +170,30 @@ export default function LeadsPage() {
                 Close Deal
               </Button>
             )}
+          {(user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') &&
+            (item.visitApprovedByOwner ? (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-success-text">
+                <CheckIcon size={14} className="text-success-icon" />
+                Visit approved
+              </span>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    await leadsApi.approveVisit(item.id);
+                    showToast.success('Visit approved');
+                    fetchLeads();
+                  } catch (e: unknown) {
+                    const err = e as { response?: { data?: { message?: string } } };
+                    showToast.error(err?.response?.data?.message || 'Failed to approve visit');
+                  }
+                }}
+              >
+                Approve Visit
+              </Button>
+            ))}
         </div>
       ),
     },
@@ -174,8 +203,10 @@ export default function LeadsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-heading-xl text-gray-900">Leads</h1>
-          {total > 0 && <p className="mt-0.5 text-body-sm text-gray-500">{total} leads total</p>}
+          <h1 className="text-heading-xl text-foreground">Leads</h1>
+          {total > 0 && (
+            <p className="mt-0.5 text-body-sm text-muted-foreground">{total} leads total</p>
+          )}
         </div>
       </div>
 
@@ -200,10 +231,10 @@ export default function LeadsPage() {
       </div>
 
       {error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-error-bg">
             <svg
-              className="h-7 w-7 text-red-500"
+              className="h-7 w-7 text-error-icon"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -216,14 +247,14 @@ export default function LeadsPage() {
               />
             </svg>
           </div>
-          <h3 className="text-heading-md text-gray-900">Failed to load leads</h3>
-          <p className="mt-2 max-w-sm text-body-md text-gray-500">{error}</p>
+          <h3 className="text-heading-md text-foreground">Failed to load leads</h3>
+          <p className="mt-2 max-w-sm text-body-md text-muted-foreground">{error}</p>
           <Button onClick={fetchLeads} className="mt-6">
             Try Again
           </Button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <DataTable
             columns={columns}
             data={leads}
@@ -243,8 +274,8 @@ export default function LeadsPage() {
 
       <Modal isOpen={!!closeDealModal} onClose={() => setCloseDealModal(null)} title="Close Deal">
         <div className="space-y-4">
-          <div className="rounded-lg bg-gray-50 p-3">
-            <p className="text-body-md text-gray-700">
+          <div className="rounded-lg bg-muted p-3">
+            <p className="text-body-md text-foreground">
               Close deal for{' '}
               <span className="font-medium">
                 {closeDealModal?.property?.flatNumber}, {closeDealModal?.property?.towerBlock}
@@ -252,7 +283,7 @@ export default function LeadsPage() {
             </p>
           </div>
           <div>
-            <label className="mb-1.5 block text-label-sm text-gray-700">Transaction Type</label>
+            <label className="mb-1.5 block text-label-sm text-foreground">Transaction Type</label>
             <Select value={dealType} onChange={(e) => setDealType(e.target.value)}>
               <option value="RENT">Rent</option>
               <option value="SALE">Sale</option>
@@ -260,7 +291,7 @@ export default function LeadsPage() {
             </Select>
           </div>
           <div>
-            <label className="mb-1.5 block text-label-sm text-gray-700">Deal Value (INR)</label>
+            <label className="mb-1.5 block text-label-sm text-foreground">Deal Value (INR)</label>
             <Input
               type="number"
               value={dealValue}
@@ -269,7 +300,7 @@ export default function LeadsPage() {
             />
           </div>
           {closeDealError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-body-sm text-red-700">
+            <div className="rounded-lg border border-error-border bg-error-bg px-4 py-3 text-body-sm text-error-text">
               {closeDealError}
             </div>
           )}

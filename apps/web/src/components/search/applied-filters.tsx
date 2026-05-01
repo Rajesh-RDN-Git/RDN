@@ -1,7 +1,6 @@
 'use client';
 
 import { Chip } from '../ui/chip';
-import { Button } from '../ui/button';
 
 interface AppliedFiltersProps {
   filters: Record<string, string | undefined>;
@@ -26,15 +25,15 @@ const FORMAT_VALUE: Record<string, (v: string) => string> = {
   bhk: (v) => `${v} BHK`,
   priceMin: (v) => {
     const n = Number(v);
-    if (n >= 10000000) return `From ${(n / 10000000).toFixed(1)} Cr`;
-    if (n >= 100000) return `From ${(n / 100000).toFixed(0)} L`;
-    return `From ${n.toLocaleString('en-IN')}`;
+    if (n >= 10000000) return `${(n / 10000000).toFixed(1)} Cr+`;
+    if (n >= 100000) return `${(n / 100000).toFixed(0)} L+`;
+    return `${n.toLocaleString('en-IN')}+`;
   },
   priceMax: (v) => {
     const n = Number(v);
-    if (n >= 10000000) return `To ${(n / 10000000).toFixed(1)} Cr`;
-    if (n >= 100000) return `To ${(n / 100000).toFixed(0)} L`;
-    return `To ${n.toLocaleString('en-IN')}`;
+    if (n >= 10000000) return `< ${(n / 10000000).toFixed(1)} Cr`;
+    if (n >= 100000) return `< ${(n / 100000).toFixed(0)} L`;
+    return `< ${n.toLocaleString('en-IN')}`;
   },
   furnishing: (v) => v.replace('_', '-'),
   availability: (v) => v.replace(/_/g, ' '),
@@ -53,12 +52,13 @@ export function AppliedFilters({ filters, onChange }: AppliedFiltersProps) {
     onChange({ ...filters, [key]: undefined, page: undefined });
   };
 
-  const clearAll = () => {
-    onChange({});
-  };
+  const clearAll = () => onChange({});
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        Applied
+      </span>
       {activeFilters.map(([key, value]) => {
         const label = LABEL_MAP[key] || key;
         const formatted = FORMAT_VALUE[key]?.(value!) || value;
@@ -66,9 +66,13 @@ export function AppliedFilters({ filters, onChange }: AppliedFiltersProps) {
           <Chip key={key} label={`${label}: ${formatted}`} onRemove={() => removeFilter(key)} />
         );
       })}
-      <Button variant="ghost" size="sm" onClick={clearAll} className="text-gray-500">
-        Clear All
-      </Button>
+      <button
+        type="button"
+        onClick={clearAll}
+        className="ml-1 text-sm font-medium text-muted-foreground transition-colors duration-fast hover:text-foreground"
+      >
+        Clear all
+      </button>
     </div>
   );
 }

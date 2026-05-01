@@ -78,9 +78,9 @@ export function PropertyCard({ property }: PropertyCardProps) {
 
   return (
     <Link href={`/property/${property.id}`} className="block">
-      <div className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:shadow-elevation-2">
+      <div className="group overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-elevation-2">
         {/* Image */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+        <div className="relative aspect-[4/3] overflow-hidden bg-subtle">
           {imageUrl && !imageError ? (
             <img
               src={imageUrl}
@@ -89,8 +89,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-              <BuildingIcon size={48} className="text-primary-300" />
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-brand-subtle to-brand-subtle">
+              <BuildingIcon size={48} className="text-brand" />
             </div>
           )}
           {/* Gradient badge overlay */}
@@ -98,10 +98,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
             <span
               className={`rounded-md px-2.5 py-1 text-xs font-semibold text-white ${
                 property.transactionType === 'SALE'
-                  ? 'bg-gradient-to-r from-green-600 to-green-500'
+                  ? 'bg-gradient-to-r from-success-icon to-success-icon'
                   : property.transactionType === 'RENT'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500'
-                    : 'bg-gradient-to-r from-amber-600 to-amber-500'
+                    ? 'bg-gradient-to-r from-info-icon to-info-icon'
+                    : 'bg-gradient-to-r from-warning-icon to-warning-icon'
               }`}
             >
               {property.transactionType === 'BOTH'
@@ -112,13 +112,13 @@ export function PropertyCard({ property }: PropertyCardProps) {
           {/* Heart icon */}
           <button
             onClick={toggleShortlist}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-elevation-1 transition-all hover:bg-muted hover:scale-110"
             aria-label={shortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
           >
             <HeartIcon
               size={18}
               filled={shortlisted}
-              className={shortlisted ? 'text-red-500' : 'text-gray-600'}
+              className={shortlisted ? 'text-error-icon' : 'text-muted-foreground'}
             />
           </button>
         </div>
@@ -126,25 +126,25 @@ export function PropertyCard({ property }: PropertyCardProps) {
         {/* Content */}
         <div className="p-4">
           {/* Price */}
-          <p className="text-heading-lg text-gray-900">{price}</p>
-          {rentSubtitle && <p className="text-body-sm text-gray-500">{rentSubtitle}</p>}
+          <p className="text-heading-lg text-foreground">{price}</p>
+          {rentSubtitle && <p className="text-body-sm text-muted-foreground">{rentSubtitle}</p>}
 
           {/* Property specs line */}
-          <div className="mt-1.5 flex items-center gap-3 overflow-hidden text-body-md text-gray-600">
+          <div className="mt-1.5 flex items-center gap-3 overflow-hidden text-body-md text-muted-foreground">
             <span className="flex shrink-0 items-center gap-1">
-              <BedIcon size={15} className="text-gray-400" />
+              <BedIcon size={15} className="text-muted-foreground" />
               {property.bhk} BHK
             </span>
-            <span className="shrink-0 text-gray-300">|</span>
+            <span className="shrink-0 text-muted-foreground">|</span>
             <span className="flex shrink-0 items-center gap-1">
-              <AreaIcon size={15} className="text-gray-400" />
+              <AreaIcon size={15} className="text-muted-foreground" />
               {property.carpetArea} sq.ft.
             </span>
             {property.floor != null && (
               <>
-                <span className="shrink-0 text-gray-300">|</span>
+                <span className="shrink-0 text-muted-foreground">|</span>
                 <span className="flex shrink-0 items-center gap-1">
-                  <FloorIcon size={15} className="text-gray-400" />
+                  <FloorIcon size={15} className="text-muted-foreground" />
                   Floor {property.floor}
                   {property.totalFloors ? `/${property.totalFloors}` : ''}
                 </span>
@@ -153,18 +153,20 @@ export function PropertyCard({ property }: PropertyCardProps) {
           </div>
 
           {/* Society link */}
-          <p className="mt-2 text-body-sm text-gray-500">{property.society.name}</p>
+          <p className="mt-2 text-body-sm text-muted-foreground">{property.society.name}</p>
 
           {/* Dealer footer */}
           {property.dealer?.user && (
-            <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-600">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-subtle text-xs font-semibold text-brand">
                   {property.dealer.user.name?.charAt(0)?.toUpperCase() || 'D'}
                 </div>
-                <span className="text-body-sm text-gray-600">{property.dealer.user.name}</span>
+                <span className="text-body-sm text-muted-foreground">
+                  {property.dealer.user.name}
+                </span>
               </div>
-              <Button variant="ghost" size="sm" className="text-primary-600 hover:text-primary-700">
+              <Button variant="ghost" size="sm" className="text-brand hover:text-brand-text">
                 Contact
               </Button>
             </div>

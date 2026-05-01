@@ -156,6 +156,20 @@ export const lightTheme = {
   // Skeleton / Loading
   skeletonBase: palette.gray[200],
   skeletonShimmer: palette.gray[100],
+
+  // On-* (foreground when placed atop a colored surface)
+  onBrand: palette.gray[0],
+  onSuccess: palette.gray[0],
+  onWarning: palette.gray[900],
+  onError: palette.gray[0],
+  onInfo: palette.gray[0],
+
+  // Chrome (header / footer / nav surfaces — intentionally dark in both themes)
+  chrome: palette.gray[900],
+  chromeFg: palette.gray[0],
+  chromeFgMuted: palette.gray[400],
+  chromeBorder: palette.gray[800],
+  chromeHover: palette.gray[800],
 } as const;
 
 // ─────────────────────────────────────────────
@@ -227,6 +241,20 @@ export const darkTheme: Record<keyof typeof lightTheme, string> = {
   // Skeleton / Loading
   skeletonBase: palette.gray[700],
   skeletonShimmer: palette.gray[600],
+
+  // On-*
+  onBrand: palette.gray[0],
+  onSuccess: palette.gray[0],
+  onWarning: palette.gray[900],
+  onError: palette.gray[0],
+  onInfo: palette.gray[0],
+
+  // Chrome — same dark intent in both modes
+  chrome: palette.gray[900],
+  chromeFg: palette.gray[0],
+  chromeFgMuted: palette.gray[400],
+  chromeBorder: palette.gray[800],
+  chromeHover: palette.gray[800],
 } as const;
 
 // ─────────────────────────────────────────────

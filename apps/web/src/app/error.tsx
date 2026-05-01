@@ -18,9 +18,9 @@ export default function Error({
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-error-bg">
         <svg
-          className="h-8 w-8 text-red-500"
+          className="h-8 w-8 text-error-icon"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -33,8 +33,8 @@ export default function Error({
           />
         </svg>
       </div>
-      <h2 className="text-heading-xl text-gray-900">Something went wrong</h2>
-      <p className="mt-2 max-w-md text-body-md text-gray-500">
+      <h2 className="text-heading-xl text-foreground">Something went wrong</h2>
+      <p className="mt-2 max-w-md text-body-md text-muted-foreground">
         An error occurred while loading this page. Please try again or contact support if the
         problem persists.
       </p>
@@ -45,7 +45,7 @@ export default function Error({
         </Link>
       </div>
       {error.digest && (
-        <p className="mt-6 text-caption-md text-gray-400">Error ID: {error.digest}</p>
+        <p className="mt-6 text-caption-md text-muted-foreground">Error ID: {error.digest}</p>
       )}
     </div>
   );

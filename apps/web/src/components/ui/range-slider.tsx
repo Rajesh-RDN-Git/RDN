@@ -69,28 +69,28 @@ export function RangeSlider({
   const minPercent = getPercent(value[0]);
   const maxPercent = getPercent(value[1]);
 
+  const handleClasses =
+    'absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-brand bg-card shadow-elevation-1 transition-shadow duration-fast hover:shadow-elevation-2 active:cursor-grabbing';
+
   return (
     <div className={`space-y-3 ${className}`}>
-      <div className="flex items-center justify-between text-label-sm text-gray-700">
+      <div className="flex items-center justify-between text-label-sm text-foreground tabular-nums">
         <span>{formatLabel(value[0])}</span>
         <span>{formatLabel(value[1])}</span>
       </div>
       <div
         ref={trackRef}
-        className="relative h-6 cursor-pointer"
+        className="relative h-6 cursor-pointer touch-none"
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        {/* Track background */}
-        <div className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-gray-200" />
-        {/* Active range */}
+        <div className="absolute top-1/2 h-1.5 w-full -translate-y-1/2 rounded-full bg-subtle" />
         <div
-          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-primary-500"
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-brand"
           style={{ left: `${minPercent}%`, width: `${maxPercent - minPercent}%` }}
         />
-        {/* Min handle */}
         <div
-          className={`absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-primary-500 bg-white shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${dragging === 'min' ? 'ring-2 ring-primary-200' : ''}`}
+          className={`${handleClasses} ${dragging === 'min' ? 'ring-2 ring-brand/30' : ''}`}
           style={{ left: `${minPercent}%` }}
           onPointerDown={handlePointerDown('min')}
           role="slider"
@@ -100,9 +100,8 @@ export function RangeSlider({
           aria-label="Minimum value"
           tabIndex={0}
         />
-        {/* Max handle */}
         <div
-          className={`absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-primary-500 bg-white shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing ${dragging === 'max' ? 'ring-2 ring-primary-200' : ''}`}
+          className={`${handleClasses} ${dragging === 'max' ? 'ring-2 ring-brand/30' : ''}`}
           style={{ left: `${maxPercent}%` }}
           onPointerDown={handlePointerDown('max')}
           role="slider"

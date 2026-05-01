@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { CloseIcon } from './icons';
 
 interface ModalProps {
   isOpen: boolean;
@@ -33,26 +34,28 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-[var(--color-overlay-backdrop)]" onClick={onClose} />
+    <div
+      className="fixed inset-0 z-modal flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       <div
-        className={`animate-in relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-elevation-4 ${className}`}
+        className="fixed inset-0 bg-[var(--color-overlay-backdrop)]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className={`animate-in relative z-10 w-full max-w-lg rounded-xl border border-border bg-popover p-6 text-popover-foreground shadow-elevation-4 ${className}`}
       >
         {title && (
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-heading-lg text-gray-900">{title}</h2>
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <h2 className="text-heading-lg text-foreground">{title}</h2>
             <button
               onClick={onClose}
-              className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground"
             >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <CloseIcon size={18} />
             </button>
           </div>
         )}

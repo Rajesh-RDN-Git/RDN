@@ -100,10 +100,10 @@ export default function RegisterPage() {
   }, [phone]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-xl border bg-white p-8 shadow-sm">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">Create account</h1>
-        <p className="mb-6 text-sm text-gray-500">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
+      <div className="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Create account</h1>
+        <p className="mb-6 text-sm text-muted-foreground">
           {step === 'phone' && 'Enter your phone number to get started'}
           {step === 'otp' && `Enter the OTP sent to ${phone}`}
           {step === 'name' && 'Tell us your name'}
@@ -135,11 +135,11 @@ export default function RegisterPage() {
             )}
             <div className="text-center">
               {resendTimer > 0 ? (
-                <p className="text-sm text-gray-500">Resend OTP in {resendTimer}s</p>
+                <p className="text-sm text-muted-foreground">Resend OTP in {resendTimer}s</p>
               ) : (
                 <button
                   onClick={handleResend}
-                  className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                  className="text-sm font-medium text-brand hover:text-brand-text"
                 >
                   Resend OTP
                 </button>
@@ -169,9 +169,9 @@ export default function RegisterPage() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/login" className="font-medium text-primary-600 hover:text-primary-700">
+          <Link href="/login" className="font-medium text-brand hover:text-brand-text">
             Login
           </Link>
         </p>

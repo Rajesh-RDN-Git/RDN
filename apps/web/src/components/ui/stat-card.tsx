@@ -7,7 +7,7 @@ interface StatCardProps {
   className?: string;
 }
 
-function MiniSparkline({ data }: { data: number[] }) {
+function MiniSparkline({ data, isPositive }: { data: number[]; isPositive?: boolean }) {
   if (data.length < 2) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -19,7 +19,12 @@ function MiniSparkline({ data }: { data: number[] }) {
   const points = data.map((v, i) => `${i * step},${h - ((v - min) / range) * h}`).join(' ');
 
   return (
-    <svg width={w} height={h} className="text-primary-500">
+    <svg
+      width={w}
+      height={h}
+      className={isPositive === false ? 'text-error-icon' : 'text-success-icon'}
+      aria-hidden="true"
+    >
       <polyline
         points={points}
         fill="none"
@@ -35,19 +40,19 @@ function MiniSparkline({ data }: { data: number[] }) {
 export function StatCard({ label, value, trend, icon, sparkline, className = '' }: StatCardProps) {
   return (
     <div
-      className={`rounded-xl border border-gray-200 bg-white p-6 shadow-elevation-1 ${className}`}
+      className={`rounded-lg border border-border bg-card p-6 text-card-foreground shadow-elevation-1 ${className}`}
     >
       <div className="flex items-start justify-between">
-        <p className="text-label-sm text-gray-500">{label}</p>
-        {icon && <div className="text-gray-400">{icon}</div>}
+        <p className="text-label-sm text-muted-foreground">{label}</p>
+        {icon && <div className="text-muted-foreground">{icon}</div>}
       </div>
       <div className="mt-2 flex items-end justify-between">
         <div>
-          <p className="text-display-sm text-gray-900">{value}</p>
+          <p className="text-display-sm text-foreground">{value}</p>
           {trend && (
             <p
               className={`mt-1 text-label-sm ${
-                trend.isPositive ? 'text-green-600' : 'text-red-600'
+                trend.isPositive ? 'text-success-text' : 'text-error-text'
               }`}
             >
               {trend.isPositive ? '+' : ''}
@@ -55,7 +60,9 @@ export function StatCard({ label, value, trend, icon, sparkline, className = '' 
             </p>
           )}
         </div>
-        {sparkline && sparkline.length > 1 && <MiniSparkline data={sparkline} />}
+        {sparkline && sparkline.length > 1 && (
+          <MiniSparkline data={sparkline} isPositive={trend?.isPositive} />
+        )}
       </div>
     </div>
   );

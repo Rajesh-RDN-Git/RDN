@@ -8,15 +8,10 @@ interface QuickFiltersProps {
 }
 
 const PRESETS = [
-  { label: 'Affordable (50L-90L)', priceMin: '5000000', priceMax: '9000000' },
-  { label: 'Mid-Range (90L-1.5Cr)', priceMin: '9000000', priceMax: '15000000' },
-  { label: 'Premium (1.5Cr-3Cr)', priceMin: '15000000', priceMax: '30000000' },
-  { label: 'Luxury (3Cr+)', priceMin: '30000000', priceMax: '' },
-];
-
-const TOGGLES = [
-  { label: 'New Listings', key: 'sort', value: '' },
-  { label: 'Verified Only', key: 'verified', value: 'true' },
+  { label: 'Affordable', sub: '50L–90L', priceMin: '5000000', priceMax: '9000000' },
+  { label: 'Mid-Range', sub: '90L–1.5Cr', priceMin: '9000000', priceMax: '15000000' },
+  { label: 'Premium', sub: '1.5Cr–3Cr', priceMin: '15000000', priceMax: '30000000' },
+  { label: 'Luxury', sub: '3Cr+', priceMin: '30000000', priceMax: '' },
 ];
 
 export function QuickFilters({ filters, onChange }: QuickFiltersProps) {
@@ -37,38 +32,33 @@ export function QuickFilters({ filters, onChange }: QuickFiltersProps) {
     }
   };
 
+  const verifiedActive = filters.verified === 'true';
+
   return (
-    <div
-      className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none"
-      style={{ scrollbarWidth: 'none' }}
-    >
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+      <span className="flex-shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        Budget
+      </span>
       {PRESETS.map((preset) => (
         <Chip
           key={preset.label}
-          label={preset.label}
+          label={`${preset.label} · ${preset.sub}`}
           selected={isPresetActive(preset)}
           onToggle={() => togglePreset(preset)}
         />
       ))}
-      <div className="mx-1 h-6 w-px flex-shrink-0 bg-gray-200" />
-      {TOGGLES.map((toggle) => (
-        <Chip
-          key={toggle.label}
-          label={toggle.label}
-          selected={
-            filters[toggle.key] === toggle.value || (toggle.key === 'sort' && !filters.sort)
-          }
-          onToggle={() => {
-            if (toggle.key === 'verified') {
-              onChange({
-                ...filters,
-                verified: filters.verified ? undefined : 'true',
-                page: undefined,
-              });
-            }
-          }}
-        />
-      ))}
+      <div className="mx-2 h-5 w-px flex-shrink-0 bg-border" aria-hidden="true" />
+      <Chip
+        label="Verified only"
+        selected={verifiedActive}
+        onToggle={() =>
+          onChange({
+            ...filters,
+            verified: verifiedActive ? undefined : 'true',
+            page: undefined,
+          })
+        }
+      />
     </div>
   );
 }

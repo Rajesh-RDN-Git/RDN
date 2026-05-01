@@ -111,7 +111,7 @@ export default function ReportsPage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.key ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.key ? 'border-b-2 border-brand text-brand' : 'text-muted-foreground hover:text-foreground'}`}
           >
             {tab.label}
           </button>
@@ -121,11 +121,11 @@ export default function ReportsPage() {
       {activeTab !== 'dashboard' && (
         <div className="mb-4 flex gap-3">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">From</label>
+            <label className="mb-1 block text-xs text-muted-foreground">From</label>
             <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">To</label>
+            <label className="mb-1 block text-xs text-muted-foreground">To</label>
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
         </div>
@@ -136,10 +136,10 @@ export default function ReportsPage() {
           <Spinner />
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16 text-center shadow-sm">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-error-bg">
             <svg
-              className="h-7 w-7 text-red-500"
+              className="h-7 w-7 text-error-icon"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -152,8 +152,8 @@ export default function ReportsPage() {
               />
             </svg>
           </div>
-          <h3 className="text-heading-md text-gray-900">Failed to load reports</h3>
-          <p className="mt-2 max-w-sm text-body-md text-gray-500">{error}</p>
+          <h3 className="text-heading-md text-foreground">Failed to load reports</h3>
+          <p className="mt-2 max-w-sm text-body-md text-muted-foreground">{error}</p>
           <Button onClick={fetchData} className="mt-6">
             Try Again
           </Button>
@@ -173,7 +173,7 @@ export default function ReportsPage() {
           <StatCard label="Open Grievances" value={dashboardData?.openGrievances || 0} />
         </div>
       ) : activeTab === 'leads' ? (
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-lg border bg-card">
           <DataTable
             columns={leadColumns}
             data={reportData}
@@ -182,7 +182,7 @@ export default function ReportsPage() {
           />
         </div>
       ) : activeTab === 'transactions' ? (
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-lg border bg-card">
           <DataTable
             columns={txnColumns}
             data={reportData}
@@ -191,7 +191,7 @@ export default function ReportsPage() {
           />
         </div>
       ) : (
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-lg border bg-card">
           <DataTable
             columns={commColumns}
             data={reportData}

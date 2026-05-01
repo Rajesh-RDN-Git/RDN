@@ -57,8 +57,8 @@ export default async function SocietiesPage({
     <div className="mx-auto max-w-content px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-heading-xl text-gray-900">Browse Societies</h1>
-        <p className="mt-1 text-body-md text-gray-500">
+        <h1 className="text-heading-xl text-foreground">Browse Societies</h1>
+        <p className="mt-1 text-body-md text-muted-foreground">
           Discover verified residential communities across India
         </p>
       </div>
@@ -68,7 +68,7 @@ export default async function SocietiesPage({
         <Link
           href="/societies"
           className={`rounded-full px-4 py-2 text-body-sm font-medium transition-colors ${
-            !city ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            !city ? 'bg-brand text-white' : 'bg-subtle text-foreground hover:bg-subtle'
           }`}
         >
           All Cities
@@ -78,9 +78,7 @@ export default async function SocietiesPage({
             key={c}
             href={`/societies?city=${c}`}
             className={`rounded-full px-4 py-2 text-body-sm font-medium transition-colors ${
-              city === c
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              city === c ? 'bg-brand text-white' : 'bg-subtle text-foreground hover:bg-subtle'
             }`}
           >
             {c}
@@ -90,7 +88,7 @@ export default async function SocietiesPage({
 
       {/* Results count */}
       {total > 0 && (
-        <p className="mb-4 text-body-sm text-gray-500">
+        <p className="mb-4 text-body-sm text-muted-foreground">
           {total} {total === 1 ? 'society' : 'societies'} found
           {city ? ` in ${city}` : ''}
         </p>
@@ -98,19 +96,16 @@ export default async function SocietiesPage({
 
       {/* Grid */}
       {societies.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-20 text-center">
-          <BuildingIcon size={48} className="mb-4 text-gray-300" />
-          <h3 className="text-heading-md text-gray-900">No societies found</h3>
-          <p className="mt-2 max-w-sm text-body-md text-gray-500">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-20 text-center">
+          <BuildingIcon size={48} className="mb-4 text-muted-foreground" />
+          <h3 className="text-heading-md text-foreground">No societies found</h3>
+          <p className="mt-2 max-w-sm text-body-md text-muted-foreground">
             {city
               ? `No societies are currently listed in ${city}. Try another city.`
               : 'No societies are currently listed. Check back soon.'}
           </p>
           {city && (
-            <Link
-              href="/societies"
-              className="mt-4 text-label-md text-primary-600 hover:text-primary-700"
-            >
+            <Link href="/societies" className="mt-4 text-label-md text-brand hover:text-brand-text">
               View all cities
             </Link>
           )}
@@ -129,7 +124,7 @@ export default async function SocietiesPage({
           {page > 1 && (
             <Link
               href={`/societies?${new URLSearchParams({ ...(city && { city }), page: String(page - 1) })}`}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-subtle"
             >
               <ChevronIcon size={16} direction="left" className="inline" /> Previous
             </Link>
@@ -143,7 +138,7 @@ export default async function SocietiesPage({
             }, [])
             .map((p, i) =>
               p === 'ellipsis' ? (
-                <span key={`e-${i}`} className="px-2 text-gray-400">
+                <span key={`e-${i}`} className="px-2 text-muted-foreground">
                   ...
                 </span>
               ) : (
@@ -151,7 +146,7 @@ export default async function SocietiesPage({
                   key={p}
                   href={`/societies?${new URLSearchParams({ ...(city && { city }), ...(p > 1 && { page: String(p) }) })}`}
                   className={`rounded-lg px-3 py-2 text-sm font-medium ${
-                    page === p ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-100'
+                    page === p ? 'bg-brand text-white' : 'text-foreground hover:bg-subtle'
                   }`}
                 >
                   {p}
@@ -161,7 +156,7 @@ export default async function SocietiesPage({
           {page < totalPages && (
             <Link
               href={`/societies?${new URLSearchParams({ ...(city && { city }), page: String(page + 1) })}`}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-subtle"
             >
               Next <ChevronIcon size={16} direction="right" className="inline" />
             </Link>
@@ -176,9 +171,9 @@ function SocietyCard({ society }: { society: Society }) {
   return (
     <Link
       href={`/society/${society.slug}`}
-      className="group block overflow-hidden rounded-xl border border-gray-200 bg-white transition-shadow hover:shadow-elevation-2"
+      className="group block overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-elevation-2"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+      <div className="relative aspect-[16/10] overflow-hidden bg-subtle">
         {society.media?.[0]?.url ? (
           <img
             src={society.media[0].url}
@@ -186,8 +181,8 @@ function SocietyCard({ society }: { society: Society }) {
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-            <BuildingIcon size={48} className="text-primary-300" />
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-brand-subtle to-brand-subtle">
+            <BuildingIcon size={48} className="text-brand" />
           </div>
         )}
         {society.verificationStatus === 'VERIFIED' && (
@@ -197,13 +192,11 @@ function SocietyCard({ society }: { society: Society }) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="text-heading-sm text-gray-900 group-hover:text-primary-600">
-          {society.name}
-        </h3>
-        <div className="mt-1 flex items-center gap-1 text-body-sm text-gray-500">
+        <h3 className="text-heading-sm text-foreground group-hover:text-brand">{society.name}</h3>
+        <div className="mt-1 flex items-center gap-1 text-body-sm text-muted-foreground">
           <LocationIcon size={14} /> {society.city}
         </div>
-        <div className="mt-3 flex items-center gap-2 text-caption-md text-gray-400">
+        <div className="mt-3 flex items-center gap-2 text-caption-md text-muted-foreground">
           <BuildingIcon size={14} />
           {society.totalUnits || '—'} units
         </div>

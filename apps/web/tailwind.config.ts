@@ -6,46 +6,115 @@ const config: Config = {
   darkMode: 'class',
   theme: {
     extend: {
+      borderColor: {
+        DEFAULT: 'var(--color-border)',
+      },
+      ringOffsetColor: {
+        DEFAULT: 'var(--color-bg-primary)',
+      },
       colors: {
-        // Brand palette
+        // Brand palette (raw scale — use sparingly, prefer semantic tokens below)
         primary: palette.blue,
+        gray: palette.gray,
 
-        // Semantic colors via CSS custom properties (set in globals.css)
+        // ── Page surfaces ─────────────────────────────────
+        background: 'var(--color-bg-primary)',
+        foreground: 'var(--color-text-primary)',
+
+        // Subdued surfaces (muted = secondary; subtle = tertiary)
+        muted: {
+          DEFAULT: 'var(--color-bg-secondary)',
+          foreground: 'var(--color-text-secondary)',
+        },
+        subtle: {
+          DEFAULT: 'var(--color-bg-tertiary)',
+          foreground: 'var(--color-text-tertiary)',
+        },
+
+        // ── Component surfaces ────────────────────────────
+        card: {
+          DEFAULT: 'var(--color-surface)',
+          foreground: 'var(--color-text-primary)',
+          raised: 'var(--color-surface-raised)',
+        },
+        popover: {
+          DEFAULT: 'var(--color-surface-overlay)',
+          foreground: 'var(--color-text-primary)',
+        },
+
+        // ── Borders / focus ───────────────────────────────
+        border: {
+          DEFAULT: 'var(--color-border)',
+          strong: 'var(--color-border-strong)',
+        },
+        input: 'var(--color-border-strong)',
+        ring: 'var(--color-border-focus)',
+
+        // ── Brand / interactive ───────────────────────────
         brand: {
           DEFAULT: 'var(--color-brand)',
           hover: 'var(--color-brand-hover)',
           active: 'var(--color-brand-active)',
           subtle: 'var(--color-brand-subtle)',
+          'subtle-hover': 'var(--color-brand-subtle-hover)',
           text: 'var(--color-brand-text)',
+          foreground: 'var(--color-on-brand)',
         },
+
+        // ── Surface (legacy alias kept for backwards-compat) ───
         surface: {
           DEFAULT: 'var(--color-surface)',
           raised: 'var(--color-surface-raised)',
           overlay: 'var(--color-surface-overlay)',
         },
+
+        // ── Status ────────────────────────────────────────
         success: {
+          DEFAULT: 'var(--color-success-icon)',
+          foreground: 'var(--color-on-success)',
           bg: 'var(--color-success-bg)',
           border: 'var(--color-success-border)',
           text: 'var(--color-success-text)',
           icon: 'var(--color-success-icon)',
         },
         warning: {
+          DEFAULT: 'var(--color-warning-icon)',
+          foreground: 'var(--color-on-warning)',
           bg: 'var(--color-warning-bg)',
           border: 'var(--color-warning-border)',
           text: 'var(--color-warning-text)',
           icon: 'var(--color-warning-icon)',
         },
         error: {
+          DEFAULT: 'var(--color-error-icon)',
+          foreground: 'var(--color-on-error)',
           bg: 'var(--color-error-bg)',
           border: 'var(--color-error-border)',
           text: 'var(--color-error-text)',
           icon: 'var(--color-error-icon)',
         },
         info: {
+          DEFAULT: 'var(--color-info-icon)',
+          foreground: 'var(--color-on-info)',
           bg: 'var(--color-info-bg)',
           border: 'var(--color-info-border)',
           text: 'var(--color-info-text)',
           icon: 'var(--color-info-icon)',
+        },
+
+        // ── Chrome (header / footer — intentionally dark) ─
+        chrome: {
+          DEFAULT: 'var(--color-chrome)',
+          foreground: 'var(--color-chrome-fg)',
+          muted: 'var(--color-chrome-fg-muted)',
+          border: 'var(--color-chrome-border)',
+          hover: 'var(--color-chrome-hover)',
+        },
+
+        // ── Skeleton ──────────────────────────────────────
+        skeleton: {
+          base: 'var(--color-skeleton-base)',
+          shimmer: 'var(--color-skeleton-shimmer)',
         },
       },
       fontFamily: {

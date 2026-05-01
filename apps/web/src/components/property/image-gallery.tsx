@@ -28,8 +28,8 @@ export function ImageGallery({ images }: ImageGalleryProps) {
 
   if (sorted.length === 0) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-xl bg-gray-100">
-        <p className="text-gray-400">No images available</p>
+      <div className="flex aspect-video items-center justify-center rounded-xl bg-subtle">
+        <p className="text-muted-foreground">No images available</p>
       </div>
     );
   }
@@ -85,7 +85,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             {/* Close button */}
             <button
               onClick={() => setSelectedIndex(null)}
-              className="absolute -right-2 -top-2 z-10 rounded-full bg-white p-2 shadow-elevation-2 hover:bg-gray-100"
+              className="absolute -right-2 -top-2 z-10 rounded-full bg-card p-2 shadow-elevation-2 hover:bg-subtle"
             >
               <CloseIcon size={20} />
             </button>
@@ -102,7 +102,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
               {selectedIndex > 0 && (
                 <button
                   onClick={() => setSelectedIndex(selectedIndex - 1)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-elevation-2 hover:bg-white"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-card p-2 shadow-elevation-2 hover:bg-muted"
                 >
                   <ChevronIcon size={24} direction="left" />
                 </button>
@@ -110,7 +110,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
               {selectedIndex < sorted.length - 1 && (
                 <button
                   onClick={() => setSelectedIndex(selectedIndex + 1)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-elevation-2 hover:bg-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-card p-2 shadow-elevation-2 hover:bg-muted"
                 >
                   <ChevronIcon size={24} direction="right" />
                 </button>
@@ -118,7 +118,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             </div>
 
             {/* Counter */}
-            <p className="mt-3 text-center text-body-sm text-gray-500">
+            <p className="mt-3 text-center text-body-sm text-muted-foreground">
               {selectedIndex + 1} / {sorted.length}
             </p>
 
@@ -133,7 +133,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   onClick={() => setSelectedIndex(i)}
                   className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                     i === selectedIndex
-                      ? 'border-primary-500 opacity-100'
+                      ? 'border-brand opacity-100'
                       : 'border-transparent opacity-60 hover:opacity-80'
                   }`}
                 >

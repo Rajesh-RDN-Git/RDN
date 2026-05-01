@@ -37,7 +37,6 @@ export function Carousel({
     const items = container.children;
     if (!items[index]) return;
     const item = items[index] as HTMLElement;
-    // Use scrollLeft on the container — NOT scrollIntoView which moves the whole page
     container.scrollTo({
       left: item.offsetLeft - container.offsetLeft,
       behavior: 'smooth',
@@ -72,8 +71,11 @@ export function Carousel({
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
+  const arrowBtn =
+    'absolute top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full border border-border bg-popover text-foreground shadow-elevation-2 opacity-0 transition-opacity duration-fast group-hover:opacity-100 hover:bg-muted disabled:opacity-0';
+
   return (
-    <div className={`relative group ${className}`} onMouseEnter={pauseAutoplay}>
+    <div className={`group relative ${className}`} onMouseEnter={pauseAutoplay}>
       <div
         ref={scrollRef}
         onScroll={handleScroll}
@@ -91,19 +93,19 @@ export function Carousel({
         <>
           <button
             onClick={() => scrollToIndex(Math.max(0, activeIndex - 1))}
-            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-elevation-2 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white disabled:opacity-0"
+            className={`${arrowBtn} left-2`}
             disabled={activeIndex === 0}
             aria-label="Previous"
           >
-            <ChevronIcon size={20} direction="left" />
+            <ChevronIcon size={18} direction="left" />
           </button>
           <button
             onClick={() => scrollToIndex(Math.min(itemCount - 1, activeIndex + 1))}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-elevation-2 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white disabled:opacity-0"
+            className={`${arrowBtn} right-2`}
             disabled={activeIndex === itemCount - 1}
             aria-label="Next"
           >
-            <ChevronIcon size={20} direction="right" />
+            <ChevronIcon size={18} direction="right" />
           </button>
         </>
       )}
@@ -114,10 +116,13 @@ export function Carousel({
             <button
               key={i}
               onClick={() => scrollToIndex(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === activeIndex ? 'w-6 bg-primary-600' : 'w-2 bg-gray-300 hover:bg-gray-400'
+              className={`h-2 rounded-full transition-all duration-fast ${
+                i === activeIndex
+                  ? 'w-6 bg-brand'
+                  : 'w-2 bg-border-strong hover:bg-muted-foreground'
               }`}
               aria-label={`Go to slide ${i + 1}`}
+              aria-current={i === activeIndex ? 'true' : undefined}
             />
           ))}
         </div>

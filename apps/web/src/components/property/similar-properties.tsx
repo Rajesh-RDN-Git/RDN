@@ -30,7 +30,7 @@ export function SimilarProperties({ societyId, currentPropertyId }: SimilarPrope
 
   return (
     <section className="mt-12">
-      <h2 className="mb-6 text-heading-xl text-gray-900">Similar Properties in This Society</h2>
+      <h2 className="mb-6 text-heading-xl text-foreground">Similar Properties in This Society</h2>
       <Carousel showArrows showDots={false} itemClassName="w-[300px] md:w-[340px] pr-4">
         {properties.map((property) => (
           <PropertyCard key={property.id} property={property} />

@@ -140,12 +140,12 @@ export default function ChatPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-heading-xl text-gray-900">Chat</h1>
-      <div className="flex h-[calc(100vh-200px)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <h1 className="mb-6 text-heading-xl text-foreground">Chat</h1>
+      <div className="flex h-[calc(100vh-200px)] overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         {/* Conversation List */}
-        <div className="w-80 flex-shrink-0 border-r border-gray-200">
-          <div className="border-b border-gray-200 p-4">
-            <h2 className="text-heading-sm text-gray-900">Conversations</h2>
+        <div className="w-80 flex-shrink-0 border-r border-border">
+          <div className="border-b border-border p-4">
+            <h2 className="text-heading-sm text-foreground">Conversations</h2>
           </div>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -153,18 +153,18 @@ export default function ChatPage() {
             </div>
           ) : error ? (
             <div className="flex flex-col items-center p-6 text-center">
-              <p className="text-body-sm text-red-600">{error}</p>
+              <p className="text-body-sm text-error-icon">{error}</p>
               <button
                 onClick={fetchConversations}
-                className="mt-2 text-label-sm text-primary-600 hover:text-primary-700"
+                className="mt-2 text-label-sm text-brand hover:text-brand-text"
               >
                 Retry
               </button>
             </div>
           ) : conversations.length === 0 ? (
             <div className="flex flex-col items-center p-6 text-center">
-              <ChatIcon size={32} className="mb-2 text-gray-300" />
-              <p className="text-body-sm text-gray-500">No conversations yet</p>
+              <ChatIcon size={32} className="mb-2 text-muted-foreground" />
+              <p className="text-body-sm text-muted-foreground">No conversations yet</p>
             </div>
           ) : (
             <div className="overflow-y-auto">
@@ -172,8 +172,8 @@ export default function ChatPage() {
                 <button
                   key={convo.id}
                   onClick={() => setSelectedId(convo.id)}
-                  className={`flex w-full items-center gap-3 border-b border-gray-100 p-4 text-left transition-colors hover:bg-gray-50 ${
-                    selectedId === convo.id ? 'bg-primary-50 border-l-2 border-l-primary-500' : ''
+                  className={`flex w-full items-center gap-3 border-b border-border p-4 text-left transition-colors hover:bg-muted ${
+                    selectedId === convo.id ? 'bg-brand-subtle border-l-2 border-l-primary-500' : ''
                   }`}
                 >
                   <Avatar
@@ -182,18 +182,18 @@ export default function ChatPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
-                      <p className="truncate text-label-md text-gray-900">
+                      <p className="truncate text-label-md text-foreground">
                         {convo.lead?.property
                           ? `${convo.lead.property.flatNumber}, ${convo.lead.property.towerBlock}`
                           : 'Conversation'}
                       </p>
                       {(convo.unreadCount ?? 0) > 0 && (
-                        <span className="ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-600 px-1.5 text-[11px] font-semibold text-white">
+                        <span className="ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-semibold text-white">
                           {convo.unreadCount}
                         </span>
                       )}
                     </div>
-                    <p className="text-caption-md text-gray-500">
+                    <p className="text-caption-md text-muted-foreground">
                       {convo.lastMessageAt
                         ? new Date(convo.lastMessageAt).toLocaleDateString('en-IN')
                         : '-'}
@@ -217,15 +217,15 @@ export default function ChatPage() {
           ) : (
             <>
               {/* Thread header */}
-              <div className="flex items-center gap-3 border-b border-gray-200 p-4">
+              <div className="flex items-center gap-3 border-b border-border p-4">
                 <Avatar name={selectedConvo?.lead?.property?.flatNumber || 'C'} size="sm" />
                 <div>
-                  <p className="text-label-md text-gray-900">
+                  <p className="text-label-md text-foreground">
                     {selectedConvo?.lead?.property
                       ? `${selectedConvo.lead.property.flatNumber}, ${selectedConvo.lead.property.towerBlock}`
                       : 'Chat'}
                   </p>
-                  <p className="text-caption-md text-gray-500">
+                  <p className="text-caption-md text-muted-foreground">
                     {selectedConvo?.lead?.buyer?.name && `Buyer: ${selectedConvo.lead.buyer.name}`}
                     {selectedConvo?.lead?.dealer?.user?.name &&
                       ` · Dealer: ${selectedConvo.lead.dealer.user.name}`}
@@ -234,31 +234,31 @@ export default function ChatPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto bg-gray-50 p-4">
+              <div className="flex-1 overflow-y-auto bg-muted p-4">
                 {loadingMessages ? (
                   <div className="flex justify-center py-8">
                     <Spinner />
                   </div>
                 ) : messagesError ? (
                   <div className="flex flex-col items-center py-8 text-center">
-                    <p className="text-body-sm text-red-600">{messagesError}</p>
+                    <p className="text-body-sm text-error-icon">{messagesError}</p>
                     <button
                       onClick={() => setSelectedId(selectedId)}
-                      className="mt-2 text-label-sm text-primary-600 hover:text-primary-700"
+                      className="mt-2 text-label-sm text-brand hover:text-brand-text"
                     >
                       Retry
                     </button>
                   </div>
                 ) : messages.length === 0 ? (
-                  <p className="text-center text-body-sm text-gray-500">No messages yet</p>
+                  <p className="text-center text-body-sm text-muted-foreground">No messages yet</p>
                 ) : (
                   messageGroups.map((group) => (
                     <div key={group.date}>
                       {/* Date separator */}
                       <div className="my-4 flex items-center gap-3">
-                        <div className="flex-1 border-t border-gray-200" />
-                        <span className="text-caption-md text-gray-400">{group.date}</span>
-                        <div className="flex-1 border-t border-gray-200" />
+                        <div className="flex-1 border-t border-border" />
+                        <span className="text-caption-md text-muted-foreground">{group.date}</span>
+                        <div className="flex-1 border-t border-border" />
                       </div>
 
                       <div className="space-y-3">
@@ -272,12 +272,12 @@ export default function ChatPage() {
                               <div
                                 className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm ${
                                   isMe
-                                    ? 'rounded-br-md bg-primary-600 text-white'
-                                    : 'rounded-bl-md bg-white text-gray-900'
+                                    ? 'rounded-br-md bg-brand text-white'
+                                    : 'rounded-bl-md bg-card text-foreground'
                                 }`}
                               >
                                 {!isMe && msg.sender && (
-                                  <p className="mb-1 text-caption-md font-medium text-primary-600">
+                                  <p className="mb-1 text-caption-md font-medium text-brand">
                                     {msg.sender.name}
                                   </p>
                                 )}
@@ -286,7 +286,7 @@ export default function ChatPage() {
                                   className={`mt-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`}
                                 >
                                   <p
-                                    className={`text-[11px] ${isMe ? 'text-white/60' : 'text-gray-400'}`}
+                                    className={`text-[11px] ${isMe ? 'text-white/60' : 'text-muted-foreground'}`}
                                   >
                                     {new Date(msg.createdAt).toLocaleTimeString('en-IN', {
                                       hour: '2-digit',
@@ -309,9 +309,9 @@ export default function ChatPage() {
               </div>
 
               {/* Send form */}
-              <div className="border-t border-gray-200 bg-white p-4">
+              <div className="border-t border-border bg-card p-4">
                 {sendError && (
-                  <div className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-body-sm text-red-700">
+                  <div className="mb-2 rounded-lg border border-error-border bg-error-bg px-3 py-2 text-body-sm text-error-text">
                     {sendError}
                   </div>
                 )}
@@ -326,7 +326,7 @@ export default function ChatPage() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-body-md outline-none transition-colors focus:border-primary-500 focus:bg-white focus:ring-1 focus:ring-primary-500"
+                    className="flex-1 rounded-xl border border-border bg-muted px-4 py-2.5 text-body-md outline-none transition-colors focus:border-brand focus:bg-card focus:ring-1 focus:ring-ring"
                   />
                   <Button
                     type="submit"

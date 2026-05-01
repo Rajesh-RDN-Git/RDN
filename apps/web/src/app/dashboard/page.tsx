@@ -90,9 +90,9 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-error-bg">
           <svg
-            className="h-7 w-7 text-red-500"
+            className="h-7 w-7 text-error-icon"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -105,8 +105,8 @@ export default function DashboardPage() {
             />
           </svg>
         </div>
-        <h3 className="text-heading-md text-gray-900">Failed to load dashboard</h3>
-        <p className="mt-2 max-w-sm text-body-md text-gray-500">{error}</p>
+        <h3 className="text-heading-md text-foreground">Failed to load dashboard</h3>
+        <p className="mt-2 max-w-sm text-body-md text-muted-foreground">{error}</p>
         <Button onClick={fetchStats} className="mt-6">
           Try Again
         </Button>
@@ -127,10 +127,10 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Welcome header */}
-      <div className="mb-8 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 p-6 text-white shadow-elevation-1 md:p-8">
-        <p className="text-body-lg text-primary-200">{getGreeting()},</p>
+      <div className="mb-8 rounded-lg bg-gradient-to-r from-brand to-brand-hover p-6 text-brand-foreground shadow-elevation-1 md:p-8">
+        <p className="text-sm opacity-80">{getGreeting()},</p>
         <h1 className="mt-1 text-display-sm">{user?.name || 'User'}</h1>
-        <p className="mt-2 text-body-md text-primary-200">
+        <p className="mt-2 text-sm opacity-90">
           {role === Role.SUPER_ADMIN && 'Managing the RDN platform'}
           {role === Role.RWA_ADMIN && 'Managing your society'}
           {role === Role.DEALER && 'Your lead pipeline at a glance'}
@@ -145,20 +145,18 @@ export default function DashboardPage() {
           <Link
             key={action.href}
             href={action.href}
-            className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-primary-200 hover:shadow-elevation-1"
+            className="group flex items-center gap-3 rounded-lg border border-border bg-card p-4 transition-all duration-fast hover:border-brand hover:shadow-elevation-1"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 transition-colors group-hover:bg-primary-100">
-              <action.icon size={20} className="text-primary-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-subtle transition-colors duration-fast group-hover:bg-brand-subtle-hover">
+              <action.icon size={20} className="text-brand" />
             </div>
-            <span className="text-label-md text-gray-700 group-hover:text-gray-900">
-              {action.label}
-            </span>
+            <span className="text-label-md text-foreground">{action.label}</span>
           </Link>
         ))}
       </div>
 
       {/* Stats */}
-      <h2 className="mb-4 text-heading-md text-gray-900">Overview</h2>
+      <h2 className="mb-4 text-heading-md text-foreground">Overview</h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {(role === Role.SUPER_ADMIN || role === Role.RWA_ADMIN) && (
           <>

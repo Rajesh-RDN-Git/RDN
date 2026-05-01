@@ -38,20 +38,20 @@ export function DataTable<T>({
   }
 
   return (
-    <div className={`overflow-x-auto ${className}`}>
+    <div className={`overflow-x-auto rounded-lg border border-border bg-card ${className}`}>
       <table className="w-full text-left text-sm">
-        <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
+        <thead className="border-b border-border bg-muted text-overline text-muted-foreground">
           <tr>
             {columns.map((col) => (
-              <th key={col.key} className="px-4 py-3 font-medium">
+              <th key={col.key} className="px-4 py-3 font-semibold">
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-border text-foreground">
           {data.map((item) => (
-            <tr key={keyExtractor(item)} className="hover:bg-gray-50">
+            <tr key={keyExtractor(item)} className="transition-colors duration-fast hover:bg-muted">
               {columns.map((col) => (
                 <td key={col.key} className="px-4 py-3">
                   {col.render
