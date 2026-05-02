@@ -13,3 +13,4 @@ export { transactionsApi } from './transactions.api';
 export { grievancesApi } from './grievances.api';
 export { referralsApi } from './referrals.api';
 export { verificationApi } from './verification.api';
+export { commissionsApi } from './commissions.api';

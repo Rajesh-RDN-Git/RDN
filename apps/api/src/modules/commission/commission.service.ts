@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryCommissionsDto } from './dto/query-commissions.dto';
 import type { SettleCommissionDto } from './dto/settle-commission.dto';
+import type { CancelCommissionDto } from './dto/cancel-commission.dto';
 import type { Prisma } from '@rdn/db';
 
 @Injectable()
@@ -109,16 +110,21 @@ export class CommissionService {
     return updated;
   }
 
-  async cancel(id: string): Promise<any> {
+  async cancel(id: string, data: CancelCommissionDto = {}): Promise<any> {
     const commission = await this.prisma.commission.findUnique({ where: { id } });
     if (!commission) throw new NotFoundException('Commission not found');
     if (commission.status !== 'PENDING') {
       throw new BadRequestException(`Commission is already ${commission.status}`);
     }
 
+    // Cancellations don't have a payout, so we reuse `payoutReference`
+    // to persist the operator-supplied reason for audit purposes.
     return this.prisma.commission.update({
       where: { id },
-      data: { status: 'CANCELLED' },
+      data: {
+        status: 'CANCELLED',
+        ...(data.reason ? { payoutReference: `CANCELLED: ${data.reason}` } : {}),
+      },
     });
   }
 }

@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CommissionService } from './commission.service';
 import { QueryCommissionsDto } from './dto/query-commissions.dto';
 import { SettleCommissionDto } from './dto/settle-commission.dto';
+import { CancelCommissionDto } from './dto/cancel-commission.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -50,7 +51,10 @@ export class CommissionController {
   @Post(':id/cancel')
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Cancel a commission' })
-  async cancel(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
-    return this.commissionService.cancel(id);
+  async cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: CancelCommissionDto = {},
+  ): Promise<any> {
+    return this.commissionService.cancel(id, body);
   }
 }
