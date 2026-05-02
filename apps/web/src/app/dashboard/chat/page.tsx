@@ -117,11 +117,21 @@ export default function ChatPage() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!selectedId || !newMessage.trim()) return;
+    if (!selectedId || !newMessage.trim() || !user) return;
+    const conv = conversations.find((c) => c.id === selectedId);
+    const receiverId = conv?.participants.find((p) => p !== user.id);
+    if (!receiverId) {
+      setSendError('Cannot determine recipient.');
+      return;
+    }
     setSending(true);
     setSendError(null);
     try {
-      await communicationApi.sendMessage(selectedId, { content: newMessage.trim() });
+      await communicationApi.sendMessage(selectedId, {
+        receiverId,
+        content: newMessage.trim(),
+        type: 'TEXT',
+      });
       setNewMessage('');
       const { data } = await communicationApi.getConversation(selectedId, { limit: 50 });
       setMessages(data.messages || []);

@@ -7,6 +7,8 @@ export const communicationApi = {
   getConversation: (conversationId: string, params?: { page?: number; limit?: number }) =>
     apiClient.get(`/communication/conversations/${conversationId}`, { params }),
 
-  sendMessage: (conversationId: string, data: { content: string }) =>
-    apiClient.post(`/communication/conversations/${conversationId}/messages`, data),
+  sendMessage: (
+    conversationId: string,
+    data: { receiverId: string; content: string; type?: 'TEXT' | 'IMAGE' | 'FILE' },
+  ) => apiClient.post(`/communication/conversations/${conversationId}/messages`, data),
 };
