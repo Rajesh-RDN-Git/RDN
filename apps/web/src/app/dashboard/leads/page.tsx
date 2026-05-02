@@ -13,6 +13,24 @@ import { Input } from '@/components/ui/input';
 import { CheckIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 
+// Maps the current lead status to the next allowed status + button label.
+// Excludes CLOSED (handled by close-deal endpoint) and terminal states.
+const NEXT_STATUS: Record<string, { next: string; label: string }> = {
+  NEW: { next: 'CONTACTED', label: 'Mark Contacted' },
+  CONTACTED: { next: 'VISIT_SCHEDULED', label: 'Schedule Visit' },
+  VISIT_SCHEDULED: { next: 'VISITED', label: 'Mark Visited' },
+  VISITED: { next: 'NEGOTIATING', label: 'Start Negotiation' },
+  NEGOTIATING: { next: 'CLOSING', label: 'Move to Closing' },
+};
+
+const tomorrowISO = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
 const statusVariant = (s: string) => {
   switch (s) {
     case 'NEW':
@@ -57,6 +75,10 @@ export default function LeadsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [closeDealError, setCloseDealError] = useState<string | null>(null);
+  // Lead id -> tracks inline date-picker state for the Schedule Visit flow.
+  const [scheduleFor, setScheduleFor] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState<string>(tomorrowISO());
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -81,6 +103,25 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchLeads();
   }, [page, statusFilter]);
+
+  const handleAdvanceStatus = async (
+    leadId: string,
+    nextStatus: string,
+    extra?: Record<string, unknown>,
+  ) => {
+    setAdvancingId(leadId);
+    try {
+      await leadsApi.update(leadId, { status: nextStatus, ...(extra || {}) });
+      showToast.success(`Lead moved to ${nextStatus.replace('_', ' ').toLowerCase()}`);
+      setScheduleFor(null);
+      setScheduleDate(tomorrowISO());
+      fetchLeads();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      showToast.error(err?.response?.data?.message || 'Failed to update lead status');
+    }
+    setAdvancingId(null);
+  };
 
   const handleCloseDeal = async () => {
     if (!closeDealModal || !dealValue) return;
@@ -162,40 +203,104 @@ export default function LeadsPage() {
     {
       key: 'actions',
       header: '',
-      render: (item: any) => (
-        <div className="flex gap-2">
-          {(item.status === 'NEGOTIATING' || item.status === 'CLOSING') &&
-            (user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN') && (
-              <Button size="sm" onClick={() => setCloseDealModal(item)}>
-                Close Deal
-              </Button>
+      render: (item: any) => {
+        const canAdvance = user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN';
+        const nextStep = NEXT_STATUS[item.status];
+        const isScheduling = scheduleFor === item.id;
+        const isAdvancing = advancingId === item.id;
+
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            {canAdvance && nextStep && (
+              <>
+                {item.status === 'CONTACTED' && isScheduling ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      min={todayISO()}
+                      value={scheduleDate}
+                      onChange={(e) => setScheduleDate(e.target.value)}
+                      className="rounded-md border border-border bg-background px-2 py-1 text-body-sm text-foreground"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        handleAdvanceStatus(item.id, 'VISIT_SCHEDULED', {
+                          visitDate: new Date(scheduleDate).toISOString(),
+                        })
+                      }
+                      isLoading={isAdvancing}
+                      disabled={!scheduleDate}
+                    >
+                      Confirm
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setScheduleFor(null);
+                        setScheduleDate(tomorrowISO());
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : item.status === 'VISIT_SCHEDULED' && !item.visitApprovedByOwner ? (
+                  <span className="text-caption-md text-muted-foreground">
+                    Awaiting owner approval
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (item.status === 'CONTACTED') {
+                        setScheduleFor(item.id);
+                        setScheduleDate(tomorrowISO());
+                      } else {
+                        handleAdvanceStatus(item.id, nextStep.next);
+                      }
+                    }}
+                    isLoading={isAdvancing && !isScheduling}
+                  >
+                    {nextStep.label}
+                  </Button>
+                )}
+              </>
             )}
-          {(user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') &&
-            (item.visitApprovedByOwner ? (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-success-text">
-                <CheckIcon size={14} className="text-success-icon" />
-                Visit approved
-              </span>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  try {
-                    await leadsApi.approveVisit(item.id);
-                    showToast.success('Visit approved');
-                    fetchLeads();
-                  } catch (e: unknown) {
-                    const err = e as { response?: { data?: { message?: string } } };
-                    showToast.error(err?.response?.data?.message || 'Failed to approve visit');
-                  }
-                }}
-              >
-                Approve Visit
-              </Button>
-            ))}
-        </div>
-      ),
+            {(item.status === 'NEGOTIATING' || item.status === 'CLOSING') &&
+              (user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN') && (
+                <Button size="sm" onClick={() => setCloseDealModal(item)}>
+                  Close Deal
+                </Button>
+              )}
+            {(user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') &&
+              (item.visitApprovedByOwner ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-success-text">
+                  <CheckIcon size={14} className="text-success-icon" />
+                  Visit approved
+                </span>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      await leadsApi.approveVisit(item.id);
+                      showToast.success('Visit approved');
+                      fetchLeads();
+                    } catch (e: unknown) {
+                      const err = e as { response?: { data?: { message?: string } } };
+                      showToast.error(err?.response?.data?.message || 'Failed to approve visit');
+                    }
+                  }}
+                >
+                  Approve Visit
+                </Button>
+              ))}
+          </div>
+        );
+      },
     },
   ];
 
