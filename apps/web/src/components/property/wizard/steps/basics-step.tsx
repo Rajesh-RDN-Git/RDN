@@ -22,7 +22,10 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
   useEffect(() => {
     societiesApi
       .list()
-      .then((r: { data: Society[] }) => setSocieties(r.data))
+      .then((r: { data: Society[] | { data: Society[] } }) => {
+        const list = Array.isArray(r.data) ? r.data : (r.data?.data ?? []);
+        setSocieties(list);
+      })
       .catch(() => {
         /* swallow — wizard can still render with empty list */
       });

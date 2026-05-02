@@ -47,7 +47,8 @@ function WizardInner({ userRole, userId, primarySocietyId, onPublished }: Props)
       societiesApi
         .list()
         .then((r) => {
-          const list = r.data as SocietyResponse[];
+          const raw = r.data as SocietyResponse[] | { data: SocietyResponse[] };
+          const list = Array.isArray(raw) ? raw : (raw?.data ?? []);
           setSocietyAmenities(extractAmenities(list.find((x) => x.id === state.data.societyId)));
         })
         .catch(() => {
