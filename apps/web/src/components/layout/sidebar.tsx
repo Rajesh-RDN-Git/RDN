@@ -18,6 +18,7 @@ import {
   CloseIcon,
   BriefcaseIcon,
   CheckIcon,
+  BellIcon,
 } from '@/components/ui/icons';
 
 type IconComponent = ComponentType<{ size?: number; className?: string }>;
@@ -27,6 +28,12 @@ interface NavItem {
   label: string;
   icon: IconComponent;
 }
+
+const NOTIFICATIONS_LINK: NavItem = {
+  href: '/dashboard/notifications',
+  label: 'Notifications',
+  icon: BellIcon,
+};
 
 const navByRole: Record<string, NavItem[]> = {
   [Role.SUPER_ADMIN]: [
@@ -38,6 +45,7 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/commissions', label: 'Commissions', icon: FileTextIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
     { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
+    NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.RWA_ADMIN]: [
@@ -47,6 +55,7 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
+    NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.DEALER]: [
@@ -54,18 +63,21 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
     { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
+    NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.OWNER]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     { href: '/dashboard/properties', label: 'My Properties', icon: HomeIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
+    NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.BUYER_TENANT]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     { href: '/dashboard/properties', label: 'Saved', icon: HeartIcon },
     { href: '/dashboard/leads', label: 'My Inquiries', icon: FileTextIcon },
+    NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
 };

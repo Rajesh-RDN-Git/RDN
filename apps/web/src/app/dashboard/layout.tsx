@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Sidebar } from '@/components/layout/sidebar';
+import { NotificationBell } from '@/components/layout/notification-bell';
 import { MenuIcon, HomeIcon } from '@/components/ui/icons';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -26,20 +27,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-header items-center gap-3 border-b border-border bg-card px-4 lg:hidden">
+        <div className="sticky top-0 z-sticky flex h-header items-center gap-3 border-b border-border bg-card px-4">
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="Open menu"
-            className="grid h-9 w-9 place-items-center rounded-md text-foreground transition-colors duration-fast hover:bg-muted"
+            className="grid h-9 w-9 place-items-center rounded-md text-foreground transition-colors duration-fast hover:bg-muted lg:hidden"
           >
             <MenuIcon size={20} />
           </button>
-          <Link href="/" className="flex items-center gap-2 text-base font-bold text-foreground">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-base font-bold text-foreground lg:hidden"
+          >
             <span className="grid h-7 w-7 place-items-center rounded-md bg-brand text-brand-foreground">
               <HomeIcon size={16} />
             </span>
             <span>RDN</span>
           </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationBell />
+          </div>
         </div>
         <div className="flex-1 p-4 lg:p-8">{children}</div>
       </main>
