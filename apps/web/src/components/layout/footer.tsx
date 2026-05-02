@@ -14,7 +14,7 @@ const footerLinks = {
     { label: 'FAQs', href: '/faq' },
   ],
   'For Dealers': [
-    { label: 'Become a Dealer', href: '/dashboard/dealers' },
+    { label: 'Become a Dealer', href: '/become-dealer' },
     { label: 'Dealer Training', href: '/training' },
     { label: 'Commission Structure', href: '/commission' },
     { label: 'Resources', href: '/resources' },
