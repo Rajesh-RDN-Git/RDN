@@ -164,6 +164,12 @@ export class LeadsService {
     const lead = await this.prisma.lead.findUnique({ where: { id } });
     if (!lead) throw new NotFoundException('Lead not found');
 
+    if (data.status === 'CLOSED') {
+      throw new BadRequestException(
+        'Use POST /leads/:id/close-deal to close — it creates the transaction, commission, and notifications.',
+      );
+    }
+
     const updateData: any = {};
     if (data.status) updateData.status = data.status;
     if (data.visitDate) updateData.visitDate = new Date(data.visitDate);

@@ -142,6 +142,27 @@ export class TransactionsService {
       })
       .catch(() => {});
 
+    // Fan out to all SUPER_ADMINs (commission oversight)
+    this.prisma.user
+      .findMany({ where: { role: 'SUPER_ADMIN', status: 'ACTIVE' }, select: { id: true } })
+      .then((admins) =>
+        Promise.all(
+          admins.map((a) =>
+            this.notificationsService
+              .create({
+                userId: a.id,
+                type: 'DEAL',
+                title: 'Deal Closed (Oversight)',
+                body: `${data.type} deal of Rs ${dealValue.toLocaleString('en-IN')} closed; commission Rs ${(rdnShare + dealerShare + rwaShare).toLocaleString('en-IN')}.`,
+                channel: 'IN_APP',
+                data: { transactionId: result.transaction.id, commissionId: result.commission.id },
+              })
+              .catch(() => {}),
+          ),
+        ),
+      )
+      .catch(() => {});
+
     return result.transaction;
   }
 

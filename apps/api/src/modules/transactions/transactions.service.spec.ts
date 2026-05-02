@@ -21,6 +21,7 @@ describe('TransactionsService', () => {
       count: jest.fn(),
       update: jest.fn(),
     },
+    user: { findMany: jest.fn().mockResolvedValue([]) },
     $transaction: jest.fn((cb) => cb(mockTx)),
   };
 
