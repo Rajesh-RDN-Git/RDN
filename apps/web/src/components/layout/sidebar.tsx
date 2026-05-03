@@ -38,18 +38,19 @@ const NOTIFICATIONS_LINK: NavItem = {
 const navByRole: Record<string, NavItem[]> = {
   [Role.SUPER_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
     { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/commissions', label: 'Commissions', icon: FileTextIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
-    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.RWA_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
     { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
@@ -60,14 +61,15 @@ const navByRole: Record<string, NavItem[]> = {
   ],
   [Role.DEALER]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
-    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
   [Role.OWNER]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     { href: '/dashboard/properties', label: 'My Properties', icon: HomeIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     NOTIFICATIONS_LINK,
@@ -75,6 +77,7 @@ const navByRole: Record<string, NavItem[]> = {
   ],
   [Role.BUYER_TENANT]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
+    { href: '/dashboard/chat', label: 'Chat', icon: ChatIcon },
     { href: '/dashboard/properties', label: 'Saved', icon: HeartIcon },
     { href: '/dashboard/leads', label: 'My Inquiries', icon: FileTextIcon },
     NOTIFICATIONS_LINK,
