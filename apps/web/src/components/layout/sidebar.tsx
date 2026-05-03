@@ -19,6 +19,7 @@ import {
   BriefcaseIcon,
   CheckIcon,
   BellIcon,
+  ShieldIcon,
 } from '@/components/ui/icons';
 
 type IconComponent = ComponentType<{ size?: number; className?: string }>;
@@ -41,6 +42,12 @@ const NOTIFICATIONS_LINK: NavItem = {
   icon: BellIcon,
 };
 
+const GRIEVANCES_LINK: NavItem = {
+  href: '/dashboard/grievances',
+  label: 'Grievances',
+  icon: ShieldIcon,
+};
+
 const navByRole: Record<string, NavItem[]> = {
   [Role.SUPER_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
@@ -51,6 +58,7 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/commissions', label: 'Commissions', icon: FileTextIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
+    GRIEVANCES_LINK,
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
@@ -62,6 +70,7 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },
+    GRIEVANCES_LINK,
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],

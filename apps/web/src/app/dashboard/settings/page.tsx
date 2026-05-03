@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CheckIcon, ShieldIcon } from '@/components/ui/icons';
+import { FileGrievanceModal } from '@/components/grievance/file-grievance-modal';
 
 type TabKey = 'profile' | 'notifications' | 'security';
 
@@ -22,6 +23,7 @@ export default function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [nameError, setNameError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [grievanceOpen, setGrievanceOpen] = useState(false);
 
   const validate = () => {
     let valid = true;
@@ -95,6 +97,25 @@ export default function SettingsPage() {
           </button>
         ))}
       </div>
+
+      <div className="mb-6 flex max-w-2xl items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-warning-bg">
+            <ShieldIcon size={20} className="text-warning-text" />
+          </div>
+          <div>
+            <p className="text-label-md text-foreground">Need help or want to report an issue?</p>
+            <p className="mt-0.5 text-body-sm text-muted-foreground">
+              File a grievance and our team will follow up.
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={() => setGrievanceOpen(true)}>
+          File a Grievance
+        </Button>
+      </div>
+
+      <FileGrievanceModal open={grievanceOpen} onClose={() => setGrievanceOpen(false)} />
 
       <div className="max-w-2xl rounded-xl border border-border bg-card p-6 shadow-sm">
         {activeTab === 'profile' && (
