@@ -74,6 +74,26 @@ export default function DealersPage() {
     }
   };
 
+  const handleKycUpdate = async (id: string, status: 'APPROVED' | 'REJECTED') => {
+    setActionError(null);
+    try {
+      await dealersApi.updateKyc(id, status);
+      fetchDealers();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.message || 'Failed to update KYC status.');
+    }
+  };
+
+  const handleCompleteTraining = async (id: string) => {
+    setActionError(null);
+    try {
+      await dealersApi.completeTraining(id);
+      fetchDealers();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.message || 'Failed to mark training complete.');
+    }
+  };
+
   const columns = [
     {
       key: 'dealer',
@@ -123,7 +143,7 @@ export default function DealersPage() {
       key: 'actions',
       header: '',
       render: (item: any) => (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {item.rwaApprovalStatus === 'PENDING' &&
             (user?.role === 'RWA_ADMIN' || user?.role === 'SUPER_ADMIN') && (
               <>
@@ -135,6 +155,25 @@ export default function DealersPage() {
                 </Button>
               </>
             )}
+          {user?.role === 'SUPER_ADMIN' && item.kycStatus === 'PENDING' && (
+            <>
+              <Button size="sm" onClick={() => handleKycUpdate(item.id, 'APPROVED')}>
+                Approve KYC
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleKycUpdate(item.id, 'REJECTED')}
+              >
+                Reject KYC
+              </Button>
+            </>
+          )}
+          {user?.role === 'SUPER_ADMIN' && item.trainingStatus !== 'COMPLETED' && (
+            <Button size="sm" variant="secondary" onClick={() => handleCompleteTraining(item.id)}>
+              Mark Training Complete
+            </Button>
+          )}
         </div>
       ),
     },
