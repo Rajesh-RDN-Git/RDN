@@ -43,6 +43,8 @@ export class SocietiesService {
           status: true,
           verificationStatus: true,
           createdAt: true,
+          rwaAdminId: true,
+          rwaAdmin: { select: { id: true, name: true } },
         },
       }),
       this.prisma.society.count({ where }),

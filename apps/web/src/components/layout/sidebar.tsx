@@ -48,10 +48,17 @@ const GRIEVANCES_LINK: NavItem = {
   icon: ShieldIcon,
 };
 
+const SOCIETIES_LINK: NavItem = {
+  href: '/dashboard/societies',
+  label: 'Societies',
+  icon: BuildingIcon,
+};
+
 const navByRole: Record<string, NavItem[]> = {
   [Role.SUPER_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     CHAT_LINK,
+    SOCIETIES_LINK,
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
     { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
