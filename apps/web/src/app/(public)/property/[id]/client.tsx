@@ -19,6 +19,10 @@ import {
   ChatIcon,
   ChevronIcon,
 } from '@/components/ui/icons';
+import { leadsApi } from '@/lib/api/leads.api';
+import { communicationApi } from '@/lib/api/communication.api';
+import { useAuthStore } from '@/stores/auth-store';
+import { showToast } from '@/stores/toast-store';
 
 interface Property {
   id: string;
@@ -85,6 +89,8 @@ const specItems = (property: Property) => [
 
 export function PropertyDetailClient({ property }: { property: Property }) {
   const [showEnquiry, setShowEnquiry] = useState(false);
+  const { isAuthenticated } = useAuthStore();
+  const [requestingCallback, setRequestingCallback] = useState(false);
   const [shortlisted, setShortlisted] = useState(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -102,6 +108,42 @@ export function PropertyDetailClient({ property }: { property: Property }) {
       setShortlisted(!shortlisted);
     } catch {
       /* localStorage unavailable */
+    }
+  };
+
+  const handleRequestCallback = async () => {
+    if (!isAuthenticated) {
+      showToast.info('Sign in to request a callback');
+      window.location.href = `/login?from=/property/${property.id}`;
+      return;
+    }
+
+    setRequestingCallback(true);
+    try {
+      // Create a lead — backend auto-assigns the dealer (or uses property.assignedDealerId).
+      // The response includes dealer.user.id, which we need as toUserId for the masked call.
+      const leadRes = await leadsApi.create({
+        propertyId: property.id,
+        source: 'APP_SEARCH',
+      });
+      const lead = leadRes.data as { id: string; dealer?: { user?: { id: string } } };
+      const toUserId = lead?.dealer?.user?.id;
+
+      if (!lead?.id || !toUserId) {
+        throw new Error('No dealer available to call you back right now.');
+      }
+
+      await communicationApi.initiateCall({ leadId: lead.id, toUserId });
+
+      showToast.success('Callback requested. Dealer will call you shortly via masked number.');
+    } catch (err) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (err as Error)?.message ||
+        'Failed to request callback. Please try again.';
+      showToast.error(msg);
+    } finally {
+      setRequestingCallback(false);
     }
   };
 
@@ -254,6 +296,9 @@ export function PropertyDetailClient({ property }: { property: Property }) {
                 className="w-full"
                 size="lg"
                 leftIcon={<PhoneIcon size={18} />}
+                onClick={handleRequestCallback}
+                isLoading={requestingCallback}
+                disabled={requestingCallback}
               >
                 Request Callback
               </Button>

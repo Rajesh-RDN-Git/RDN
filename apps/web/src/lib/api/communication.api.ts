@@ -11,4 +11,7 @@ export const communicationApi = {
     conversationId: string,
     data: { receiverId: string; content: string; type?: 'TEXT' | 'IMAGE' | 'FILE' },
   ) => apiClient.post(`/communication/conversations/${conversationId}/messages`, data),
+
+  initiateCall: (data: { leadId: string; toUserId: string }) =>
+    apiClient.post('/communication/call', data),
 };
