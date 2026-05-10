@@ -25,8 +25,11 @@ export class MediaService {
   private async initS3Client() {
     try {
       const { S3Client } = await import('@aws-sdk/client-s3');
+      const endpoint = this.configService.get<string>('aws.s3Endpoint');
+      const forcePathStyle = this.configService.get<boolean>('aws.s3ForcePathStyle');
       this.s3Client = new S3Client({
         region: this.region,
+        ...(endpoint ? { endpoint, forcePathStyle: forcePathStyle ?? true } : {}),
         credentials: {
           accessKeyId: this.configService.get<string>('aws.accessKeyId') || '',
           secretAccessKey: this.configService.get<string>('aws.secretAccessKey') || '',
