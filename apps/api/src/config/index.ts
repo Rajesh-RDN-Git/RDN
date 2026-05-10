@@ -5,3 +5,4 @@ export { default as awsConfig } from './aws.config';
 export { default as jwtConfig } from './jwt.config';
 export { default as msg91Config } from './msg91.config';
 export { default as exotelConfig } from './exotel.config';
+export { default as authConfig } from './auth.config';

@@ -15,6 +15,7 @@ import {
   jwtConfig,
   msg91Config,
   exotelConfig,
+  authConfig,
 } from './config';
 import { SocietyScopeMiddleware } from './common/middleware/society-scope.middleware';
 import { AuthModule } from './modules/auth/auth.module';
@@ -47,6 +48,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
         jwtConfig,
         msg91Config,
         exotelConfig,
+        authConfig,
       ],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),

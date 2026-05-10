@@ -15,7 +15,9 @@ export class OtpService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
   ) {
-    this.isDev = configService.get('app.environment') === 'development';
+    const environment = configService.get<string>('app.environment');
+    const explicitBypass = configService.get<string>('auth.otpDevBypass') === 'true';
+    this.isDev = environment === 'development' || explicitBypass;
   }
 
   async sendOtp(phone: string): Promise<{ hash: string; expiresAt: Date }> {

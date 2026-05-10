@@ -111,3 +111,4 @@ docker-compose.override.yml
 .cache/
 tmp/
 temp/
+.playwright-mcp/
