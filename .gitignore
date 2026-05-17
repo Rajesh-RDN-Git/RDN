@@ -112,3 +112,5 @@ docker-compose.override.yml
 tmp/
 temp/
 .playwright-mcp/
+
+.vercel
