@@ -3,24 +3,33 @@ import { getAccessToken } from '@/lib/secure-storage';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/v1', '') || 'http://localhost:4000';
 
+const COMMON_OPTS = {
+  autoConnect: false,
+  transports: ['websocket'],
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 30000,
+  randomizationFactor: 0.5,
+  timeout: 10000,
+};
+
+function authProvider(cb: (data: { token: string | null }) => void) {
+  getAccessToken()
+    .then((token) => cb({ token }))
+    .catch(() => cb({ token: null }));
+}
+
 export function createChatSocket(): Socket {
   return io(`${BASE_URL}/chat`, {
-    autoConnect: false,
-    transports: ['websocket'],
-    auth: async (cb) => {
-      const token = await getAccessToken();
-      cb({ token });
-    },
+    ...COMMON_OPTS,
+    auth: authProvider as unknown as Record<string, unknown>,
   });
 }
 
 export function createNotificationSocket(): Socket {
   return io(`${BASE_URL}/notifications`, {
-    autoConnect: false,
-    transports: ['websocket'],
-    auth: async (cb) => {
-      const token = await getAccessToken();
-      cb({ token });
-    },
+    ...COMMON_OPTS,
+    auth: authProvider as unknown as Record<string, unknown>,
   });
 }

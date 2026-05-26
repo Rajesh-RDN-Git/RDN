@@ -3,23 +3,49 @@
     "name": "RDN",
     "slug": "rdn-mobile",
     "version": "1.0.0",
+    "description": "RDN — Residential Dealer Network. Browse, list, and rent/buy homes within your society in India. Phone-OTP login, masked chat, RWA-verified listings.",
+    "primaryColor": "#2563eb",
     "orientation": "portrait",
     "scheme": "rdn",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2563eb"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rdn.mobile"
+      "bundleIdentifier": "com.rdn.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "RDN needs access to your photo library to upload property photos.",
+        "NSCameraUsageDescription": "RDN needs camera access to capture property photos.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.rdn.mobile",
+      "versionCode": 1,
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2563eb"
       },
-      "package": "com.rdn.mobile"
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": ["expo-router", "expo-secure-store"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "REPLACE_AFTER_EAS_INIT"
+      }
     }
   }
 }

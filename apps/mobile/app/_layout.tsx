@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '@/stores/auth-store';
+import { SocketProvider } from '@/providers/SocketProvider';
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -40,31 +41,33 @@ export default function RootLayout() {
 
   return (
     <AuthGate>
-      <StatusBar style="auto" />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen
-          name="property/[id]"
-          options={{ title: 'Property Details', headerBackTitle: 'Back' }}
-        />
-        <Stack.Screen
-          name="society/[slug]"
-          options={{ title: 'Society', headerBackTitle: 'Back' }}
-        />
-        <Stack.Screen
-          name="lead/[id]"
-          options={{ title: 'Lead Details', headerBackTitle: 'Back' }}
-        />
-        <Stack.Screen
-          name="conversation/[id]"
-          options={{ title: 'Chat', headerBackTitle: 'Back' }}
-        />
-        <Stack.Screen
-          name="notifications"
-          options={{ title: 'Notifications', headerBackTitle: 'Back' }}
-        />
-      </Stack>
+      <SocketProvider>
+        <StatusBar style="auto" />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen
+            name="property/[id]"
+            options={{ title: 'Property Details', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="society/[slug]"
+            options={{ title: 'Society', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="lead/[id]"
+            options={{ title: 'Lead Details', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="conversation/[id]"
+            options={{ title: 'Chat', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="notifications"
+            options={{ title: 'Notifications', headerBackTitle: 'Back' }}
+          />
+        </Stack>
+      </SocketProvider>
     </AuthGate>
   );
 }

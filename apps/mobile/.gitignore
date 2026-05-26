@@ -4,3 +4,11 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# Sensitive credentials — never commit
+play-service-account.json
+*.p8
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
