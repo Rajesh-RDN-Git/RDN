@@ -4,11 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '@/stores/auth-store';
 import { SocketProvider } from '@/providers/SocketProvider';
+import { addNotificationResponseListener } from '@/lib/push';
+import { initSentry } from '@/lib/sentry';
+
+initSentry();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
   const segments = useSegments();
-  const router = useRouter();
 
   useEffect(() => {
     if (isLoading) return;
@@ -34,10 +37,25 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const { checkAuth } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    const sub = addNotificationResponseListener((response) => {
+      const data = response.notification.request.content.data as Record<string, unknown> | null;
+      const route = data && typeof data.route === 'string' ? data.route : null;
+      if (!route) return;
+      try {
+        router.push(route as never);
+      } catch {
+        /* invalid route — ignore */
+      }
+    });
+    return () => sub.remove();
+  }, [router]);
 
   return (
     <AuthGate>
@@ -65,6 +83,14 @@ export default function RootLayout() {
           <Stack.Screen
             name="notifications"
             options={{ title: 'Notifications', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="become-dealer"
+            options={{ title: 'Become a Dealer', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="settings/delete-account"
+            options={{ title: 'Delete Account', headerBackTitle: 'Back' }}
           />
         </Stack>
       </SocketProvider>

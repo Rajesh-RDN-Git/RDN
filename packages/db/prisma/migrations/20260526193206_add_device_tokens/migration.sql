@@ -1,0 +1,27 @@
+-- CreateEnum
+CREATE TYPE "DevicePlatform" AS ENUM ('IOS', 'ANDROID');
+
+-- CreateTable
+CREATE TABLE "device_tokens" (
+    "id" UUID NOT NULL,
+    "user_id" UUID NOT NULL,
+    "token" VARCHAR(512) NOT NULL,
+    "platform" "DevicePlatform" NOT NULL,
+    "app_version" VARCHAR(32),
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "last_seen_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "device_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "device_tokens_user_id_idx" ON "device_tokens"("user_id");
+
+-- CreateIndex
+CREATE INDEX "device_tokens_token_idx" ON "device_tokens"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "device_tokens_user_id_token_key" ON "device_tokens"("user_id", "token");
+
+-- AddForeignKey
+ALTER TABLE "device_tokens" ADD CONSTRAINT "device_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

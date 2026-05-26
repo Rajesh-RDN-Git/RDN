@@ -38,7 +38,18 @@
         "android.permission.CAMERA"
       ]
     },
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2563eb"
+        }
+      ],
+      "@sentry/react-native"
+    ],
     "experiments": {
       "typedRoutes": true
     },

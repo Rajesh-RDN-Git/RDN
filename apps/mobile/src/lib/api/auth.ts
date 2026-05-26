@@ -11,4 +11,6 @@ export const authApi = {
   logout: () => apiClient.post('/auth/logout'),
 
   getProfile: () => apiClient.get('/users/me'),
+
+  deleteAccount: () => apiClient.delete('/users/me'),
 };

@@ -71,6 +71,16 @@ export class UsersController {
     return this.usersService.update(id, body);
   }
 
+  @Delete('me')
+  @ApiOperation({
+    summary: 'Delete current user account (DPDP erasure + Apple requirement)',
+    description:
+      'Soft-deletes the account, scrubs PII, removes device tokens. Leads/transactions retained for legal/audit per DPDP Section 8(7).',
+  })
+  deleteMe(@CurrentUser('id') userId: string) {
+    return this.usersService.deleteMe(userId);
+  }
+
   @Delete(':id')
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Deactivate user (admin only)' })

@@ -121,4 +121,36 @@ export class UsersService {
       },
     });
   }
+
+  /**
+   * DPDP Section 11 erasure + Apple App Store account-deletion requirement.
+   * Soft-deletes the user, scrubs PII, cascades anonymization, removes device tokens.
+   * Leads/transactions are retained for legal/audit (Section 8(7)) — separate retention job hard-purges later.
+   */
+  async deleteMe(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const anonymousPhone = `deleted-${userId}@rdn.local`;
+    const anonymousName = 'Deleted User';
+
+    await this.prisma.$transaction([
+      this.prisma.deviceToken.deleteMany({ where: { userId } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: 'INACTIVE',
+          name: anonymousName,
+          phone: anonymousPhone,
+          email: null,
+          avatarUrl: null,
+          otpHash: null,
+          otpExpiresAt: null,
+          refreshToken: null,
+        },
+      }),
+    ]);
+
+    return { ok: true, deletedAt: new Date().toISOString() };
+  }
 }

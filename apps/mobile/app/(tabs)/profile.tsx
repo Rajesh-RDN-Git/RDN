@@ -111,7 +111,17 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={styles.menuCard}>
+        <MenuItem
+          title="Become a dealer"
+          subtitle="Apply to your society's RWA"
+          onPress={() => router.push('/become-dealer' as never)}
+        />
         <MenuItem title="About RDN" subtitle="Version 1.0.0" onPress={() => {}} />
+        <MenuItem
+          title="Delete account"
+          subtitle="Permanent — DPDP-compliant erasure"
+          onPress={() => router.push('/settings/delete-account' as never)}
+        />
       </Card>
 
       <View style={styles.logoutContainer}>

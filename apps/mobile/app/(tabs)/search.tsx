@@ -8,40 +8,65 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { searchApi } from '@/lib/api/search';
 
-const TRANSACTION_TYPES = ['ALL', 'RENT', 'SALE'];
-const PROPERTY_TYPES = ['ALL', 'APARTMENT', 'VILLA', 'PENTHOUSE', 'STUDIO'];
+const TRANSACTION_TYPES = ['ALL', 'RENT', 'SALE'] as const;
+const PROPERTY_TYPES = ['ALL', 'APARTMENT', 'VILLA', 'PENTHOUSE', 'STUDIO'] as const;
+const BHK_OPTIONS = ['ALL', '1', '2', '3', '4', '5+'] as const;
+
+type SortKey = 'recent' | 'price_asc' | 'price_desc';
+
+const SORT_OPTIONS: Array<{ key: SortKey; label: string; sortBy: string; sortDir: string }> = [
+  { key: 'recent', label: 'Most recent', sortBy: 'createdAt', sortDir: 'desc' },
+  { key: 'price_asc', label: 'Price: low to high', sortBy: 'price', sortDir: 'asc' },
+  { key: 'price_desc', label: 'Price: high to low', sortBy: 'price', sortDir: 'desc' },
+];
 
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [transactionType, setTransactionType] = useState('ALL');
-  const [propertyType, setPropertyType] = useState('ALL');
+  const [transactionType, setTransactionType] = useState<string>('ALL');
+  const [propertyType, setPropertyType] = useState<string>('ALL');
+  const [bhk, setBhk] = useState<string>('ALL');
+  const [sort, setSort] = useState<SortKey>('recent');
+  const [sortModalOpen, setSortModalOpen] = useState(false);
+
   const [properties, setProperties] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const buildParams = useCallback(
+    (targetPage: number): Record<string, string> => {
+      const sortOpt = SORT_OPTIONS.find((s) => s.key === sort) ?? SORT_OPTIONS[0];
+      const params: Record<string, string> = {
+        page: String(targetPage),
+        limit: '20',
+        sortBy: sortOpt.sortBy,
+        sortDir: sortOpt.sortDir,
+      };
+      if (query) params.city = query;
+      if (transactionType !== 'ALL') params.transactionType = transactionType;
+      if (propertyType !== 'ALL') params.type = propertyType;
+      if (bhk !== 'ALL') params.bhk = bhk.replace('+', '');
+      return params;
+    },
+    [query, transactionType, propertyType, bhk, sort],
+  );
+
   const searchProperties = useCallback(
-    async (resetPage = false) => {
+    async (resetPage: boolean) => {
       setLoading(true);
       try {
-        const params: Record<string, string> = {
-          page: resetPage ? '1' : String(page),
-          limit: '20',
-        };
-        if (query) params.city = query;
-        if (transactionType !== 'ALL') params.transactionType = transactionType;
-        if (propertyType !== 'ALL') params.type = propertyType;
-
-        const { data } = await searchApi.search(params);
+        const targetPage = resetPage ? 1 : page;
+        const { data } = await searchApi.search(buildParams(targetPage));
         const result = data.data || data;
-
         if (resetPage) {
           setProperties(result.data || []);
           setPage(1);
@@ -50,17 +75,17 @@ export default function SearchScreen() {
         }
         setTotal(result.total || 0);
       } catch {
-        /\* ignore \*/;
+        /* network error */
       }
       setLoading(false);
     },
-    [query, transactionType, propertyType, page],
+    [buildParams, page],
   );
 
   useEffect(() => {
-    const timeout = setTimeout(() => searchProperties(true), 500);
+    const timeout = setTimeout(() => searchProperties(true), 400);
     return () => clearTimeout(timeout);
-  }, [query, transactionType, propertyType]);
+  }, [query, transactionType, propertyType, bhk, sort, searchProperties]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -102,9 +127,10 @@ export default function SearchScreen() {
     </TouchableOpacity>
   );
 
+  const currentSort = SORT_OPTIONS.find((s) => s.key === sort) ?? SORT_OPTIONS[0];
+
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
@@ -115,7 +141,6 @@ export default function SearchScreen() {
         />
       </View>
 
-      {/* Filter Chips */}
       <View style={styles.filters}>
         <ScrollChips
           items={TRANSACTION_TYPES}
@@ -126,9 +151,16 @@ export default function SearchScreen() {
       <View style={styles.filters}>
         <ScrollChips items={PROPERTY_TYPES} selected={propertyType} onSelect={setPropertyType} />
       </View>
+      <View style={styles.filters}>
+        <ScrollChips items={BHK_OPTIONS} selected={bhk} onSelect={setBhk} labelPrefix="BHK " />
+      </View>
 
-      {/* Results */}
-      <Text style={styles.resultCount}>{total} properties found</Text>
+      <View style={styles.summaryRow}>
+        <Text style={styles.resultCount}>{total} properties</Text>
+        <TouchableOpacity style={styles.sortBtn} onPress={() => setSortModalOpen(true)}>
+          <Text style={styles.sortBtnText}>Sort: {currentSort.label}</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={properties}
@@ -147,6 +179,36 @@ export default function SearchScreen() {
           ) : null
         }
       />
+
+      <Modal
+        transparent
+        visible={sortModalOpen}
+        animationType="fade"
+        onRequestClose={() => setSortModalOpen(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setSortModalOpen(false)}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Sort by</Text>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={styles.modalOption}
+                onPress={() => {
+                  setSort(opt.key);
+                  setSortModalOpen(false);
+                }}
+              >
+                <Text
+                  style={[styles.modalOptionText, sort === opt.key && styles.modalOptionActive]}
+                >
+                  {opt.label}
+                </Text>
+                {sort === opt.key && <Text style={styles.modalCheck}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -155,10 +217,12 @@ function ScrollChips({
   items,
   selected,
   onSelect,
+  labelPrefix,
 }: {
-  items: string[];
+  items: readonly string[];
   selected: string;
   onSelect: (item: string) => void;
+  labelPrefix?: string;
 }) {
   return (
     <FlatList
@@ -171,7 +235,9 @@ function ScrollChips({
           style={[styles.chip, selected === item && styles.chipActive]}
           onPress={() => onSelect(item)}
         >
-          <Text style={[styles.chipText, selected === item && styles.chipTextActive]}>{item}</Text>
+          <Text style={[styles.chipText, selected === item && styles.chipTextActive]}>
+            {labelPrefix && item !== 'ALL' ? `${labelPrefix}${item}` : item}
+          </Text>
         </TouchableOpacity>
       )}
     />
@@ -199,7 +265,16 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#2563eb' },
   chipText: { fontSize: 13, color: '#374151' },
   chipTextActive: { color: '#fff', fontWeight: '600' },
-  resultCount: { paddingHorizontal: 16, paddingVertical: 8, fontSize: 13, color: '#6b7280' },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  resultCount: { fontSize: 13, color: '#6b7280' },
+  sortBtn: { paddingVertical: 4, paddingHorizontal: 8 },
+  sortBtnText: { fontSize: 13, color: '#2563eb', fontWeight: '600' },
   list: { paddingHorizontal: 16 },
   propertyCard: { marginBottom: 12 },
   cardHeader: {
@@ -218,4 +293,29 @@ const styles = StyleSheet.create({
   price: { fontSize: 18, fontWeight: 'bold', color: '#059669', marginTop: 4 },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyText: { fontSize: 16, color: '#9ca3af' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  modalTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827', marginBottom: 12 },
+  modalOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalOptionText: { fontSize: 15, color: '#374151' },
+  modalOptionActive: { color: '#2563eb', fontWeight: '600' },
+  modalCheck: { color: '#2563eb', fontSize: 18, fontWeight: 'bold' },
 });

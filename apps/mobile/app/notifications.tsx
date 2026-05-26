@@ -1,44 +1,83 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { notificationsApi } from '@/lib/api/notifications';
 
+type Notif = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown> | null;
+  readAt?: string | null;
+  createdAt: string;
+};
+
+const PAGE_SIZE = 20;
+
 export default function NotificationsScreen() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const router = useRouter();
+  const [notifications, setNotifications] = useState<Notif[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadNotifications = useCallback(async () => {
+  const load = useCallback(async (targetPage: number, append: boolean) => {
     try {
-      const { data } = await notificationsApi.list();
+      const { data } = await notificationsApi.list({
+        page: String(targetPage),
+        limit: String(PAGE_SIZE),
+      });
       const result = data.data || data;
-      setNotifications(result.data || []);
+      const rows: Notif[] = result.data || [];
       setUnreadCount(result.unreadCount || 0);
+      setHasMore(rows.length >= PAGE_SIZE);
+      setNotifications((prev) => (append ? [...prev, ...rows] : rows));
     } catch {
-      /\* ignore \*/;
+      /* network error — keep current list */
     }
   }, []);
 
   useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+    load(1, false);
+  }, [load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadNotifications();
+    setPage(1);
+    await load(1, false);
     setRefreshing(false);
+  };
+
+  const onEndReached = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const next = page + 1;
+    await load(next, true);
+    setPage(next);
+    setLoadingMore(false);
   };
 
   const markAllRead = async () => {
     try {
       await notificationsApi.markAllAsRead();
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })),
-      );
+      const now = new Date().toISOString();
+      setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || now })));
       setUnreadCount(0);
     } catch {
-      /\* ignore \*/;
+      /* ignore */
     }
   };
 
@@ -50,14 +89,27 @@ export default function NotificationsScreen() {
       );
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch {
-      /\* ignore \*/;
+      /* ignore */
     }
   };
 
-  const renderNotification = ({ item }: { item: any }) => {
+  const onPress = (item: Notif) => {
+    if (!item.readAt) markRead(item.id);
+    const route =
+      item.data && typeof item.data.route === 'string' ? (item.data.route as string) : null;
+    if (route) {
+      try {
+        router.push(route as never);
+      } catch {
+        /* invalid route */
+      }
+    }
+  };
+
+  const renderNotification = ({ item }: { item: Notif }) => {
     const isUnread = !item.readAt;
     return (
-      <TouchableOpacity onPress={() => isUnread && markRead(item.id)}>
+      <TouchableOpacity onPress={() => onPress(item)}>
         <Card style={[styles.notifCard, isUnread && styles.unreadCard]}>
           <View style={styles.notifHeader}>
             <Text style={styles.notifType}>{item.type}</Text>
@@ -88,6 +140,11 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? <ActivityIndicator color="#2563eb" style={{ marginVertical: 16 }} /> : null
+        }
         ListEmptyComponent={
           <View style={styles.center}>
             <Text style={styles.emptyText}>No notifications</Text>
