@@ -1,6 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -52,6 +53,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
       ],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
     AuthModule,

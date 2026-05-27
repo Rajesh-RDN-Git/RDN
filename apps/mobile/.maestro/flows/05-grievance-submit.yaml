@@ -1,0 +1,16 @@
+appId: com.rdn.mobile
+name: DPDP grievance submission
+tags:
+  - dpdp
+---
+- launchApp
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- tapOn: 'Data grievance'
+- assertVisible: 'Data grievance'
+- tapOn: 'Data erasure'
+- tapOn:
+    id: 'description'
+- inputText: 'Maestro e2e test grievance — please ignore.'
+- tapOn: 'Submit grievance'
+- assertVisible: 'Grievance submitted'

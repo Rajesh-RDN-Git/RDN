@@ -1,0 +1,19 @@
+appId: com.rdn.mobile
+name: Browse properties and open detail
+---
+- launchApp
+- tapOn: 'Search'
+- assertVisible:
+    text: 'Search by city...'
+- tapOn:
+    id: 'search-input'
+- inputText: 'Mumbai'
+- waitForAnimationToEnd
+- assertVisible:
+    text: 'properties' # part of "{n} properties" count
+- # Tap first property card
+  tapOn:
+    index: 0
+    text: '.*BHK.*'
+- assertVisible:
+    text: 'Property Details'

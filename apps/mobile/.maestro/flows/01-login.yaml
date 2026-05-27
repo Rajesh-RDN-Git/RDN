@@ -1,0 +1,20 @@
+appId: com.rdn.mobile
+name: Login with phone OTP
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Welcome to RDN'
+- tapOn: 'Login / Register'
+- assertVisible:
+    text: 'Enter 10-digit number'
+- tapOn:
+    id: 'phone-input'
+- inputText: '9999900001'
+- tapOn: 'Send OTP'
+- assertVisible:
+    text: 'Enter 6-digit OTP'
+- tapOn:
+    id: 'otp-input'
+- inputText: '123456'
+- tapOn: 'Verify'
+- assertVisible: 'RDN' # home tab title or user name shown

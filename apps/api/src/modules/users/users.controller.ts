@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { updateUserSchema } from '@rdn/shared';
 import { UsersService } from './users.service';
@@ -50,6 +51,7 @@ export class UsersController {
   }
 
   @Get('me/data-export')
+  @Throttle({ default: { ttl: 3600_000, limit: 3 } })
   @ApiOperation({
     summary: 'DPDP data portability — export current user data as JSON',
     description:
@@ -72,6 +74,7 @@ export class UsersController {
   }
 
   @Post('me/consent')
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
   @ApiOperation({ summary: 'Grant or withdraw consent for a purpose' })
   grantConsent(
     @Body() dto: GrantConsentDto,
@@ -118,6 +121,7 @@ export class UsersController {
   }
 
   @Delete('me')
+  @Throttle({ default: { ttl: 3600_000, limit: 3 } })
   @ApiOperation({
     summary: 'Delete current user account (DPDP erasure + Apple requirement)',
     description:

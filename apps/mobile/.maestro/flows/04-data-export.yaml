@@ -1,0 +1,14 @@
+appId: com.rdn.mobile
+name: DPDP data export returns JSON
+tags:
+  - dpdp
+---
+- launchApp
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- tapOn: 'Export my data'
+- assertVisible: 'Data portability'
+- tapOn: 'Export my data'
+- # Native share sheet opens — Maestro can't introspect it cross-platform reliably.
+  # Capture screenshot for manual review.
+  takeScreenshot: data-export-share-sheet

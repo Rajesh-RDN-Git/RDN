@@ -6,6 +6,7 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsGateway } from './notifications.gateway';
 import { PushService } from './services/push.service';
 import { DeviceTokenService } from './services/device-token.service';
+import { EmailService } from './services/email.service';
 
 @Module({
   imports: [
@@ -18,7 +19,13 @@ import { DeviceTokenService } from './services/device-token.service';
     }),
   ],
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsGateway, PushService, DeviceTokenService],
-  exports: [NotificationsService, PushService, DeviceTokenService],
+  providers: [
+    NotificationsService,
+    NotificationsGateway,
+    PushService,
+    DeviceTokenService,
+    EmailService,
+  ],
+  exports: [NotificationsService, PushService, DeviceTokenService, EmailService],
 })
 export class NotificationsModule {}

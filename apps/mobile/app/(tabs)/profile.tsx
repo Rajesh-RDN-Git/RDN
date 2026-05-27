@@ -102,11 +102,18 @@ export default function ProfileScreen() {
           />
         )}
         {role === 'OWNER' && (
-          <MenuItem
-            title="My Properties"
-            subtitle="Manage your listings"
-            onPress={() => router.push('/(tabs)/search')}
-          />
+          <>
+            <MenuItem
+              title="My Properties"
+              subtitle="Manage your listings"
+              onPress={() => router.push('/(tabs)/search')}
+            />
+            <MenuItem
+              title="List a new property"
+              subtitle="6-step wizard"
+              onPress={() => router.push('/property/new' as never)}
+            />
+          </>
         )}
       </Card>
 

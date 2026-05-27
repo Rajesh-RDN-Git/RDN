@@ -1,9 +1,11 @@
 import { Body, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { scrubPii } from '../../common/utils/pii-scrub';
 import { PrismaService } from '../../database/prisma.service';
+import { EmailService } from '../notifications/services/email.service';
 
 export enum DpdpCategoryDto {
   DATA_ACCESS = 'DATA_ACCESS',
@@ -33,7 +35,13 @@ class SubmitDpdpGrievanceDto {
 export class DpdpGrievanceController {
   private readonly logger = new Logger(DpdpGrievanceController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly officerEmail =
+    process.env.GRIEVANCE_OFFICER_EMAIL || 'grievance@rdn.example.com';
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly email: EmailService,
+  ) {}
 
   /**
    * Public endpoint — unauthenticated submission allowed since DPDP
@@ -42,6 +50,7 @@ export class DpdpGrievanceController {
    */
   @Post('dpdp')
   @HttpCode(201)
+  @Throttle({ default: { ttl: 3600_000, limit: 5 } })
   @ApiOperation({
     summary: 'Submit a DPDP data grievance (public, no auth required)',
   })
@@ -65,7 +74,24 @@ export class DpdpGrievanceController {
       )}`,
     );
 
-    // TODO(prod): email/Slack notify designated Grievance Officer
+    // Notify Grievance Officer (stubbed log until SES env is configured)
+    void this.email.send({
+      to: this.officerEmail,
+      subject: `[DPDP] New grievance: ${body.category}`,
+      bodyText: [
+        `Ticket ID: ${record.id}`,
+        `Category: ${body.category}`,
+        `Submitted: ${record.createdAt.toISOString()}`,
+        `Contact: ${body.contact ?? '(none)'}`,
+        `IP: ${ip ?? '(unknown)'}`,
+        '',
+        'Description:',
+        body.description,
+        '',
+        'SLA: acknowledge within 7 days, resolve within 30 days (DPDP §8(9)).',
+      ].join('\n'),
+    });
+
     return { ok: true, ticketId: record.id, acknowledgedAt: new Date().toISOString() };
   }
 }

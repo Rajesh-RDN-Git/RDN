@@ -1,0 +1,19 @@
+appId: com.rdn.mobile
+name: DPDP consent toggle persists
+tags:
+  - dpdp
+---
+- launchApp
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- tapOn: 'Manage consent'
+- assertVisible: 'Marketing communications'
+- # Toggle marketing off
+  tapOn:
+    text: 'Marketing communications'
+    relativePoint: 90%,50% # tap the Switch on the right
+- # Verify state persists after navigating away + back
+  back
+- tapOn: 'Manage consent'
+- # Expect the toggle to still reflect "off" — visual assertion via screenshot
+  takeScreenshot: consent-after-toggle
