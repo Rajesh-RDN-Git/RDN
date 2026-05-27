@@ -19,6 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.rdn.mobile",
       "buildNumber": "1",
+      "associatedDomains": ["applinks:rdn-web-one.vercel.app"],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "RDN needs access to your photo library to upload property photos.",
         "NSCameraUsageDescription": "RDN needs camera access to capture property photos.",
@@ -36,6 +37,25 @@
         "android.permission.INTERNET",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "rdn-web-one.vercel.app",
+              "pathPrefix": "/property"
+            },
+            {
+              "scheme": "https",
+              "host": "rdn-web-one.vercel.app",
+              "pathPrefix": "/society"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "plugins": [

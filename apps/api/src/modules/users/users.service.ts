@@ -123,6 +123,54 @@ export class UsersService {
   }
 
   /**
+   * DPDP Section 11 data portability — bundles a user's primary records into JSON.
+   * Returns a snapshot suitable for download. PII is intentionally NOT scrubbed here
+   * because the data principal is requesting their own data.
+   */
+  async exportData(userId: string) {
+    const [user, properties, leads, sentMessages, notifications, consents] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          phone: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+          avatarUrl: true,
+          primarySocietyId: true,
+          nomineeName: true,
+          nomineePhone: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prisma.property.findMany({ where: { ownerId: userId } }),
+      this.prisma.lead.findMany({ where: { buyerId: userId } }),
+      this.prisma.message.findMany({ where: { senderId: userId } }),
+      this.prisma.notification.findMany({ where: { userId } }),
+      this.prisma.consentRecord.findMany({
+        where: { userId },
+        orderBy: { grantedAt: 'desc' },
+      }),
+    ]);
+
+    if (!user) throw new NotFoundException('User not found');
+
+    return {
+      exportedAt: new Date().toISOString(),
+      schema: 'rdn-data-export@1',
+      user,
+      properties,
+      leads,
+      sentMessages,
+      notifications,
+      consents,
+    };
+  }
+
+  /**
    * DPDP Section 11 erasure + Apple App Store account-deletion requirement.
    * Soft-deletes the user, scrubs PII, cascades anonymization, removes device tokens.
    * Leads/transactions are retained for legal/audit (Section 8(7)) — separate retention job hard-purges later.

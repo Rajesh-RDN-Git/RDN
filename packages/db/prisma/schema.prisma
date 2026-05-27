@@ -191,25 +191,88 @@ model User {
   updatedAt        DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  managedSocieties   Society[]      @relation("RwaAdmin")
+  managedSocieties   Society[]       @relation("RwaAdmin")
   dealer             Dealer[]
-  ownedProperties    Property[]     @relation("PropertyOwner")
-  buyerLeads         Lead[]         @relation("LeadBuyer")
-  sentMessages       Message[]      @relation("MessageSender")
-  receivedMessages   Message[]      @relation("MessageReceiver")
+  ownedProperties    Property[]      @relation("PropertyOwner")
+  buyerLeads         Lead[]          @relation("LeadBuyer")
+  sentMessages       Message[]       @relation("MessageSender")
+  receivedMessages   Message[]       @relation("MessageReceiver")
   notifications      Notification[]
   auditLogs          AuditLog[]
-  filedGrievances    Grievance[]    @relation("GrievanceFiler")
-  againstGrievances  Grievance[]    @relation("GrievanceTarget")
-  assignedGrievances Grievance[]    @relation("GrievanceAssignee")
-  referralsMade      Referral[]     @relation("Referrer")
-  referralsReceived  Referral[]     @relation("Referred")
+  filedGrievances    Grievance[]     @relation("GrievanceFiler")
+  againstGrievances  Grievance[]     @relation("GrievanceTarget")
+  assignedGrievances Grievance[]     @relation("GrievanceAssignee")
+  referralsMade      Referral[]      @relation("Referrer")
+  referralsReceived  Referral[]      @relation("Referred")
   deviceTokens       DeviceToken[]
+  consentRecords     ConsentRecord[]
+  nomineeName        String?         @map("nominee_name") @db.VarChar(255)
+  nomineePhone       String?         @map("nominee_phone") @db.VarChar(255)
 
   @@index([role])
   @@index([status])
   @@index([primarySocietyId])
   @@map("users")
+}
+
+enum ConsentPurpose {
+  CORE_SERVICE
+  MARKETING
+  ANALYTICS
+  THIRD_PARTY
+}
+
+enum DpdpGrievanceCategory {
+  DATA_ACCESS
+  DATA_ERASURE
+  DATA_CORRECTION
+  CONSENT_WITHDRAWAL
+  DPDP_OTHER
+}
+
+enum DpdpGrievanceStatus {
+  RECEIVED
+  ACKNOWLEDGED
+  IN_PROGRESS  @map("DPDP_IN_PROGRESS")
+  RESOLVED     @map("DPDP_RESOLVED")
+  REJECTED     @map("DPDP_REJECTED")
+}
+
+model DpdpGrievance {
+  id             String                @id @default(uuid()) @db.Uuid
+  userId         String?               @map("user_id") @db.Uuid
+  category       DpdpGrievanceCategory
+  description    String
+  contact        String?               @db.VarChar(200)
+  ip             String?               @db.VarChar(64)
+  userAgent      String?               @map("user_agent") @db.VarChar(512)
+  status         DpdpGrievanceStatus   @default(RECEIVED)
+  resolution     String?
+  createdAt      DateTime              @default(now()) @map("created_at")
+  acknowledgedAt DateTime?             @map("acknowledged_at")
+  resolvedAt     DateTime?             @map("resolved_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("dpdp_grievances")
+}
+
+model ConsentRecord {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  purpose       ConsentPurpose
+  granted       Boolean
+  policyVersion String         @map("policy_version") @db.VarChar(16)
+  ip            String?        @db.VarChar(64)
+  userAgent     String?        @map("user_agent") @db.VarChar(512)
+  grantedAt     DateTime       @default(now()) @map("granted_at")
+  withdrawnAt   DateTime?      @map("withdrawn_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, purpose])
+  @@map("consent_records")
 }
 
 enum DevicePlatform {

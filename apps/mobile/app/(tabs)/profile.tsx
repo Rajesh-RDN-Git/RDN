@@ -116,6 +116,21 @@ export default function ProfileScreen() {
           subtitle="Apply to your society's RWA"
           onPress={() => router.push('/become-dealer' as never)}
         />
+        <MenuItem
+          title="Manage consent"
+          subtitle="DPDP consent preferences"
+          onPress={() => router.push('/settings/consent' as never)}
+        />
+        <MenuItem
+          title="Export my data"
+          subtitle="DPDP data portability"
+          onPress={() => router.push('/settings/data-export' as never)}
+        />
+        <MenuItem
+          title="Data grievance"
+          subtitle="Contact our Grievance Officer"
+          onPress={() => router.push('/settings/grievance' as never)}
+        />
         <MenuItem title="About RDN" subtitle="Version 1.0.0" onPress={() => {}} />
         <MenuItem
           title="Delete account"

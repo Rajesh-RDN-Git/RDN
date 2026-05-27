@@ -92,6 +92,18 @@ export default function RootLayout() {
             name="settings/delete-account"
             options={{ title: 'Delete Account', headerBackTitle: 'Back' }}
           />
+          <Stack.Screen
+            name="settings/consent"
+            options={{ title: 'Manage Consent', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="settings/data-export"
+            options={{ title: 'Export Data', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="settings/grievance"
+            options={{ title: 'Data Grievance', headerBackTitle: 'Back' }}
+          />
         </Stack>
       </SocketProvider>
     </AuthGate>

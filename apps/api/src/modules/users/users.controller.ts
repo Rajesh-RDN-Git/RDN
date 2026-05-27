@@ -1,37 +1,84 @@
 import {
-  Controller,
-  Get,
-  Patch,
-  Delete,
-  Param,
   Body,
-  Query,
-  UseGuards,
-  ParseUUIDPipe,
+  Controller,
+  Delete,
   ForbiddenException,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import type { Request } from 'express';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { updateUserSchema } from '@rdn/shared';
 import { UsersService } from './users.service';
+import { ConsentService } from './consent.service';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { GrantConsentDto } from './dto/consent.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 
+function clientIp(req: Request): string | undefined {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string') return fwd.split(',')[0].trim();
+  if (Array.isArray(fwd) && fwd.length > 0) return fwd[0];
+  return req.ip;
+}
+
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly consentService: ConsentService,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
   getProfile(@CurrentUser('id') userId: string) {
     return this.usersService.getProfile(userId);
+  }
+
+  @Get('me/data-export')
+  @ApiOperation({
+    summary: 'DPDP data portability — export current user data as JSON',
+    description:
+      'Returns user profile, owned properties, leads, messages, notifications, consent ledger.',
+  })
+  async exportMe(@CurrentUser('id') userId: string): Promise<unknown> {
+    return this.usersService.exportData(userId);
+  }
+
+  @Get('me/consent')
+  @ApiOperation({ summary: 'Current consent state per purpose' })
+  getConsent(@CurrentUser('id') userId: string) {
+    return this.consentService.current(userId);
+  }
+
+  @Get('me/consent/history')
+  @ApiOperation({ summary: 'Full consent audit log' })
+  getConsentHistory(@CurrentUser('id') userId: string) {
+    return this.consentService.history(userId);
+  }
+
+  @Post('me/consent')
+  @ApiOperation({ summary: 'Grant or withdraw consent for a purpose' })
+  grantConsent(
+    @Body() dto: GrantConsentDto,
+    @CurrentUser('id') userId: string,
+    @Req() req: Request,
+  ) {
+    return this.consentService.grantOrWithdraw(userId, dto, clientIp(req));
   }
 
   @Get()
@@ -64,7 +111,6 @@ export class UsersController {
     @Body(new ZodValidationPipe(updateUserSchema)) body: UpdateUserDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    // Self-edit allowed; admin can edit anyone
     if (user.id !== id && user.role !== 'SUPER_ADMIN') {
       throw new ForbiddenException('You can only update your own profile');
     }

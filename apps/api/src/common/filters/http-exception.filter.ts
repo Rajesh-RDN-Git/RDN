@@ -1,6 +1,7 @@
 import type { ExceptionFilter, ArgumentsHost } from '@nestjs/common';
 import { Catch, HttpException, Logger } from '@nestjs/common';
 import type { Response } from 'express';
+import { scrubPii } from '../utils/pii-scrub';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -12,7 +13,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
     const exceptionResponse = exception.getResponse();
 
-    this.logger.error(`HTTP ${status}: ${JSON.stringify(exceptionResponse)}`);
+    this.logger.error(`HTTP ${status}: ${JSON.stringify(scrubPii(exceptionResponse))}`);
 
     response.status(status).json({
       error: {
