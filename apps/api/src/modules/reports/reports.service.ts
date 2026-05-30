@@ -7,9 +7,58 @@ import type { Prisma } from '@rdn/db';
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getDashboard(query: QueryReportDto): Promise<any> {
+  async getDashboard(
+    query: QueryReportDto,
+    user?: { id: string; role: string; societyId?: string },
+  ): Promise<any> {
     const dateFilter = this.buildDateFilter(query.from, query.to);
-    const societyFilter = query.societyId ? { societyId: query.societyId } : {};
+    const role = user?.role ?? 'SUPER_ADMIN';
+
+    if (role === 'OWNER') {
+      const [myListings, inquiryCount] = await Promise.all([
+        this.prisma.property.count({ where: { ownerId: user!.id } }),
+        this.prisma.lead.count({
+          where: { property: { ownerId: user!.id }, createdAt: dateFilter },
+        }),
+      ]);
+      return { myListings, inquiryCount };
+    }
+
+    if (role === 'DEALER') {
+      const dealer = await this.prisma.dealer.findFirst({
+        where: { userId: user!.id, isActive: true },
+        select: { id: true },
+      });
+      if (!dealer) return { activeLeads: 0, assignedProperties: 0 };
+      const [activeLeads, assignedProperties] = await Promise.all([
+        this.prisma.lead.count({
+          where: {
+            dealerId: dealer.id,
+            status: { notIn: ['CLOSED', 'LOST'] },
+            createdAt: dateFilter,
+          },
+        }),
+        this.prisma.property.count({
+          where: { assignedDealerId: dealer.id, status: 'ACTIVE' },
+        }),
+      ]);
+      return { activeLeads, assignedProperties };
+    }
+
+    if (role === 'BUYER_TENANT') {
+      const activeInquiries = await this.prisma.lead.count({
+        where: {
+          buyerId: user!.id,
+          status: { notIn: ['CLOSED', 'LOST'] },
+          createdAt: dateFilter,
+        },
+      });
+      return { savedProperties: 0, activeInquiries };
+    }
+
+    // SUPER_ADMIN or RWA_ADMIN
+    const societyId = role === 'RWA_ADMIN' ? user?.societyId : query.societyId;
+    const societyFilter = societyId ? { societyId } : {};
 
     const [totalProperties, totalLeads, totalDealers, totalSocieties, activeLeads, closedLeads] =
       await Promise.all([
