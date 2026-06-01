@@ -27,9 +27,15 @@ App icon, splash, and adaptive icon for iOS + Android.
 
 ## Current state
 
-**PLACEHOLDER PENDING.** Designer task — see `docs/mobile-phase1-checklist.md`.
+**Solid brand-color (`#2563eb`) placeholder PNGs are checked in** at every required dimension so EAS preview/dev builds compile without designer artwork. They are NOT store-grade. Replace before TestFlight or Play Internal submission.
 
-EAS build will fail until real PNG files exist at the paths above. To unblock dev, generate temporary placeholders with ImageMagick:
+Regenerate placeholders any time (no external deps; Node ≥ 22):
+
+```bash
+node apps/mobile/scripts/gen-placeholder-assets.mjs
+```
+
+Legacy ImageMagick recipe (for designers who prefer it):
 
 ```bash
 # Solid color placeholder (1024x1024 blue square with text)
