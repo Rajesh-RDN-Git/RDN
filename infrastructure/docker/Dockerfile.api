@@ -48,4 +48,6 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["node", "apps/api/dist/main.js"]
+# Apply pending Prisma migrations on boot, then start the API.
+# `migrate deploy` is idempotent and safe to run on every container start.
+CMD ["sh", "-c", "pnpm --filter @rdn/db exec prisma migrate deploy && node apps/api/dist/main.js"]
