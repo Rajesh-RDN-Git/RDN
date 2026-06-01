@@ -50,4 +50,5 @@ EXPOSE 3000
 
 # Apply pending Prisma migrations on boot, then start the API.
 # `migrate deploy` is idempotent and safe to run on every container start.
+# Build tag: 2026-06-01-r1
 CMD ["sh", "-c", "pnpm --filter @rdn/db exec prisma migrate deploy && node apps/api/dist/main.js"]
