@@ -108,6 +108,14 @@ export default function RootLayout() {
             name="settings/grievance"
             options={{ title: 'Data Grievance', headerBackTitle: 'Back' }}
           />
+          <Stack.Screen
+            name="grievances/index"
+            options={{ title: 'Grievances', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="grievances/new"
+            options={{ title: 'Raise a grievance', headerBackTitle: 'Back' }}
+          />
         </Stack>
       </SocketProvider>
     </AuthGate>
