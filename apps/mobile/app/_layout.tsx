@@ -117,6 +117,10 @@ export default function RootLayout() {
             options={{ title: 'Grievances', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="manage/properties/index"
+            options={{ title: 'Manage Properties', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
             name="grievances/new"
             options={{ title: 'Raise a grievance', headerBackTitle: 'Back' }}
           />
