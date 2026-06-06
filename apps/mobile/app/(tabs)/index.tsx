@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } 
 import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { SaveButton } from '@/components/ui/SaveButton';
 import { useAuthStore } from '@/stores/auth-store';
 import { propertiesApi } from '@/lib/api/properties';
 import { societiesApi } from '@/lib/api/societies';
@@ -154,6 +155,7 @@ export default function HomeScreen() {
                       : `₹${Number(property.priceRent).toLocaleString('en-IN')}/mo`}
                   </Text>
                   <Text style={styles.txnType}>{property.transactionType}</Text>
+                  <SaveButton propertyId={property.id} />
                 </View>
               </View>
             </Card>

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
+import { SaveButton } from '@/components/ui/SaveButton';
 import { searchApi } from '@/lib/api/search';
 
 const TRANSACTION_TYPES = ['ALL', 'RENT', 'SALE'] as const;
@@ -113,6 +114,7 @@ export default function SearchScreen() {
             <Text style={styles.badgeText}>{item.transactionType}</Text>
           </View>
           <Text style={styles.bhk}>{item.bhk} BHK</Text>
+          <SaveButton propertyId={item.id} />
         </View>
         <Text style={styles.propertyType}>{item.type}</Text>
         <Text style={styles.location}>

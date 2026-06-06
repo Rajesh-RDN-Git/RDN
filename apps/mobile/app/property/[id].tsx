@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { SaveButton } from '@/components/ui/SaveButton';
 import { useAuthStore } from '@/stores/auth-store';
 import { propertiesApi } from '@/lib/api/properties';
 import { leadsApi } from '@/lib/api/leads';
@@ -86,13 +87,16 @@ export default function PropertyDetailScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.badges}>
-            <View style={[styles.badge, styles.typeBadge]}>
-              <Text style={styles.badgeText}>{property.transactionType}</Text>
+          <View style={styles.headerTopRow}>
+            <View style={styles.badges}>
+              <View style={[styles.badge, styles.typeBadge]}>
+                <Text style={styles.badgeText}>{property.transactionType}</Text>
+              </View>
+              <View style={[styles.badge, styles.statusBadge]}>
+                <Text style={styles.badgeText}>{property.availabilityStatus || 'AVAILABLE'}</Text>
+              </View>
             </View>
-            <View style={[styles.badge, styles.statusBadge]}>
-              <Text style={styles.badgeText}>{property.availabilityStatus || 'AVAILABLE'}</Text>
-            </View>
+            <SaveButton propertyId={id!} />
           </View>
           <Text style={styles.price}>{price}</Text>
           {property.securityDeposit && property.transactionType === 'RENT' && (
@@ -100,6 +104,17 @@ export default function PropertyDetailScreen() {
               Security Deposit: ₹{Number(property.securityDeposit).toLocaleString('en-IN')}
             </Text>
           )}
+          <TouchableOpacity
+            style={styles.grievanceLink}
+            onPress={() =>
+              router.push({
+                pathname: '/grievances/new',
+                params: property.society?.id ? { societyId: property.society.id } : {},
+              } as never)
+            }
+          >
+            <Text style={styles.grievanceLinkText}>Raise a grievance</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Details */}
@@ -183,7 +198,15 @@ const styles = StyleSheet.create({
   },
   imagePlaceholderText: { fontSize: 16, color: '#6b7280' },
   header: { padding: 16 },
-  badges: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  badges: { flexDirection: 'row', gap: 8 },
+  grievanceLink: { marginTop: 10 },
+  grievanceLinkText: { fontSize: 13, color: '#2563eb', textDecorationLine: 'underline' },
   badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 4 },
   typeBadge: { backgroundColor: '#dbeafe' },
   statusBadge: { backgroundColor: '#d1fae5' },
