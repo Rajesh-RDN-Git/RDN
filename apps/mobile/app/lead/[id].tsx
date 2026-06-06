@@ -1,21 +1,73 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { ActionSheet, SheetAction } from '@/components/ui/ActionSheet';
+import { BottomSheet } from '@/components/ui/BottomSheet';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { useAuthStore } from '@/stores/auth-store';
 import { leadsApi } from '@/lib/api/leads';
+import { communicationApi } from '@/lib/api/communication';
 
 const statusColors: Record<string, string> = {
   NEW: '#3b82f6',
   CONTACTED: '#8b5cf6',
+  NOT_PICKED: '#9ca3af',
+  INTERESTED: '#06b6d4',
+  QUALIFIED: '#7c3aed',
   VISIT_SCHEDULED: '#f59e0b',
+  VISITED: '#fb923c',
   NEGOTIATING: '#f97316',
+  MEETING_ARRANGED: '#ea580c',
+  DEAL_OPEN: '#dc2626',
   CLOSING: '#ef4444',
   CLOSED: '#10b981',
+  LOST: '#6b7280',
 };
 
-const STATUS_FLOW = ['NEW', 'CONTACTED', 'VISIT_SCHEDULED', 'NEGOTIATING', 'CLOSING', 'CLOSED'];
+// Full CRM status flow — mirrors NEXT_ACTIONS map from the web CRM board.
+const NEXT_ACTIONS: Record<string, Array<{ next: string; label: string }>> = {
+  NEW: [{ next: 'CONTACTED', label: 'Mark Called' }],
+  CONTACTED: [
+    { next: 'QUALIFIED', label: 'Qualified' },
+    { next: 'INTERESTED', label: 'Interested' },
+    { next: 'NOT_PICKED', label: 'Not Picked' },
+  ],
+  NOT_PICKED: [{ next: 'CONTACTED', label: 'Call Again' }],
+  INTERESTED: [{ next: 'QUALIFIED', label: 'Qualified' }],
+  QUALIFIED: [{ next: 'VISIT_SCHEDULED', label: 'Plan Visit' }],
+  VISIT_SCHEDULED: [{ next: 'VISITED', label: 'Mark Visit Done' }],
+  VISITED: [{ next: 'NEGOTIATING', label: 'Start Negotiation' }],
+  NEGOTIATING: [{ next: 'MEETING_ARRANGED', label: 'Arrange Meeting' }],
+  MEETING_ARRANGED: [{ next: 'DEAL_OPEN', label: 'Open Deal' }],
+};
+
+// Statuses from which a deal can be closed.
+const CLOSEABLE = new Set(['NEGOTIATING', 'MEETING_ARRANGED', 'DEAL_OPEN', 'CLOSING']);
+
+// Statuses displayed in the timeline strip.
+const TIMELINE_FLOW = [
+  'NEW',
+  'CONTACTED',
+  'QUALIFIED',
+  'VISIT_SCHEDULED',
+  'VISITED',
+  'NEGOTIATING',
+  'DEAL_OPEN',
+  'CLOSED',
+];
+
+const DEAL_TYPES = ['RENT', 'SALE', 'RENEWAL'];
 
 export default function LeadDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,25 +77,141 @@ export default function LeadDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  useEffect(() => {
+  // Sheet / modal state
+  const [sheet, setSheet] = useState<null | 'status' | 'visit' | 'deal'>(null);
+  const [visitDate, setVisitDate] = useState<Date | null>(null);
+  const [dealType, setDealType] = useState('RENT');
+  const [dealValue, setDealValue] = useState('');
+
+  const fetchLead = () => {
     if (!id) return;
+    setLoading(true);
     leadsApi
       .getById(id)
       .then(({ data }) => setLead(data.data || data))
       .catch(() => Alert.alert('Error', 'Failed to load lead'))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchLead();
   }, [id]);
 
-  const updateStatus = async (status: string) => {
+  // ─── helpers ──────────────────────────────────────────────────────────────
+
+  const handleStatusAction = async (status: string) => {
+    if (status === 'VISIT_SCHEDULED') {
+      // Route through the Plan Visit sheet so a date can be attached.
+      setVisitDate(null);
+      setSheet('visit');
+      return;
+    }
     setUpdating(true);
     try {
       await leadsApi.update(id!, { status });
-      setLead((prev: any) => ({ ...prev, status }));
+      fetchLead();
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Failed to update');
+      /* show error to user */
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to update status');
     }
     setUpdating(false);
   };
+
+  const handleScheduleVisit = async () => {
+    if (!visitDate) {
+      Alert.alert('Select a date', 'Please choose a visit date first.');
+      return;
+    }
+    setUpdating(true);
+    try {
+      await leadsApi.update(id!, {
+        status: 'VISIT_SCHEDULED',
+        visitDate: visitDate.toISOString(),
+      });
+      setSheet(null);
+      fetchLead();
+    } catch (err: any) {
+      /* show error to user */
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to schedule visit');
+    }
+    setUpdating(false);
+  };
+
+  const handleCloseDeal = async () => {
+    if (!dealValue) {
+      Alert.alert('Enter deal value', 'Please enter the deal value before closing.');
+      return;
+    }
+    setUpdating(true);
+    try {
+      await leadsApi.closeDeal(id!, { type: dealType, dealValue: Number(dealValue) });
+      setSheet(null);
+      setDealValue('');
+      fetchLead();
+    } catch (err: any) {
+      /* show error to user */
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to close deal');
+    }
+    setUpdating(false);
+  };
+
+  const handleApproveVisit = async () => {
+    setUpdating(true);
+    try {
+      await leadsApi.approveVisit(id!);
+      fetchLead();
+    } catch (err: any) {
+      /* show error to user */
+      Alert.alert('Error', err?.response?.data?.message || 'Failed to approve visit');
+    }
+    setUpdating(false);
+  };
+
+  const handleMaskedCall = async () => {
+    // toUserId is the buyer's user id — lead.buyer.id as returned by the API.
+    const buyerUserId = lead?.buyer?.id;
+    if (!buyerUserId) {
+      Alert.alert('Unavailable', 'Buyer information is not available for this lead.');
+      return;
+    }
+    setUpdating(true);
+    try {
+      await communicationApi.call({ leadId: id!, toUserId: buyerUserId });
+      Alert.alert('Call connecting', 'Connecting your call…');
+    } catch (err: any) {
+      /* show error to user */
+      Alert.alert('Error', err?.response?.data?.message || 'Could not place call right now');
+    }
+    setUpdating(false);
+  };
+
+  // ─── derived state ─────────────────────────────────────────────────────────
+
+  const role = user?.role;
+  const isTerminal = lead?.status === 'CLOSED' || lead?.status === 'LOST';
+  const canAdvance =
+    (role === 'DEALER' || role === 'SUPER_ADMIN' || role === 'RWA_ADMIN') && !isTerminal;
+  const canCloseDeal = (role === 'DEALER' || role === 'SUPER_ADMIN') && CLOSEABLE.has(lead?.status);
+  const canCall = role === 'DEALER' && !isTerminal && !!lead?.buyer?.id;
+  const isOwner = role === 'OWNER';
+  const needsOwnerApproval =
+    isOwner && lead?.status === 'VISIT_SCHEDULED' && !lead?.visitApprovedByOwner;
+
+  // Build ActionSheet actions from NEXT_ACTIONS for the current status.
+  const statusSheetActions: SheetAction[] = (NEXT_ACTIONS[lead?.status] || []).map((a) => ({
+    label: a.label,
+    onPress: () => handleStatusAction(a.next),
+  }));
+  // Always offer "Lost" on non-terminal statuses for DEALER / SUPER_ADMIN.
+  if ((role === 'DEALER' || role === 'SUPER_ADMIN') && !isTerminal && lead?.status !== 'LOST') {
+    statusSheetActions.push({
+      label: 'Mark as Lost',
+      onPress: () => handleStatusAction('LOST'),
+      destructive: true,
+    });
+  }
+
+  // ─── render ────────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -61,13 +229,11 @@ export default function LeadDetailScreen() {
     );
   }
 
-  const currentIndex = STATUS_FLOW.indexOf(lead.status);
-  const nextStatus = currentIndex < STATUS_FLOW.length - 2 ? STATUS_FLOW[currentIndex + 1] : null;
-  const isDealerOrAdmin = user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN';
+  const currentIndex = TIMELINE_FLOW.indexOf(lead.status);
 
   return (
     <ScrollView style={styles.container}>
-      {/* Status */}
+      {/* Status header */}
       <View style={styles.statusHeader}>
         <View
           style={[
@@ -76,7 +242,7 @@ export default function LeadDetailScreen() {
           ]}
         >
           <Text style={[styles.statusText, { color: statusColors[lead.status] || '#6b7280' }]}>
-            {lead.status?.replace('_', ' ')}
+            {lead.status?.replace(/_/g, ' ')}
           </Text>
         </View>
         <Text style={styles.date}>
@@ -88,7 +254,7 @@ export default function LeadDetailScreen() {
       <Card style={styles.timelineCard}>
         <Text style={styles.sectionTitle}>Status Timeline</Text>
         <View style={styles.timeline}>
-          {STATUS_FLOW.map((status, index) => {
+          {TIMELINE_FLOW.map((status, index) => {
             const isCompleted = index <= currentIndex;
             const isCurrent = index === currentIndex;
             return (
@@ -101,7 +267,7 @@ export default function LeadDetailScreen() {
                   ]}
                 />
                 <Text style={[styles.timelineLabel, isCompleted && styles.timelineLabelCompleted]}>
-                  {status.replace('_', ' ')}
+                  {status.replace(/_/g, ' ')}
                 </Text>
               </View>
             );
@@ -151,26 +317,129 @@ export default function LeadDetailScreen() {
         </Card>
       )}
 
-      {/* Actions */}
-      {isDealerOrAdmin && lead.status !== 'CLOSED' && (
-        <View style={styles.actions}>
-          {nextStatus && (
-            <Button
-              title={updating ? 'Updating...' : `Move to ${nextStatus.replace('_', ' ')}`}
-              onPress={() => updateStatus(nextStatus)}
-              style={styles.actionButton}
-            />
-          )}
+      {/* ── Actions ─────────────────────────────────────────────────── */}
+      <View style={styles.actions}>
+        {/* Change status (DEALER / SUPER_ADMIN / RWA_ADMIN) */}
+        {canAdvance && statusSheetActions.length > 0 && (
           <Button
-            title="Chat"
-            onPress={() => router.push(`/conversation/${lead.id}`)}
+            title={updating ? 'Updating…' : 'Change status'}
+            onPress={() => setSheet('status')}
+            style={styles.actionButton}
+          />
+        )}
+
+        {/* Close deal */}
+        {canCloseDeal && (
+          <Button
+            title="Close Deal"
+            onPress={() => {
+              setDealType('RENT');
+              setDealValue('');
+              setSheet('deal');
+            }}
+            style={styles.actionButton}
+          />
+        )}
+
+        {/* Approve visit (OWNER) */}
+        {needsOwnerApproval && (
+          <Button
+            title={updating ? 'Approving…' : 'Approve visit'}
+            onPress={handleApproveVisit}
+            style={styles.actionButton}
+          />
+        )}
+
+        {/* Masked call (DEALER only — never shows phone number) */}
+        {canCall && (
+          <Button
+            title={updating ? 'Calling…' : 'Call (masked)'}
+            onPress={handleMaskedCall}
             variant="outline"
             style={styles.actionButton}
           />
-        </View>
-      )}
+        )}
+
+        {/* Chat */}
+        <Button
+          title="Chat"
+          onPress={() => router.push(`/conversation/${lead.id}`)}
+          variant="outline"
+          style={styles.actionButton}
+        />
+
+        {/* Raise grievance — route may not yet resolve; that's fine */}
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: '/grievances/new',
+              params: { societyId: lead.property?.societyId ?? lead.societyId ?? '' },
+            } as any)
+          }
+          style={styles.grievanceLink}
+        >
+          <Text style={styles.grievanceLinkText}>Raise grievance</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={{ height: 24 }} />
+
+      {/* ── ActionSheet: status transitions ─────────────────────────── */}
+      <ActionSheet
+        visible={sheet === 'status'}
+        onClose={() => setSheet(null)}
+        title="Change status"
+        actions={statusSheetActions}
+      />
+
+      {/* ── BottomSheet: plan visit ──────────────────────────────────── */}
+      <BottomSheet visible={sheet === 'visit'} onClose={() => setSheet(null)} title="Plan Visit">
+        <DatePickerField
+          label="Visit date"
+          value={visitDate}
+          onChange={(d) => setVisitDate(d)}
+          minimumDate={new Date()}
+        />
+        <Button
+          title={updating ? 'Scheduling…' : 'Schedule visit'}
+          onPress={handleScheduleVisit}
+          style={styles.sheetButton}
+        />
+      </BottomSheet>
+
+      {/* ── BottomSheet: close deal ──────────────────────────────────── */}
+      <BottomSheet visible={sheet === 'deal'} onClose={() => setSheet(null)} title="Close Deal">
+        {/* Deal type chips */}
+        <Text style={styles.fieldLabel}>Transaction type</Text>
+        <View style={styles.chipRow}>
+          {DEAL_TYPES.map((t) => (
+            <TouchableOpacity
+              key={t}
+              style={[styles.chip, dealType === t && styles.chipActive]}
+              onPress={() => setDealType(t)}
+            >
+              <Text style={[styles.chipLabel, dealType === t && styles.chipLabelActive]}>{t}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Deal value */}
+        <Text style={styles.fieldLabel}>Deal value (INR)</Text>
+        <TextInput
+          style={styles.textInput}
+          keyboardType="numeric"
+          placeholder="Enter amount"
+          placeholderTextColor="#9ca3af"
+          value={dealValue}
+          onChangeText={setDealValue}
+        />
+
+        <Button
+          title={updating ? 'Closing…' : 'Close Deal'}
+          onPress={handleCloseDeal}
+          style={styles.sheetButton}
+        />
+      </BottomSheet>
     </ScrollView>
   );
 }
@@ -211,4 +480,30 @@ const styles = StyleSheet.create({
   noteText: { fontSize: 13, color: '#374151', marginBottom: 4 },
   actions: { padding: 16, gap: 8 },
   actionButton: { width: '100%' },
+  grievanceLink: { alignItems: 'center', paddingVertical: 10 },
+  grievanceLinkText: { fontSize: 14, color: '#6b7280', textDecorationLine: 'underline' },
+  // Sheet internals
+  sheetButton: { marginTop: 8 },
+  fieldLabel: { fontSize: 13, color: '#6b7280', marginBottom: 6 },
+  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#f9fafb',
+  },
+  chipActive: { borderColor: '#2563eb', backgroundColor: '#eff6ff' },
+  chipLabel: { fontSize: 14, color: '#374151' },
+  chipLabelActive: { color: '#2563eb', fontWeight: '600' },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    color: '#111827',
+    marginBottom: 16,
+  },
 });
