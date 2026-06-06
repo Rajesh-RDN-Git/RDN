@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryDealersDto } from './dto/query-dealers.dto';
@@ -163,5 +168,26 @@ export class DealersService {
         isActive: dealer.kycStatus === 'APPROVED' && dealer.rwaApprovalStatus === 'APPROVED',
       },
     });
+  }
+
+  // SUPER_ADMIN explicit activate/deactivate. Reactivating requires the dealer
+  // to have cleared KYC + RWA approval + training.
+  async setActive(id: string, isActive: boolean) {
+    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+
+    if (isActive) {
+      const eligible =
+        dealer.kycStatus === 'APPROVED' &&
+        dealer.rwaApprovalStatus === 'APPROVED' &&
+        dealer.trainingStatus === 'COMPLETED';
+      if (!eligible) {
+        throw new BadRequestException(
+          'Dealer must clear KYC, RWA approval and training before activation',
+        );
+      }
+    }
+
+    return this.prisma.dealer.update({ where: { id }, data: { isActive } });
   }
 }

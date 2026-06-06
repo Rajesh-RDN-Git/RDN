@@ -84,4 +84,14 @@ export class DealersController {
   async completeTraining(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
     return this.dealersService.completeTraining(id);
   }
+
+  @Patch(':id/active')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Activate or deactivate a resident dealer' })
+  async setActive(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { isActive: boolean },
+  ): Promise<any> {
+    return this.dealersService.setActive(id, body.isActive);
+  }
 }

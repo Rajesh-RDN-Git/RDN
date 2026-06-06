@@ -23,16 +23,25 @@ export class MediaService {
   }
 
   private async initS3Client() {
+    const accessKeyId = this.configService.get<string>('aws.accessKeyId');
+    const secretAccessKey = this.configService.get<string>('aws.secretAccessKey');
+    const endpoint = this.configService.get<string>('aws.s3Endpoint');
+    // Without real credentials (or a custom S3-compatible endpoint) any signed
+    // URL would point at a non-existent bucket and 404 on upload. Stay in mock
+    // mode so the client skips the PUT and the property flow still completes.
+    if (!endpoint && (!accessKeyId || !secretAccessKey)) {
+      this.logger.warn('No S3 credentials configured. Media uploads will use mock URLs.');
+      return;
+    }
     try {
       const { S3Client } = await import('@aws-sdk/client-s3');
-      const endpoint = this.configService.get<string>('aws.s3Endpoint');
       const forcePathStyle = this.configService.get<boolean>('aws.s3ForcePathStyle');
       this.s3Client = new S3Client({
         region: this.region,
         ...(endpoint ? { endpoint, forcePathStyle: forcePathStyle ?? true } : {}),
         credentials: {
-          accessKeyId: this.configService.get<string>('aws.accessKeyId') || '',
-          secretAccessKey: this.configService.get<string>('aws.secretAccessKey') || '',
+          accessKeyId: accessKeyId || '',
+          secretAccessKey: secretAccessKey || '',
         },
       });
     } catch {
@@ -85,6 +94,9 @@ export class MediaService {
         ? `${this.cdnUrl}/${key}`
         : `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`,
       expiresIn: 300,
+      // No real S3 configured — signals the client to skip the upload PUT so
+      // the property flow still completes in local/dev environments.
+      mock: true,
     };
   }
 

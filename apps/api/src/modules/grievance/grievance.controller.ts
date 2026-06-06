@@ -29,7 +29,8 @@ export class GrievanceController {
   constructor(private readonly grievanceService: GrievanceService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List grievances' })
+  @Roles('SUPER_ADMIN', 'RWA_ADMIN')
+  @ApiOperation({ summary: 'List grievances (admin triage)' })
   async findAll(
     @Query() query: QueryGrievancesDto,
     @CurrentUser() user: { id: string; role: string },
