@@ -125,6 +125,14 @@ export default function RootLayout() {
             options={{ title: 'Manage Properties', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="manage/dealers/index"
+            options={{ title: 'Manage Dealers', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="manage/dealers/[id]"
+            options={{ title: 'Dealer Details', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
             name="manage/verification-queue/index"
             options={{ title: 'Verification Queue', headerBackTitle: 'Back' }}
           />
