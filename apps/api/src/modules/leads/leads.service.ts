@@ -220,9 +220,14 @@ export class LeadsService {
     const lead = await this.prisma.lead.findUnique({ where: { id } });
     if (!lead) throw new NotFoundException('Lead not found');
 
-    if (lead.status !== 'NEGOTIATING' && lead.status !== 'CLOSING') {
+    if (
+      lead.status !== 'NEGOTIATING' &&
+      lead.status !== 'MEETING_ARRANGED' &&
+      lead.status !== 'DEAL_OPEN' &&
+      lead.status !== 'CLOSING'
+    ) {
       throw new BadRequestException(
-        'Lead must be in NEGOTIATING or CLOSING status to close a deal',
+        'Lead must be in negotiation, meeting-arranged, or deal-open status to close a deal',
       );
     }
 

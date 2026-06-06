@@ -94,4 +94,18 @@ export class DealersController {
   ): Promise<any> {
     return this.dealersService.setActive(id, body.isActive);
   }
+
+  @Patch(':id/certify')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Certify a resident dealer (verified societies only)' })
+  async certify(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
+    return this.dealersService.certify(id);
+  }
+
+  @Patch(':id/revoke-certification')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Revoke a dealer certification' })
+  async revokeCertification(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
+    return this.dealersService.revokeCertification(id);
+  }
 }

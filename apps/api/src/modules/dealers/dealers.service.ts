@@ -190,4 +190,33 @@ export class DealersService {
 
     return this.prisma.dealer.update({ where: { id }, data: { isActive } });
   }
+
+  // Certify a resident dealer. Only available for dealers who have completed
+  // training and whose society is verified.
+  async certify(id: string) {
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { id },
+      include: { society: { select: { verificationStatus: true } } },
+    });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+    if (dealer.society.verificationStatus !== 'VERIFIED') {
+      throw new BadRequestException('Only dealers in a verified society can be certified');
+    }
+    if (dealer.trainingStatus !== 'COMPLETED') {
+      throw new BadRequestException('Dealer must complete training before certification');
+    }
+    return this.prisma.dealer.update({
+      where: { id },
+      data: { certificationStatus: 'CERTIFIED', certifiedAt: new Date() },
+    });
+  }
+
+  async revokeCertification(id: string) {
+    const dealer = await this.prisma.dealer.findUnique({ where: { id } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+    return this.prisma.dealer.update({
+      where: { id },
+      data: { certificationStatus: 'REVOKED' },
+    });
+  }
 }

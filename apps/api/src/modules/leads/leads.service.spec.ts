@@ -202,6 +202,7 @@ describe('LeadsService', () => {
     it('should approve visit for property owner', async () => {
       mockPrisma.lead.findUnique.mockResolvedValue({
         id: 'lead-1',
+        status: 'VISIT_SCHEDULED',
         property: { ownerId: 'owner-1' },
       });
       mockPrisma.lead.update.mockResolvedValue({ visitApprovedByOwner: true });

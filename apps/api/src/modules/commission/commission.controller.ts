@@ -48,6 +48,13 @@ export class CommissionController {
     return this.commissionService.settle(id, body);
   }
 
+  @Post(':id/distribute')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Mark a settled commission as distributed (paid out)' })
+  async distribute(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
+    return this.commissionService.distribute(id);
+  }
+
   @Post(':id/cancel')
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Cancel a commission' })

@@ -110,6 +110,35 @@ export class CommissionService {
     return updated;
   }
 
+  async distribute(id: string): Promise<any> {
+    const commission = await this.prisma.commission.findUnique({
+      where: { id },
+      include: { dealer: true },
+    });
+    if (!commission) throw new NotFoundException('Commission not found');
+    if (commission.status !== 'SETTLED') {
+      throw new BadRequestException('Only a settled commission can be distributed');
+    }
+
+    const updated = await this.prisma.commission.update({
+      where: { id },
+      data: { status: 'DISTRIBUTED' },
+    });
+
+    this.notificationsService
+      .create({
+        userId: commission.dealer.userId,
+        type: 'COMMISSION',
+        title: 'Commission Distributed',
+        body: `Your commission of Rs ${Number(commission.amount).toLocaleString('en-IN')} has been paid out.`,
+        channel: 'IN_APP',
+        data: { commissionId: id },
+      })
+      .catch(() => {});
+
+    return updated;
+  }
+
   async cancel(id: string, data: CancelCommissionDto = {}): Promise<any> {
     const commission = await this.prisma.commission.findUnique({ where: { id } });
     if (!commission) throw new NotFoundException('Commission not found');
