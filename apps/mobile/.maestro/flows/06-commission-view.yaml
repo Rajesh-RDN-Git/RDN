@@ -1,0 +1,22 @@
+appId: com.rdn.mobile
+name: View commission list (dealer)
+# precondition: logged-in account must have DEALER role
+# TODO: use a DEALER account — same number as 01-login.yaml; swap if a dedicated dealer login is available
+---
+- launchApp:
+    clearState: true
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- # Scroll down to the Manage section to reveal "Commissions" row
+  scrollUntilVisible:
+    text: 'Commissions'
+    direction: DOWN
+- tapOn: 'Commissions'
+- # Status filter chips are always rendered, "ALL" is default
+  assertVisible:
+    text: 'ALL'
+- assertVisible:
+    text: 'PENDING'
+- # Total count label format: "{n} commissions"
+  assertVisible:
+    text: 'commissions'

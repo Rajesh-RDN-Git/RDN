@@ -1,0 +1,32 @@
+appId: com.rdn.mobile
+name: File a grievance (any authenticated role)
+# precondition: user must be signed in; any role can file a grievance
+---
+- launchApp:
+    clearState: true
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- scrollUntilVisible:
+    text: 'Grievances'
+    direction: DOWN
+- tapOn: 'Grievances'
+- # "grievances" list screen — status filter chips are visible
+  assertVisible:
+    text: 'ALL'
+- # Tap the "+ File grievance" button (fileButtonText in GrievancesScreen)
+  tapOn: '+ File grievance'
+- # New grievance form
+  assertVisible: 'Raise a grievance'
+- # Select category chip — tap "Service" (default is SERVICE, but we re-tap to ensure selection)
+  tapOn: 'Service'
+- # Select severity chip — tap "Medium"
+  tapOn: 'Medium'
+- # Type description into the multiline TextInput (no testID; Maestro matches by placeholder)
+  tapOn:
+    text: 'Describe what happened, when, and any context that helps us investigate.'
+- inputText: 'Maestro e2e test grievance — please ignore this submission.'
+- # Submit
+  tapOn: 'Submit grievance'
+- # After router.replace('/grievances') we should be back on the list screen
+  assertVisible:
+    text: 'ALL'

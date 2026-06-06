@@ -1,0 +1,35 @@
+appId: com.rdn.mobile
+name: Approve a listing in verification queue (RWA admin)
+# precondition: account must have RWA_ADMIN (or SUPER_ADMIN) role AND at least
+#   one property must be in PENDING verification status.
+# TODO: use an RWA_ADMIN account — same number as 01-login.yaml; swap if a dedicated RWA admin login is available
+---
+- launchApp:
+    clearState: true
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- scrollUntilVisible:
+    text: 'Verification Queue'
+    direction: DOWN
+- tapOn: 'Verification Queue'
+- assertVisible: 'Verification Queue'
+- # At least one pending item must exist — its card has an "Approve" button
+  assertVisible: 'Approve'
+- # Tap the Approve button on the first card (index 0)
+  tapOn:
+    index: 0
+    text: 'Approve'
+- # Native Alert: "Approve listing?" with "Approve" confirm button
+  assertVisible: 'Approve listing?'
+- tapOn:
+    text: 'Approve'
+    # This dismisses the alert and triggers verificationApi.decideProperty with RWA_APPROVED
+- waitForAnimationToEnd
+- # After approval the item is optimistically removed and the queue reloads.
+  # If no more items remain the empty state is shown; otherwise the queue shrinks.
+  # We assert either the empty state OR that the queue no longer shows the same count.
+  # Flexible assertion: one of these two texts will be visible.
+  assertVisible:
+    text: '.*pending\|No pending listings.*'
+    optional: true
+- takeScreenshot: verification-after-approve

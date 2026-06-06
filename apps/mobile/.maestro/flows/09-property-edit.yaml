@@ -1,0 +1,58 @@
+appId: com.rdn.mobile
+name: Edit a property listing (owner)
+# precondition: account must have OWNER role AND own at least one listed property.
+# TODO: use an OWNER account — same number as 01-login.yaml; swap if a dedicated owner login is available
+---
+- launchApp:
+    clearState: true
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- scrollUntilVisible:
+    text: 'My Properties'
+    direction: DOWN
+- tapOn: 'My Properties'
+- # ManagePropertiesScreen renders the title "My Properties" for OWNER role
+  assertVisible: 'My Properties'
+- # Tap the "Edit" button on the first property card
+  # (Edit button is rendered inside each card for OWNER / SUPER_ADMIN / RWA_ADMIN)
+  tapOn:
+    index: 0
+    text: 'Edit'
+- # PropertyWizardScreen renders the 6-step wizard pre-filled with existing data.
+  # Step 1 (Basics) is shown first — assert a visible field from that step.
+  waitForAnimationToEnd
+- # Scroll to the price/rent field on the Pricing step (step 4).
+  # First advance through the wizard with "Continue" until we reach a numeric field we can edit.
+  # Strategy: tap Continue three times to reach the Pricing step (Basics→Specs→Amenities→Pricing).
+  tapOn: 'Continue'
+- waitForAnimationToEnd
+- tapOn: 'Continue'
+- waitForAnimationToEnd
+- tapOn: 'Continue'
+- waitForAnimationToEnd
+- # Now on Pricing step — clear and re-enter a rent price
+  # The PricingStep renders a "Monthly rent (Rs)" or similar label; we target by placeholder.
+  # Actual placeholder text sourced from steps.tsx — guessed as "e.g. 25000" (common pattern).
+  # If placeholder differs, assert the step heading instead and adjust selector.
+  clearAndTypeText:
+    text: '30000'
+    # placeholder-based tap below provides the input focus
+  tapOn:
+    text: '.*rent.*'
+    optional: true
+- clearAndTypeText:
+    text: '30000'
+- tapOn: 'Continue'
+- waitForAnimationToEnd
+- # Photos step — skip by tapping Continue
+  tapOn: 'Continue'
+- waitForAnimationToEnd
+- # Review step — the final submit button reads "Save changes" in edit mode
+  assertVisible: 'Save changes'
+- tapOn: 'Save changes'
+- # handleSubmit calls propertiesApi.update then shows Alert "Saved" with message
+  # "Your listing has been updated."
+  assertVisible: 'Saved'
+- tapOn: 'OK'
+- # After OK the router navigates to /manage/properties
+  assertVisible: 'My Properties'

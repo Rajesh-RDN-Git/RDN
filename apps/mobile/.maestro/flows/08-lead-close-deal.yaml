@@ -1,0 +1,37 @@
+appId: com.rdn.mobile
+name: Lead close-deal sheet (dealer)
+# precondition: account must have DEALER role AND have at least one lead in a
+#   CLOSEABLE status (NEGOTIATING | MEETING_ARRANGED | DEAL_OPEN | CLOSING).
+#   If no such lead exists the flow will fail after tapping the first card
+#   because "Close Deal" button won't be visible. Seed or advance a lead first.
+# TODO: use a DEALER account — same number as 01-login.yaml; swap if needed
+---
+- launchApp:
+    clearState: true
+- runFlow: 01-login.yaml
+- tapOn: 'Leads'
+- # Wait for the leads list to load
+  waitForAnimationToEnd
+- assertVisible:
+    text: 'leads'
+- # Tap the first lead card in the list (index 0 among the repeated lead items)
+  tapOn:
+    index: 0
+    text: '.*'
+- # Lead detail screen renders a status badge — assert we landed on it
+  assertVisible: 'Status Timeline'
+- # "Close Deal" button is shown when canCloseDeal is true (role=DEALER + CLOSEABLE status)
+  assertVisible: 'Close Deal'
+- tapOn: 'Close Deal'
+- # Close Deal bottom-sheet renders with title "Close Deal"
+  assertVisible: 'Close Deal'
+- # Select deal type — tap "RENT" chip (it is the default but we tap to confirm)
+  tapOn: 'RENT'
+- # Enter deal value in the numeric TextInput (placeholder: "Enter amount")
+  tapOn:
+    text: 'Enter amount'
+- inputText: '25000'
+- # Submit via the sheet's "Close Deal" button
+  tapOn: 'Close Deal'
+- # After success the sheet closes and the lead reloads; status badge should now read "CLOSED"
+  assertVisible: 'CLOSED'

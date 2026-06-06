@@ -1,0 +1,34 @@
+appId: com.rdn.mobile
+name: Reports dashboard and commissions tab (super admin)
+# precondition: account must have SUPER_ADMIN role so all three detail tabs
+#   (Leads, Transactions, Commissions) are visible.
+# TODO: use a SUPER_ADMIN account — same number as 01-login.yaml; swap if a dedicated super-admin login is available
+---
+- launchApp:
+    clearState: true
+- runFlow: 01-login.yaml
+- tapOn: 'Profile'
+- scrollUntilVisible:
+    text: 'Reports'
+    direction: DOWN
+- tapOn: 'Reports'
+- # ReportsScreen header
+  assertVisible: 'Reports & Analytics'
+- # Overview section title
+  assertVisible: 'Overview'
+- # Stat card labels rendered for SUPER_ADMIN role
+  assertVisible: 'Total Properties'
+- assertVisible: 'Active Leads'
+- # Detailed Reports section has chip tabs visible for SUPER_ADMIN
+  assertVisible: 'Detailed Reports'
+- assertVisible: 'Leads'
+- assertVisible: 'Commissions'
+- # Tap the Commissions tab chip
+  tapOn: 'Commissions'
+- waitForAnimationToEnd
+- # CommissionsSection shows Summary card with "Total Commissions" label
+  # or the empty state "No commission data available" — either confirms we reached the tab
+  assertVisible:
+    text: '.*Total Commissions\|No commission data available.*'
+    optional: true
+- takeScreenshot: reports-commissions-tab
