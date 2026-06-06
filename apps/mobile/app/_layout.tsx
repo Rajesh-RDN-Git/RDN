@@ -144,6 +144,14 @@ export default function RootLayout() {
             name="commissions/[id]"
             options={{ title: 'Commission Details', headerBackTitle: 'Back' }}
           />
+          <Stack.Screen
+            name="transactions/index"
+            options={{ title: 'Transactions', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="transactions/[id]"
+            options={{ title: 'Transaction Details', headerBackTitle: 'Back' }}
+          />
         </Stack>
       </SocketProvider>
     </AuthGate>
