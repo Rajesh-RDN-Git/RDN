@@ -31,6 +31,27 @@ export class SearchService {
     if (query.furnishing) where.furnishing = query.furnishing as any;
     if (query.availabilityStatus) where.availabilityStatus = query.availabilityStatus as any;
 
+    // Area range filters
+    if (query.areaMin || query.areaMax) {
+      const areaFilter: Prisma.DecimalNullableFilter = {};
+      if (query.areaMin) areaFilter.gte = query.areaMin;
+      if (query.areaMax) areaFilter.lte = query.areaMax;
+      where.carpetArea = areaFilter;
+    }
+
+    // Amenities filter — stored as JSON array; use string_contains per value
+    if (query.amenities) {
+      const labels = String(query.amenities)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (labels.length) {
+        where.AND = labels.map((label) => ({
+          amenities: { string_contains: label },
+        }));
+      }
+    }
+
     // Price range filters
     if (query.priceMin || query.priceMax) {
       const priceFilter: Prisma.DecimalNullableFilter = {};

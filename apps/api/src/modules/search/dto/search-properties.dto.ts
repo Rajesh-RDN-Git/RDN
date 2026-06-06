@@ -28,6 +28,15 @@ export class SearchPropertiesDto {
   @ApiPropertyOptional({ enum: ['AVAILABLE_NOW', 'AVAILABLE_FROM', 'UNDER_NOTICE'] })
   availabilityStatus?: string;
 
+  @ApiPropertyOptional({ description: 'Min carpet area in sq ft' })
+  areaMin?: number;
+
+  @ApiPropertyOptional({ description: 'Max carpet area in sq ft' })
+  areaMax?: number;
+
+  @ApiPropertyOptional({ description: 'Comma-separated amenity labels to filter by' })
+  amenities?: string;
+
   @ApiPropertyOptional({ default: 1 })
   page?: number;
 
