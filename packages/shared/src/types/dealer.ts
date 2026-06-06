@@ -15,6 +15,12 @@ export enum TrainingStatus {
   COMPLETED = 'COMPLETED',
 }
 
+export enum CertificationStatus {
+  NOT_CERTIFIED = 'NOT_CERTIFIED',
+  CERTIFIED = 'CERTIFIED',
+  REVOKED = 'REVOKED',
+}
+
 export interface IDealer {
   id: string;
   userId: string;
