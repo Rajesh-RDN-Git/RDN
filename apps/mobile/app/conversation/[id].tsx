@@ -29,6 +29,7 @@ export default function ConversationScreen() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [receiverId, setReceiverId] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -38,16 +39,21 @@ export default function ConversationScreen() {
       .then(({ data }) => {
         const result = data.data || data;
         setMessages((result.messages || []).reverse());
+        // Derive the other participant's id from the participants array
+        const participants: string[] = result.conversation?.participants ?? [];
+        const otherId = participants.find((p) => p !== user?.id) ?? participants[0] ?? null;
+        setReceiverId(otherId);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [id]);
 
   const sendMessage = async () => {
-    if (!inputText.trim() || !id) return;
+    if (!inputText.trim() || !id || !receiverId) return;
     setSending(true);
     try {
       const { data } = await communicationApi.sendMessage(id, {
+        receiverId,
         content: inputText.trim(),
         type: 'TEXT',
       });
@@ -117,9 +123,12 @@ export default function ConversationScreen() {
           placeholderTextColor="#9ca3af"
         />
         <TouchableOpacity
-          style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+          style={[
+            styles.sendButton,
+            (!inputText.trim() || !receiverId) && styles.sendButtonDisabled,
+          ]}
           onPress={sendMessage}
-          disabled={!inputText.trim() || sending}
+          disabled={!inputText.trim() || !receiverId || sending}
         >
           <Text style={styles.sendButtonText}>{sending ? '...' : '>'}</Text>
         </TouchableOpacity>
