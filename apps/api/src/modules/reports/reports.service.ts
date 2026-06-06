@@ -7,6 +7,23 @@ import type { Prisma } from '@rdn/db';
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // Public, unauthenticated aggregate counts for the marketing homepage
+  // trust indicators. No PII, no per-user scoping — just platform totals.
+  async getPublicStats(): Promise<{
+    totalSocieties: number;
+    totalProperties: number;
+    totalDealers: number;
+    totalUsers: number;
+  }> {
+    const [totalSocieties, totalProperties, totalDealers, totalUsers] = await Promise.all([
+      this.prisma.society.count({ where: { status: 'ONBOARDED' } }),
+      this.prisma.property.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.dealer.count({ where: { isActive: true } }),
+      this.prisma.user.count(),
+    ]);
+    return { totalSocieties, totalProperties, totalDealers, totalUsers };
+  }
+
   async getDashboard(
     query: QueryReportDto,
     user?: { id: string; role: string; societyId?: string },
@@ -80,14 +97,35 @@ export class ReportsService {
 
     const conversionRate = totalLeads > 0 ? ((closedLeads / totalLeads) * 100).toFixed(1) : '0.0';
 
+    // Deal/commission/grievance rollups for the reports overview. Scope through
+    // the relevant relation when a society filter is in effect (RWA admin).
+    const txWhere = societyId ? { property: { societyId } } : {};
+    const commWhere = societyId ? { dealer: { societyId } } : {};
+    const grievWhere: Prisma.GrievanceWhereInput = {
+      status: { in: ['OPEN', 'IN_PROGRESS', 'ESCALATED'] },
+      ...(societyId ? { societyId } : {}),
+    };
+
+    const [totalTransactions, revenueAgg, pendingCommissions, openGrievances] = await Promise.all([
+      this.prisma.transaction.count({ where: txWhere }),
+      this.prisma.transaction.aggregate({ _sum: { dealValue: true }, where: txWhere }),
+      this.prisma.commission.count({ where: { ...commWhere, status: 'PENDING' } }),
+      this.prisma.grievance.count({ where: grievWhere }),
+    ]);
+
     return {
       totalProperties,
       totalLeads,
       totalDealers,
+      activeDealers: totalDealers,
       totalSocieties,
       activeLeads,
       closedLeads,
       conversionRate: `${conversionRate}%`,
+      totalTransactions,
+      totalRevenue: Number(revenueAgg._sum.dealValue ?? 0),
+      pendingCommissions,
+      openGrievances,
     };
   }
 
