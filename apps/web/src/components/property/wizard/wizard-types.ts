@@ -13,6 +13,7 @@ export type PhotoState = {
   id: string; // S3 key (also used as React key)
   key: string; // S3 key (explicit field for clarity in submission)
   url: string; // local blob URL for in-wizard preview
+  persistUrl: string; // CDN/S3 URL stored server-side via addMedia
   isCover: boolean;
   order: number;
   uploadProgress?: number;

@@ -9,7 +9,7 @@ import { societiesApi } from '@/lib/api/societies.api';
 type Society = { id: string; name: string; city: string };
 
 type Props = {
-  userRole: 'OWNER' | 'SUPER_ADMIN';
+  userRole: 'OWNER' | 'SUPER_ADMIN' | 'RWA_ADMIN';
   primarySocietyId: string | null;
 };
 

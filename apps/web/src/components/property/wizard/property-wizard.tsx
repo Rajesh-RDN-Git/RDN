@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WizardProvider, useWizard } from './wizard-context';
-import { STEP_ORDER, WizardStep } from './wizard-types';
+import { STEP_ORDER, WizardStep, WizardData } from './wizard-types';
 import { useDraftAutosave, loadDraft } from './use-draft-autosave';
 import { validateStep } from './step-validation';
 import { BasicsStep } from './steps/basics-step';
@@ -14,10 +14,13 @@ import { ReviewStep } from './steps/review-step';
 import { societiesApi } from '@/lib/api/societies.api';
 
 type Props = {
-  userRole: 'OWNER' | 'SUPER_ADMIN';
+  userRole: 'OWNER' | 'SUPER_ADMIN' | 'RWA_ADMIN';
   userId: string;
   primarySocietyId: string | null;
   onPublished: (propertyId: string) => void;
+  mode?: 'create' | 'edit';
+  propertyId?: string;
+  initialData?: WizardData;
 };
 
 const STEP_LABELS: Record<WizardStep, string> = {
@@ -37,10 +40,30 @@ function extractAmenities(society: SocietyResponse | undefined): string[] {
   return society.amenities.items ?? [];
 }
 
-function WizardInner({ userRole, userId, primarySocietyId, onPublished }: Props) {
+function WizardInner({
+  userRole,
+  userId,
+  primarySocietyId,
+  onPublished,
+  mode = 'create',
+  propertyId,
+  initialData,
+}: Props) {
   const { state, dispatch } = useWizard();
   const [societyAmenities, setSocietyAmenities] = useState<string[]>([]);
-  useDraftAutosave({ userId, data: state.data, isDirty: state.isDirty });
+  const isEdit = mode === 'edit';
+  // Only autosave drafts during creation — editing an existing listing must not
+  // pollute the create draft.
+  useDraftAutosave({ userId, data: state.data, isDirty: isEdit ? false : state.isDirty });
+
+  // Prefill the wizard from the existing property when editing (once).
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (isEdit && initialData && !hydratedRef.current) {
+      hydratedRef.current = true;
+      dispatch({ type: 'LOAD_DRAFT', data: initialData });
+    }
+  }, [isEdit, initialData, dispatch]);
 
   useEffect(() => {
     if (state.data.societyId) {
@@ -58,16 +81,17 @@ function WizardInner({ userRole, userId, primarySocietyId, onPublished }: Props)
   }, [state.data.societyId]);
 
   useEffect(() => {
+    if (isEdit) return;
     if (primarySocietyId && !state.data.societyId) {
       const draft = loadDraft({ userId, societyId: primarySocietyId, flatNumber: '' });
       if (draft) dispatch({ type: 'LOAD_DRAFT', data: draft });
     }
-  }, [primarySocietyId, userId, state.data.societyId, dispatch]);
+  }, [isEdit, primarySocietyId, userId, state.data.societyId, dispatch]);
 
   const currentIndex = STEP_ORDER.indexOf(state.currentStep);
 
   const goNext = () => {
-    const result = validateStep(state.currentStep, state.data);
+    const result = validateStep(state.currentStep, state.data, mode);
     if (!result.ok) {
       dispatch({ type: 'SET_ERRORS', errors: result.errors });
       return;
@@ -95,7 +119,14 @@ function WizardInner({ userRole, userId, primarySocietyId, onPublished }: Props)
       case 'amenities':
         return <AmenitiesStep societyAmenities={societyAmenities} />;
       case 'review':
-        return <ReviewStep onPublished={onPublished} userId={userId} />;
+        return (
+          <ReviewStep
+            onPublished={onPublished}
+            userId={userId}
+            mode={mode}
+            propertyId={propertyId}
+          />
+        );
     }
   };
 

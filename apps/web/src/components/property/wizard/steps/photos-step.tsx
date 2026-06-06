@@ -63,14 +63,19 @@ export function PhotosStep() {
         const presigned = await mediaApi.getPresignedUrl({
           fileName: file.name,
           contentType: 'image/jpeg',
-          folder: 'properties',
         });
-        await mediaApi.upload(presigned.data.url, blob);
+        const { uploadUrl, key, cdnUrl, mock } = presigned.data;
+        // In local/dev with no S3 configured the API returns a mock URL that
+        // would 404 on PUT — skip the upload so the wizard flow still works.
+        if (!mock) {
+          await mediaApi.upload(uploadUrl, blob);
+        }
         const localUrl = URL.createObjectURL(blob);
         next.push({
-          id: presigned.data.key,
-          key: presigned.data.key,
+          id: key,
+          key,
           url: localUrl,
+          persistUrl: cdnUrl,
           isCover: next.length === 0,
           order: next.length,
         });

@@ -25,14 +25,24 @@ export function SpecsStep() {
           <label htmlFor="bhk" className="mb-1.5 block text-sm font-medium text-foreground">
             BHK
           </label>
-          <Input
+          <Select
             id="bhk"
-            type="number"
-            min={1}
-            max={10}
             value={data.bhk ?? ''}
-            onChange={setNum('bhk')}
-          />
+            onChange={(e) =>
+              dispatch({
+                type: 'SET_FIELD',
+                field: 'bhk',
+                value: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+          >
+            <option value="">Select BHK</option>
+            <option value="1">1 BHK</option>
+            <option value="2">2 BHK</option>
+            <option value="3">3 BHK</option>
+            <option value="4">4 BHK</option>
+            <option value="5">5 BHK</option>
+          </Select>
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">

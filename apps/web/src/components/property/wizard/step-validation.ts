@@ -4,7 +4,11 @@ type ValidationResult =
   | { ok: true; errors: Record<string, never> }
   | { ok: false; errors: Partial<Record<keyof WizardData, string>> };
 
-export function validateStep(step: WizardStep, data: WizardData): ValidationResult {
+export function validateStep(
+  step: WizardStep,
+  data: WizardData,
+  mode: 'create' | 'edit' = 'create',
+): ValidationResult {
   const errors: Partial<Record<keyof WizardData, string>> = {};
 
   if (step === 'basics') {
@@ -31,7 +35,9 @@ export function validateStep(step: WizardStep, data: WizardData): ValidationResu
     }
   }
 
-  if (step === 'photos') {
+  if (step === 'photos' && mode !== 'edit') {
+    // In edit mode existing photos aren't re-loaded into wizard state, so the
+    // minimum-photo gate is skipped (photo editing is a later phase).
     if (data.photos.length < 3) errors.photos = 'At least 3 photos required';
   }
 
