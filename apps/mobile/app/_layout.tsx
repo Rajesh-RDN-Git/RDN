@@ -125,6 +125,10 @@ export default function RootLayout() {
             options={{ title: 'Manage Properties', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="manage/verification-queue/index"
+            options={{ title: 'Verification Queue', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
             name="grievances/new"
             options={{ title: 'Raise a grievance', headerBackTitle: 'Back' }}
           />
