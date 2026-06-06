@@ -172,6 +172,10 @@ export default function RootLayout() {
             name="transactions/[id]"
             options={{ title: 'Transaction Details', headerBackTitle: 'Back' }}
           />
+          <Stack.Screen
+            name="reports/index"
+            options={{ title: 'Reports & Analytics', headerBackTitle: 'Back' }}
+          />
         </Stack>
       </SocketProvider>
     </AuthGate>
