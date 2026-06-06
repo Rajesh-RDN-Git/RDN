@@ -14,16 +14,61 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { leadsApi } from '@/lib/api/leads';
 
-const STATUSES = ['ALL', 'NEW', 'CONTACTED', 'VISIT_SCHEDULED', 'NEGOTIATING', 'CLOSING', 'CLOSED'];
+const STATUSES = [
+  'ALL',
+  'NEW',
+  'CONTACTED',
+  'NOT_PICKED',
+  'INTERESTED',
+  'QUALIFIED',
+  'VISIT_SCHEDULED',
+  'VISITED',
+  'NEGOTIATING',
+  'MEETING_ARRANGED',
+  'DEAL_OPEN',
+  'CLOSING',
+  'CLOSED',
+  'LOST',
+];
 
 const statusColors: Record<string, string> = {
   NEW: '#3b82f6',
   CONTACTED: '#8b5cf6',
+  NOT_PICKED: '#6b7280',
+  INTERESTED: '#0ea5e9',
+  QUALIFIED: '#14b8a6',
   VISIT_SCHEDULED: '#f59e0b',
+  VISITED: '#eab308',
   NEGOTIATING: '#f97316',
+  MEETING_ARRANGED: '#a855f7',
+  DEAL_OPEN: '#ec4899',
   CLOSING: '#ef4444',
   CLOSED: '#10b981',
+  LOST: '#9ca3af',
 };
+
+// Priority config mirrors web's priorityConfig exactly (apps/web/src/app/dashboard/leads/page.tsx).
+// Note: web uses per-status granular labels (HOT/WARM/RETRY/FOLLOW UP/URGENT/DONE/COLD)
+// rather than simple HOT/WARM/COLD buckets — we match that exactly here.
+const priorityConfig: Record<string, { label: string; color: string }> = {
+  NEW: { label: 'HOT', color: '#ef4444' },
+  CONTACTED: { label: 'WARM', color: '#f59e0b' },
+  NOT_PICKED: { label: 'RETRY', color: '#f59e0b' },
+  INTERESTED: { label: 'WARM', color: '#f59e0b' },
+  QUALIFIED: { label: 'HOT', color: '#ef4444' },
+  VISIT_SCHEDULED: { label: 'WARM', color: '#f59e0b' },
+  VISITED: { label: 'FOLLOW UP', color: '#3b82f6' },
+  NEGOTIATING: { label: 'HOT', color: '#ef4444' },
+  MEETING_ARRANGED: { label: 'HOT', color: '#ef4444' },
+  DEAL_OPEN: { label: 'URGENT', color: '#ef4444' },
+  CLOSING: { label: 'URGENT', color: '#ef4444' },
+  CLOSED: { label: 'DONE', color: '#10b981' },
+  LOST: { label: 'COLD', color: '#9ca3af' },
+};
+
+function priorityOf(status: string): { label: string; color: string } | null {
+  return priorityConfig[status] ?? null;
+}
 
 export default function LeadsScreen() {
   const router = useRouter();
@@ -74,15 +119,29 @@ export default function LeadsScreen() {
     <TouchableOpacity onPress={() => router.push(`/lead/${item.id}`)}>
       <Card style={styles.leadCard}>
         <View style={styles.leadHeader}>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: (statusColors[item.status] || '#6b7280') + '20' },
-            ]}
-          >
-            <Text style={[styles.statusText, { color: statusColors[item.status] || '#6b7280' }]}>
-              {item.status?.replace('_', ' ')}
-            </Text>
+          <View style={styles.badgeRow}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: (statusColors[item.status] || '#6b7280') + '20' },
+              ]}
+            >
+              <Text style={[styles.statusText, { color: statusColors[item.status] || '#6b7280' }]}>
+                {item.status?.replace(/_/g, ' ')}
+              </Text>
+            </View>
+            {priorityOf(item.status) && (
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: priorityOf(item.status)!.color + '20', marginLeft: 6 },
+                ]}
+              >
+                <Text style={[styles.statusText, { color: priorityOf(item.status)!.color }]}>
+                  {priorityOf(item.status)!.label}
+                </Text>
+              </View>
+            )}
           </View>
           <Text style={styles.leadDate}>
             {new Date(item.createdAt).toLocaleDateString('en-IN')}
@@ -172,6 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
+  badgeRow: { flexDirection: 'row', alignItems: 'center' },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   statusText: { fontSize: 11, fontWeight: '600' },
   leadDate: { fontSize: 12, color: '#9ca3af' },
