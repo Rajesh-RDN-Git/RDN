@@ -136,6 +136,14 @@ export default function RootLayout() {
             name="grievances/[id]"
             options={{ title: 'Grievance Details', headerBackTitle: 'Back' }}
           />
+          <Stack.Screen
+            name="commissions/index"
+            options={{ title: 'Commissions', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="commissions/[id]"
+            options={{ title: 'Commission Details', headerBackTitle: 'Back' }}
+          />
         </Stack>
       </SocketProvider>
     </AuthGate>
