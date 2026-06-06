@@ -117,6 +117,14 @@ export default function RootLayout() {
             options={{ title: 'Data Grievance', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="settings/notification-preferences"
+            options={{ title: 'Notification Preferences', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="settings/security"
+            options={{ title: 'Security', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
             name="saved/index"
             options={{ title: 'Saved Properties', headerBackTitle: 'Back' }}
           />
