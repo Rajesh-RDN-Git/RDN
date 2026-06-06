@@ -86,9 +86,14 @@ enum MediaType {
 enum LeadStatus {
   NEW
   CONTACTED
+  NOT_PICKED
+  INTERESTED
+  QUALIFIED
   VISIT_SCHEDULED
   VISITED
   NEGOTIATING
+  MEETING_ARRANGED
+  DEAL_OPEN
   CLOSING
   CLOSED
   LOST
@@ -117,6 +122,7 @@ enum PaymentStatus {
 enum CommissionStatus {
   PENDING   @map("COMM_PENDING")
   SETTLED
+  DISTRIBUTED
   CANCELLED
 }
 
@@ -132,6 +138,9 @@ enum GrievanceCategory {
   COMMISSION
   SERVICE
   SAFETY
+  KEY_ARRANGEMENT
+  VISIT_TIME
+  MEETING_AVAILABILITY
   OTHER
 }
 
@@ -337,10 +346,12 @@ model Dealer {
   id                 String         @id @default(uuid()) @db.Uuid
   userId             String         @map("user_id") @db.Uuid
   societyId          String         @map("society_id") @db.Uuid
-  kycStatus          KYCStatus      @default(PENDING) @map("kyc_status")
-  rwaApprovalStatus  ApprovalStatus @default(PENDING) @map("rwa_approval_status")
-  trainingStatus     TrainingStatus @default(PENDING) @map("training_status")
-  isActive           Boolean        @default(false) @map("is_active")
+  kycStatus          KYCStatus           @default(PENDING) @map("kyc_status")
+  rwaApprovalStatus  ApprovalStatus      @default(PENDING) @map("rwa_approval_status")
+  trainingStatus     TrainingStatus      @default(PENDING) @map("training_status")
+  certificationStatus CertificationStatus @default(NOT_CERTIFIED) @map("certification_status")
+  certifiedAt        DateTime?           @map("certified_at")
+  isActive           Boolean             @default(false) @map("is_active")
   bankAccountDetails Json?          @map("bank_account_details")
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
@@ -374,6 +385,12 @@ enum ApprovalStatus {
 enum TrainingStatus {
   PENDING   @map("TRAIN_PENDING")
   COMPLETED
+}
+
+enum CertificationStatus {
+  NOT_CERTIFIED
+  CERTIFIED
+  REVOKED
 }
 
 model Property {

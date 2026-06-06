@@ -1,6 +1,7 @@
 export enum CommissionStatus {
   PENDING = 'PENDING',
   SETTLED = 'SETTLED',
+  DISTRIBUTED = 'DISTRIBUTED',
   CANCELLED = 'CANCELLED',
 }
 
