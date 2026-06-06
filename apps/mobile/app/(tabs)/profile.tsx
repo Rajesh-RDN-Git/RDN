@@ -119,6 +119,14 @@ export default function ProfileScreen() {
 
       <Card style={styles.menuCard}>
         <MenuItem
+          title="Edit profile"
+          subtitle="Update name, email, avatar"
+          onPress={() => router.push('/settings/edit-profile' as never)}
+        />
+      </Card>
+
+      <Card style={styles.menuCard}>
+        <MenuItem
           title="Become a dealer"
           subtitle="Apply to your society's RWA"
           onPress={() => router.push('/become-dealer' as never)}

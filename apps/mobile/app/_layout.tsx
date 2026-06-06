@@ -97,6 +97,10 @@ export default function RootLayout() {
             options={{ title: 'Become a Dealer', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="settings/edit-profile"
+            options={{ title: 'Edit Profile', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
             name="settings/delete-account"
             options={{ title: 'Delete Account', headerBackTitle: 'Back' }}
           />
