@@ -74,7 +74,8 @@ export default function DealerDetailScreen() {
     setLoading(true);
     try {
       const { data } = await dealersApi.getById(id);
-      setDealer(data);
+      // API wraps every response as {data: <payload>, meta} — unwrap to the dealer
+      setDealer(data.data ?? data);
     } catch {
       /* failed to load dealer */
     }
