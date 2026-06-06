@@ -3,7 +3,13 @@ import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { useWizard, WizardProvider } from './wizard-context';
-import { STEP_LABELS, STEP_ORDER, validateStep, type WizardStep } from './wizard-types';
+import {
+  STEP_LABELS,
+  STEP_ORDER,
+  validateStep,
+  type WizardData,
+  type WizardStep,
+} from './wizard-types';
 import { AmenitiesStep, BasicsStep, PhotosStep, PricingStep, ReviewStep, SpecsStep } from './steps';
 import { useDraftAutosave, loadDraft, clearDraft } from './use-draft-autosave';
 import { propertiesApi } from '@/lib/api/properties';
@@ -43,14 +49,24 @@ function ProgressBar({ current }: { current: WizardStep }) {
   );
 }
 
-function WizardInner() {
+type WizardInnerProps = {
+  /** When provided the wizard runs in edit mode: draft restore is skipped, and
+   *  submit delegates to this callback instead of calling propertiesApi.create. */
+  onSubmit?: (data: WizardData) => Promise<void>;
+};
+
+function WizardInner({ onSubmit: onSubmitProp }: WizardInnerProps) {
   const router = useRouter();
   const { state, dispatch } = useWizard();
   const [submitting, setSubmitting] = useState(false);
 
-  useDraftAutosave(state.data, state.isDirty);
+  // In edit mode (onSubmitProp provided) autosave is disabled — we don't want
+  // to clobber a create-mode draft with edit data.
+  useDraftAutosave(state.data, onSubmitProp ? false : state.isDirty);
 
   useEffect(() => {
+    // Skip draft restore when editing an existing listing.
+    if (onSubmitProp) return;
     (async () => {
       const draft = await loadDraft();
       if (draft) {
@@ -60,7 +76,7 @@ function WizardInner() {
         ]);
       }
     })();
-  }, [dispatch]);
+  }, [dispatch, onSubmitProp]);
 
   const goNext = useCallback(() => {
     const { ok, errors } = validateStep(state.currentStep, state.data);
@@ -90,46 +106,52 @@ function WizardInner() {
     }
     setSubmitting(true);
     try {
-      const payload: Record<string, unknown> = {
-        societyId: state.data.societyId,
-        flatNumber: state.data.flatNumber,
-        towerBlock: state.data.towerBlock,
-        type: state.data.type,
-        transactionType: state.data.transactionType,
-        bhk: state.data.bhk,
-        carpetArea: state.data.carpetArea,
-        superArea: state.data.superArea,
-        floor: state.data.floor,
-        totalFloors: state.data.totalFloors,
-        facing: state.data.facing,
-        furnishing: state.data.furnishing,
-        priceRent: state.data.priceRent,
-        priceSale: state.data.priceSale,
-        securityDeposit: state.data.securityDeposit,
-        maintenance: state.data.maintenance,
-        negotiable: state.data.negotiable,
-        brokerageDisclosed: state.data.brokerageDisclosed,
-        amenities: state.data.amenities,
-        restrictions: state.data.restrictions,
-        photos: state.data.photos.map((p) => ({
-          url: p.url,
-          isCover: p.isCover,
-          order: p.order,
-        })),
-      };
-      await propertiesApi.create(payload);
-      await clearDraft();
-      dispatch({ type: 'RESET' });
-      Alert.alert('Listed!', 'Your property is pending RWA approval.', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
-      ]);
+      if (onSubmitProp) {
+        // Edit mode — delegate entirely to the caller.
+        await onSubmitProp(state.data);
+      } else {
+        // Create mode — original behaviour.
+        const payload: Record<string, unknown> = {
+          societyId: state.data.societyId,
+          flatNumber: state.data.flatNumber,
+          towerBlock: state.data.towerBlock,
+          type: state.data.type,
+          transactionType: state.data.transactionType,
+          bhk: state.data.bhk,
+          carpetArea: state.data.carpetArea,
+          superArea: state.data.superArea,
+          floor: state.data.floor,
+          totalFloors: state.data.totalFloors,
+          facing: state.data.facing,
+          furnishing: state.data.furnishing,
+          priceRent: state.data.priceRent,
+          priceSale: state.data.priceSale,
+          securityDeposit: state.data.securityDeposit,
+          maintenance: state.data.maintenance,
+          negotiable: state.data.negotiable,
+          brokerageDisclosed: state.data.brokerageDisclosed,
+          amenities: state.data.amenities,
+          restrictions: state.data.restrictions,
+          photos: state.data.photos.map((p) => ({
+            url: p.url,
+            isCover: p.isCover,
+            order: p.order,
+          })),
+        };
+        await propertiesApi.create(payload);
+        await clearDraft();
+        dispatch({ type: 'RESET' });
+        Alert.alert('Listed!', 'Your property is pending RWA approval.', [
+          { text: 'OK', onPress: () => router.replace('/(tabs)') },
+        ]);
+      }
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Failed to submit';
       Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }
-  }, [state.data, dispatch, router]);
+  }, [state.data, dispatch, router, onSubmitProp]);
 
   const idx = STEP_ORDER.indexOf(state.currentStep);
   const isLast = idx === STEP_ORDER.length - 1;
@@ -155,7 +177,7 @@ function WizardInner() {
         )}
         {isLast ? (
           <Button
-            title={submitting ? 'Submitting…' : 'Submit listing'}
+            title={submitting ? 'Submitting…' : onSubmitProp ? 'Save changes' : 'Submit listing'}
             onPress={submit}
             disabled={submitting}
             style={styles.primary}
@@ -168,10 +190,17 @@ function WizardInner() {
   );
 }
 
-export function PropertyWizardScreen() {
+type PropertyWizardScreenProps = {
+  /** Seed the wizard with existing property data (edit mode). */
+  initialData?: Partial<WizardData>;
+  /** Override the submit handler (edit mode). When omitted, propertiesApi.create is used. */
+  onSubmit?: (data: WizardData) => Promise<void>;
+};
+
+export function PropertyWizardScreen({ initialData, onSubmit }: PropertyWizardScreenProps = {}) {
   return (
-    <WizardProvider>
-      <WizardInner />
+    <WizardProvider initialData={initialData}>
+      <WizardInner onSubmit={onSubmit} />
     </WizardProvider>
   );
 }

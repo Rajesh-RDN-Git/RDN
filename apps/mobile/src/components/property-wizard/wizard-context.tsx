@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, type ReactNode, type Dispatch } from 'react';
-import { INITIAL_DATA, type WizardAction, type WizardState } from './wizard-types';
+import { INITIAL_DATA, type WizardAction, type WizardData, type WizardState } from './wizard-types';
 
 const INITIAL_STATE: WizardState = {
   currentStep: 'basics',
@@ -38,8 +38,17 @@ type WizardContextValue = {
 
 const WizardContext = createContext<WizardContextValue | null>(null);
 
-export function WizardProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+export function WizardProvider({
+  children,
+  initialData,
+}: {
+  children: ReactNode;
+  initialData?: Partial<WizardData>;
+}) {
+  const seedState: WizardState = initialData
+    ? { ...INITIAL_STATE, data: { ...INITIAL_DATA, ...initialData } }
+    : INITIAL_STATE;
+  const [state, dispatch] = useReducer(reducer, seedState);
   return <WizardContext.Provider value={{ state, dispatch }}>{children}</WizardContext.Provider>;
 }
 

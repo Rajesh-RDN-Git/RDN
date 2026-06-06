@@ -65,8 +65,12 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false, presentation: 'modal' }} />
           <Stack.Screen
-            name="property/[id]"
+            name="property/[id]/index"
             options={{ title: 'Property Details', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="property/[id]/edit"
+            options={{ title: 'Edit Property', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
             name="property/new"
