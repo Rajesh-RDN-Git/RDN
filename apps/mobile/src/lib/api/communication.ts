@@ -12,4 +12,6 @@ export const communicationApi = {
 
   sendMessage: (conversationId: string, data: { content: string; type?: string }) =>
     apiClient.post(`/communication/conversations/${conversationId}/messages`, data),
+
+  call: (data: { leadId: string }) => apiClient.post('/communication/call', data),
 };
