@@ -15,7 +15,7 @@ interface DashboardStats {
   totalLeads?: number;
   totalDealers?: number;
   totalSocieties?: number;
-  conversionRate?: number;
+  conversionRate?: string; // API returns a preformatted string incl. '%'
   activeLeads?: number;
   assignedProperties?: number;
   myListings?: number;
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                 icon={<BuildingIcon size={20} />}
               />
             )}
-            <StatCard label="Conversion Rate" value={`${stats.conversionRate ?? 0}%`} />
+            <StatCard label="Conversion Rate" value={stats.conversionRate ?? '0%'} />
           </>
         )}
 

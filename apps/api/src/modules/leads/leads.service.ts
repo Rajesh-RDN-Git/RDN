@@ -35,6 +35,13 @@ export class LeadsService {
       where.buyerId = userId;
     } else if (userRole === 'OWNER') {
       where.property = { ownerId: userId };
+    } else if (userRole === 'RWA_ADMIN') {
+      // RWA admins only see leads within the societies they manage.
+      const societies = await this.prisma.society.findMany({
+        where: { rwaAdminId: userId },
+        select: { id: true },
+      });
+      where.societyId = { in: societies.map((s) => s.id) };
     }
 
     const [data, total] = await Promise.all([
@@ -196,6 +203,11 @@ export class LeadsService {
     const isSuperAdmin = callerRole === 'SUPER_ADMIN';
     if (!isSuperAdmin && lead.property.ownerId !== callerId) {
       throw new BadRequestException('Only the property owner can approve visits');
+    }
+
+    // A visit can only be approved once a dealer has actually scheduled one.
+    if (lead.status !== 'VISIT_SCHEDULED') {
+      throw new BadRequestException('No visit is awaiting approval for this lead');
     }
 
     return this.prisma.lead.update({

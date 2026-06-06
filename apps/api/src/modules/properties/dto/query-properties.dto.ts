@@ -4,6 +4,23 @@ export class QueryPropertiesDto {
   @ApiPropertyOptional()
   societyId?: string;
 
+  @ApiPropertyOptional({
+    description: 'Filter to a single owner (used by the owner "My Properties" view)',
+  })
+  ownerId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter to the dealer assigned to these properties, by the dealer\'s user id (used by the dealer "Assigned Properties" view)',
+  })
+  assignedDealerUserId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Filter to the societies managed by an RWA admin, by their user id (used by the RWA "Properties" view)',
+  })
+  rwaAdminUserId?: string;
+
   @ApiPropertyOptional({ enum: ['APARTMENT', 'COMMERCIAL', 'VILLA'] })
   type?: string;
 

@@ -86,6 +86,7 @@ const navByRole: Record<string, NavItem[]> = {
     CHAT_LINK,
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
+    { href: '/dashboard/commissions', label: 'Commissions', icon: FileTextIcon },
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],

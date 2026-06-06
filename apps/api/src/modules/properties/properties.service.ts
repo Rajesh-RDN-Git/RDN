@@ -16,13 +16,35 @@ export class PropertiesService {
 
     const where: Prisma.PropertyWhereInput = {};
     if (query.societyId) where.societyId = query.societyId;
+    if (query.ownerId) where.ownerId = query.ownerId;
+    // Dealer "Assigned Properties" view: resolve the dealer record from the
+    // user id, then filter to properties assigned to that dealer. Use a
+    // non-matching sentinel when the user isn't a dealer so nothing leaks.
+    if (query.assignedDealerUserId) {
+      const dealer = await this.prisma.dealer.findFirst({
+        where: { userId: query.assignedDealerUserId },
+        select: { id: true },
+      });
+      where.assignedDealerId = dealer?.id ?? '__no_dealer__';
+    }
+    // RWA "Properties" view: scope to the societies this admin manages.
+    if (query.rwaAdminUserId) {
+      const societies = await this.prisma.society.findMany({
+        where: { rwaAdminId: query.rwaAdminUserId },
+        select: { id: true },
+      });
+      where.societyId = { in: societies.map((s) => s.id) };
+    }
     if (query.type) where.type = query.type as any;
     if (query.transactionType) where.transactionType = query.transactionType as any;
     if (query.bhk) where.bhk = Number(query.bhk);
     if (query.furnishing) where.furnishing = query.furnishing as any;
     if (query.availabilityStatus) where.availabilityStatus = query.availabilityStatus as any;
     if (query.status) where.status = query.status as any;
-    else where.status = 'ACTIVE';
+    // Default to ACTIVE only for the public catalogue. Management views (owner,
+    // assigned dealer, RWA admin) show all statuses.
+    else if (!query.ownerId && !query.assignedDealerUserId && !query.rwaAdminUserId)
+      where.status = 'ACTIVE';
 
     if (query.priceMin || query.priceMax) {
       if (query.transactionType === 'SALE') {

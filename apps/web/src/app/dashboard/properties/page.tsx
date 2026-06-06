@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { useAuthStore } from '@/stores/auth-store';
+import { SavedProperties } from '@/components/dashboard/saved-properties';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -51,14 +52,25 @@ export default function PropertiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const canCreate = user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN';
+  // Buyers/tenants don't manage properties — this route is their "Saved" list.
+  const isBuyer = user?.role === 'BUYER_TENANT';
+  // Owners see only their own listings ("My Properties"); dealers see only
+  // properties assigned to them; admins see all.
+  const isOwner = user?.role === 'OWNER';
+  const isDealer = user?.role === 'DEALER';
+  const isRwa = user?.role === 'RWA_ADMIN';
 
   const fetchProperties = async () => {
+    if (isBuyer) return;
     setLoading(true);
     setError(null);
     try {
       const params: Record<string, unknown> = { page, limit: 20 };
       if (statusFilter) params.status = statusFilter;
       if (typeFilter) params.transactionType = typeFilter;
+      if (isOwner && user?.id) params.ownerId = user.id;
+      if (isDealer && user?.id) params.assignedDealerUserId = user.id;
+      if (isRwa && user?.id) params.rwaAdminUserId = user.id;
       const { data } = await propertiesApi.list(params);
       setProperties(data.data || []);
       setTotal(data.total || 0);
@@ -75,7 +87,7 @@ export default function PropertiesPage() {
 
   useEffect(() => {
     fetchProperties();
-  }, [page, statusFilter, typeFilter]);
+  }, [page, statusFilter, typeFilter, isBuyer, isOwner, isDealer, isRwa, user?.id]);
 
   const filteredProperties = searchQuery
     ? properties.filter(
@@ -168,11 +180,17 @@ export default function PropertiesPage() {
     },
   ];
 
+  if (isBuyer) {
+    return <SavedProperties />;
+  }
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-heading-xl text-foreground">Properties</h1>
+          <h1 className="text-heading-xl text-foreground">
+            {isOwner ? 'My Properties' : isDealer ? 'Assigned Properties' : 'Properties'}
+          </h1>
           {total > 0 && (
             <p className="mt-0.5 text-body-sm text-muted-foreground">{total} properties total</p>
           )}

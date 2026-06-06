@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { leadsApi } from '@/lib/api/leads.api';
+import { communicationApi } from '@/lib/api/communication.api';
 import { useAuthStore } from '@/stores/auth-store';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
-import { CheckIcon } from '@/components/ui/icons';
+import { CheckIcon, PhoneIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 
 // Maps the current lead status to the next allowed status + button label.
@@ -64,6 +65,9 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
 
 export default function LeadsPage() {
   const { user } = useAuthStore();
+  // Buyers see their own enquiries ("My Inquiries"): no internal CRM columns
+  // (assigned dealer, lead priority) and no status-advancing actions.
+  const isBuyer = user?.role === 'BUYER_TENANT';
   const [leads, setLeads] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -79,6 +83,7 @@ export default function LeadsPage() {
   const [scheduleFor, setScheduleFor] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState<string>(tomorrowISO());
   const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [callingId, setCallingId] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -208,9 +213,41 @@ export default function LeadsPage() {
         const nextStep = NEXT_STATUS[item.status];
         const isScheduling = scheduleFor === item.id;
         const isAdvancing = advancingId === item.id;
+        // Dealers can place a masked call to the buyer on any open lead.
+        const canCall =
+          user?.role === 'DEALER' &&
+          item.status !== 'CLOSED' &&
+          item.status !== 'LOST' &&
+          item.buyer?.id;
 
         return (
           <div className="flex flex-wrap items-center gap-2">
+            {canCall && (
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<PhoneIcon size={14} />}
+                isLoading={callingId === item.id}
+                onClick={async () => {
+                  setCallingId(item.id);
+                  try {
+                    await communicationApi.initiateCall({
+                      leadId: item.id,
+                      toUserId: item.buyer.id,
+                    });
+                    showToast.success('Connecting your masked call…');
+                  } catch (e: unknown) {
+                    const err = e as { response?: { data?: { message?: string } } };
+                    showToast.error(
+                      err?.response?.data?.message || 'Could not place call right now',
+                    );
+                  }
+                  setCallingId(null);
+                }}
+              >
+                Call
+              </Button>
+            )}
             {canAdvance && nextStep && (
               <>
                 {item.status === 'CONTACTED' && isScheduling ? (
@@ -275,6 +312,7 @@ export default function LeadsPage() {
                 </Button>
               )}
             {(user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') &&
+              item.status === 'VISIT_SCHEDULED' &&
               (item.visitApprovedByOwner ? (
                 <span className="inline-flex items-center gap-1 text-xs font-medium text-success-text">
                   <CheckIcon size={14} className="text-success-icon" />
@@ -304,13 +342,22 @@ export default function LeadsPage() {
     },
   ];
 
+  // For buyers, hide internal CRM columns and the actions column.
+  const visibleColumns = isBuyer
+    ? columns.filter((c) => ['property', 'society', 'status', 'date'].includes(c.key))
+    : columns;
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-heading-xl text-foreground">Leads</h1>
+          <h1 className="text-heading-xl text-foreground">{isBuyer ? 'My Inquiries' : 'Leads'}</h1>
           {total > 0 && (
-            <p className="mt-0.5 text-body-sm text-muted-foreground">{total} leads total</p>
+            <p className="mt-0.5 text-body-sm text-muted-foreground">
+              {isBuyer
+                ? `${total} ${total === 1 ? 'inquiry' : 'inquiries'}`
+                : `${total} leads total`}
+            </p>
           )}
         </div>
       </div>
@@ -361,11 +408,11 @@ export default function LeadsPage() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <DataTable
-            columns={columns}
+            columns={visibleColumns}
             data={leads}
             isLoading={loading}
             keyExtractor={(item: any) => item.id}
-            emptyMessage="No leads found"
+            emptyMessage={isBuyer ? 'No inquiries yet' : 'No leads found'}
           />
         </div>
       )}
