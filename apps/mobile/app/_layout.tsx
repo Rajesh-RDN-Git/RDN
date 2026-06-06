@@ -121,6 +121,18 @@ export default function RootLayout() {
             options={{ title: 'Grievances', headerBackTitle: 'Back' }}
           />
           <Stack.Screen
+            name="manage/societies/index"
+            options={{ title: 'Manage Societies', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="manage/societies/new"
+            options={{ title: 'New Society', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
+            name="manage/societies/[id]"
+            options={{ title: 'Society Details', headerBackTitle: 'Back' }}
+          />
+          <Stack.Screen
             name="manage/properties/index"
             options={{ title: 'Manage Properties', headerBackTitle: 'Back' }}
           />
