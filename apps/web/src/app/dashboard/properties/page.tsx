@@ -170,12 +170,22 @@ export default function PropertiesPage() {
       key: 'actions',
       header: '',
       render: (item: any) => (
-        <Link
-          href={`/property/${item.id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm text-brand transition-colors hover:bg-brand-subtle"
-        >
-          <EyeIcon size={16} /> View
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/property/${item.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm text-brand transition-colors hover:bg-brand-subtle"
+          >
+            <EyeIcon size={16} /> View
+          </Link>
+          {(isOwner || user?.role === 'SUPER_ADMIN' || user?.role === 'RWA_ADMIN') && (
+            <Link
+              href={`/dashboard/properties/${item.id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm text-foreground transition-colors hover:bg-muted"
+            >
+              Edit
+            </Link>
+          )}
+        </div>
       ),
     },
   ];

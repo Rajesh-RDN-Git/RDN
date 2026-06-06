@@ -18,8 +18,10 @@ import {
   PhoneIcon,
   ChatIcon,
   ChevronIcon,
+  SettingsIcon,
 } from '@/components/ui/icons';
 import { leadsApi } from '@/lib/api/leads.api';
+import { propertiesApi } from '@/lib/api/properties.api';
 import { useAuthStore } from '@/stores/auth-store';
 import { showToast } from '@/stores/toast-store';
 
@@ -53,6 +55,9 @@ interface Property {
   };
   media: Array<{ url: string; type: string; order: number }>;
   dealer?: { user?: { name: string; avatarUrl?: string } };
+  status?: string;
+  owner?: { id: string; name?: string };
+  assignedDealer?: { id: string; user?: { id: string; name?: string } };
 }
 
 const formatPrice = (price: string | null) => {
@@ -99,8 +104,36 @@ const specItems = (property: Property) => [
 
 export function PropertyDetailClient({ property }: { property: Property }) {
   const [showEnquiry, setShowEnquiry] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
   const [requestingCallback, setRequestingCallback] = useState(false);
+  const [delisting, setDelisting] = useState(false);
+
+  // Role-aware action panel. Anonymous + buyers get the enquiry/shortlist flow;
+  // the owner of this listing and admins get manage actions; everyone else just
+  // gets shortlist (avoids offering enquiry that would 403). During auth-store
+  // hydration, fall back to the buyer/anon view to avoid flashing manage UI.
+  const role = user?.role;
+  const isBuyerFlow = isLoading || !user || role === 'BUYER_TENANT';
+  const isOwnerOfThis = role === 'OWNER' && !!property.owner?.id && property.owner.id === user?.id;
+  const isAdmin = role === 'SUPER_ADMIN' || role === 'RWA_ADMIN';
+  const canManage = !isBuyerFlow && (isOwnerOfThis || isAdmin);
+
+  const handleDelist = async () => {
+    if (!confirm('Delist this property? It will no longer appear in search.')) return;
+    setDelisting(true);
+    try {
+      await propertiesApi.delist(property.id);
+      showToast.success('Property delisted');
+      window.location.href = '/dashboard/properties';
+    } catch (err) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Failed to delist property';
+      showToast.error(msg);
+    } finally {
+      setDelisting(false);
+    }
+  };
   // Start false so SSR and first client render agree, then hydrate from
   // localStorage after mount — reading storage in the initializer causes a
   // hydration mismatch (React #418/#425) when the property is shortlisted.
@@ -296,42 +329,68 @@ export function PropertyDetailClient({ property }: { property: Property }) {
               )}
             </div>
 
-            {/* CTA buttons */}
+            {/* CTA buttons — role aware */}
             <div className="space-y-3">
-              <Button
-                onClick={() => setShowEnquiry(true)}
-                className="w-full"
-                size="lg"
-                leftIcon={<ChatIcon size={18} />}
-              >
-                Enquire Now
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                size="lg"
-                leftIcon={<PhoneIcon size={18} />}
-                onClick={handleRequestCallback}
-                isLoading={requestingCallback}
-                disabled={requestingCallback}
-              >
-                Request Callback
-              </Button>
-              <Button
-                variant={shortlisted ? 'secondary' : 'ghost'}
-                className="w-full"
-                size="lg"
-                leftIcon={
-                  <HeartIcon
-                    size={18}
-                    filled={shortlisted}
-                    className={shortlisted ? 'text-error-icon' : ''}
-                  />
-                }
-                onClick={toggleShortlist}
-              >
-                {shortlisted ? 'Shortlisted' : 'Shortlist'}
-              </Button>
+              {canManage ? (
+                <>
+                  <Link href={`/dashboard/properties/${property.id}/edit`} className="block">
+                    <Button className="w-full" size="lg" leftIcon={<SettingsIcon size={18} />}>
+                      Edit listing
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                    onClick={handleDelist}
+                    isLoading={delisting}
+                    disabled={delisting || property.status === 'DELISTED'}
+                  >
+                    {property.status === 'DELISTED' ? 'Delisted' : 'Delist'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {isBuyerFlow && (
+                    <>
+                      <Button
+                        onClick={() => setShowEnquiry(true)}
+                        className="w-full"
+                        size="lg"
+                        leftIcon={<ChatIcon size={18} />}
+                      >
+                        Enquire Now
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                        leftIcon={<PhoneIcon size={18} />}
+                        onClick={handleRequestCallback}
+                        isLoading={requestingCallback}
+                        disabled={requestingCallback}
+                      >
+                        Request Callback
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant={shortlisted ? 'secondary' : 'ghost'}
+                    className="w-full"
+                    size="lg"
+                    leftIcon={
+                      <HeartIcon
+                        size={18}
+                        filled={shortlisted}
+                        className={shortlisted ? 'text-error-icon' : ''}
+                      />
+                    }
+                    onClick={toggleShortlist}
+                  >
+                    {shortlisted ? 'Shortlisted' : 'Shortlist'}
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Dealer card */}

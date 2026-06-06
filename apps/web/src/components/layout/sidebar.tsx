@@ -20,6 +20,7 @@ import {
   CheckIcon,
   BellIcon,
   ShieldIcon,
+  LogoutIcon,
 } from '@/components/ui/icons';
 
 type IconComponent = ComponentType<{ size?: number; className?: string }>;
@@ -71,7 +72,6 @@ const navByRole: Record<string, NavItem[]> = {
   ],
   [Role.RWA_ADMIN]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-    CHAT_LINK,
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
     { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
@@ -92,9 +92,8 @@ const navByRole: Record<string, NavItem[]> = {
   ],
   [Role.OWNER]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-    CHAT_LINK,
     { href: '/dashboard/properties', label: 'My Properties', icon: HomeIcon },
-    { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
+    { href: '/dashboard/leads', label: 'Tracking', icon: BriefcaseIcon },
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
@@ -115,7 +114,7 @@ interface SidebarProps {
 
 export function Sidebar({ mobile, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const role = user?.role || Role.BUYER_TENANT;
   const items = navByRole[role] || navByRole[Role.BUYER_TENANT];
@@ -173,6 +172,23 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
           );
         })}
       </nav>
+      <div className="border-t border-border px-2 py-3">
+        {user?.name && (
+          <p className="truncate px-3 pb-2 text-caption-md text-muted-foreground">
+            Signed in as <span className="font-medium text-foreground">{user.name}</span>
+          </p>
+        )}
+        <button
+          onClick={() => {
+            onClose?.();
+            logout();
+          }}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors duration-fast hover:bg-subtle"
+        >
+          <LogoutIcon size={18} className="text-muted-foreground" />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

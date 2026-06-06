@@ -133,9 +133,10 @@ export default function BecomeDealerPage() {
       <div className="mb-8">
         <h1 className="text-heading-xl text-foreground">Become a Resident Dealer</h1>
         <p className="mt-2 text-body-md text-muted-foreground">
-          RDN dealers are residents of their society who help neighbours with property transactions
-          and earn commissions. Submit your application — your RWA admin reviews and approves
-          dealers from your community.
+          Resident Dealers are verified residents of their own community who make property buying,
+          selling, renting and leasing easier for buyers, sellers, owners and tenants — while
+          earning commissions on successful transactions. Submit your application and become the
+          trusted property expert of your community.
         </p>
       </div>
 

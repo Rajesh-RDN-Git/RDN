@@ -9,6 +9,8 @@ export const propertiesApi = {
 
   update: (id: string, data: Record<string, unknown>) => apiClient.patch(`/properties/${id}`, data),
 
+  delist: (id: string) => apiClient.delete(`/properties/${id}`),
+
   getVerificationQueue: () => apiClient.get('/properties/verification-queue'),
 
   updateVerification: (id: string, decision: 'RWA_APPROVED' | 'REJECTED', reason?: string) =>

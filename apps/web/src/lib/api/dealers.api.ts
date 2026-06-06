@@ -9,4 +9,6 @@ export const dealersApi = {
   reject: (id: string, reason?: string) => apiClient.patch(`/dealers/${id}/reject`, { reason }),
   updateKyc: (id: string, status: string) => apiClient.patch(`/dealers/${id}/kyc`, { status }),
   completeTraining: (id: string) => apiClient.patch(`/dealers/${id}/training-complete`),
+  setActive: (id: string, isActive: boolean) =>
+    apiClient.patch(`/dealers/${id}/active`, { isActive }),
 };

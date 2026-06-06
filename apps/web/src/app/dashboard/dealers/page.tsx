@@ -94,6 +94,16 @@ export default function DealersPage() {
     }
   };
 
+  const handleSetActive = async (id: string, isActive: boolean) => {
+    setActionError(null);
+    try {
+      await dealersApi.setActive(id, isActive);
+      fetchDealers();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.message || 'Failed to update dealer status.');
+    }
+  };
+
   const columns = [
     {
       key: 'dealer',
@@ -174,6 +184,20 @@ export default function DealersPage() {
               Mark Training Complete
             </Button>
           )}
+          {user?.role === 'SUPER_ADMIN' &&
+            (item.isActive ? (
+              <Button size="sm" variant="outline" onClick={() => handleSetActive(item.id, false)}>
+                Deactivate
+              </Button>
+            ) : (
+              item.kycStatus === 'APPROVED' &&
+              item.rwaApprovalStatus === 'APPROVED' &&
+              item.trainingStatus === 'COMPLETED' && (
+                <Button size="sm" onClick={() => handleSetActive(item.id, true)}>
+                  Activate
+                </Button>
+              )
+            ))}
         </div>
       ),
     },

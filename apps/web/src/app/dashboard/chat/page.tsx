@@ -153,6 +153,27 @@ export default function ChatPage() {
   );
   const messageGroups = groupMessagesByDate(orderedMessages);
 
+  // Chat is a masked conversation between a buyer and their assigned dealer.
+  // RWA admins and owners are never participants, so the page would always be
+  // empty for them — show a clear message instead (also guards direct URLs).
+  if (user?.role === 'RWA_ADMIN' || user?.role === 'OWNER') {
+    return (
+      <div>
+        <h1 className="mb-6 text-heading-xl text-foreground">Chat</h1>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card py-16 text-center shadow-sm">
+          <ChatIcon size={32} className="mb-3 text-muted-foreground" />
+          <h3 className="text-heading-sm text-foreground">
+            Chat isn&apos;t available for your role
+          </h3>
+          <p className="mt-2 max-w-sm text-body-sm text-muted-foreground">
+            Masked chat connects buyers with their assigned community dealer. Manage your work from
+            the Leads and Properties sections instead.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="mb-6 text-heading-xl text-foreground">Chat</h1>
