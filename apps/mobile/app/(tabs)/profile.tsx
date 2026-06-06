@@ -21,6 +21,93 @@ const ROLE_COLORS: Record<string, string> = {
   BUYER_TENANT: '#6b7280',
 };
 
+const ALL_ROLES = ['SUPER_ADMIN', 'RWA_ADMIN', 'DEALER', 'OWNER', 'BUYER_TENANT'];
+
+interface ManageRow {
+  label: string;
+  subtitle: string;
+  route: string;
+  roles: string[];
+}
+
+const MANAGE_ROWS: ManageRow[] = [
+  {
+    label: 'My Properties',
+    subtitle: 'Manage your listings',
+    route: '/manage/properties',
+    roles: ['OWNER', 'DEALER', 'SUPER_ADMIN', 'RWA_ADMIN'],
+  },
+  {
+    label: 'Saved',
+    subtitle: 'Your saved properties',
+    route: '/saved',
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'Verification Queue',
+    subtitle: 'Review pending verifications',
+    route: '/manage/verification-queue',
+    roles: ['RWA_ADMIN', 'SUPER_ADMIN'],
+  },
+  {
+    label: 'Dealers',
+    subtitle: 'Manage society dealers',
+    route: '/manage/dealers',
+    roles: ['SUPER_ADMIN', 'RWA_ADMIN'],
+  },
+  {
+    label: 'Societies',
+    subtitle: 'Manage societies',
+    route: '/manage/societies',
+    roles: ['SUPER_ADMIN'],
+  },
+  {
+    label: 'Commissions',
+    subtitle: 'View commission records',
+    route: '/commissions',
+    roles: ['SUPER_ADMIN', 'DEALER'],
+  },
+  {
+    label: 'Transactions',
+    subtitle: 'View transaction history',
+    route: '/transactions',
+    roles: ['SUPER_ADMIN', 'RWA_ADMIN'],
+  },
+  {
+    label: 'Grievances',
+    subtitle: 'View and raise grievances',
+    route: '/grievances',
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'Reports',
+    subtitle: 'Analytics & reports',
+    route: '/reports',
+    roles: ALL_ROLES,
+  },
+];
+
+const SETTINGS_ROWS: ManageRow[] = [
+  {
+    label: 'Edit Profile',
+    subtitle: 'Update name, email, avatar',
+    route: '/settings/edit-profile',
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'Notification Preferences',
+    subtitle: 'Manage notification settings',
+    route: '/settings/notification-preferences',
+    roles: ALL_ROLES,
+  },
+  {
+    label: 'Security',
+    subtitle: 'Password & security options',
+    route: '/settings/security',
+    roles: ALL_ROLES,
+  },
+];
+
 interface MenuItemProps {
   title: string;
   subtitle?: string;
@@ -36,6 +123,14 @@ function MenuItem({ title, subtitle, onPress }: MenuItemProps) {
       </View>
       <Text style={styles.menuArrow}>›</Text>
     </TouchableOpacity>
+  );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+    </View>
   );
 }
 
@@ -63,6 +158,9 @@ export default function ProfileScreen() {
 
   const role = user.role || 'BUYER_TENANT';
 
+  const visibleManageRows = MANAGE_ROWS.filter((r) => r.roles.includes(role));
+  const visibleSettingsRows = SETTINGS_ROWS.filter((r) => r.roles.includes(role));
+
   return (
     <ScrollView style={styles.container}>
       {/* Profile Header */}
@@ -87,7 +185,7 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      {/* Menu Items */}
+      {/* Notifications */}
       <Card style={styles.menuCard}>
         <MenuItem
           title="Notifications"
@@ -101,30 +199,51 @@ export default function ProfileScreen() {
             onPress={() => router.push('/(tabs)/leads')}
           />
         )}
-        {role === 'OWNER' && (
-          <>
-            <MenuItem
-              title="My Properties"
-              subtitle="Manage your listings"
-              onPress={() => router.push('/(tabs)/search')}
-            />
-            <MenuItem
-              title="List a new property"
-              subtitle="6-step wizard"
-              onPress={() => router.push('/property/new' as never)}
-            />
-          </>
+        {(role === 'OWNER' || role === 'SUPER_ADMIN' || role === 'RWA_ADMIN') && (
+          <MenuItem
+            title="List a new property"
+            subtitle="6-step wizard"
+            onPress={() => router.push('/property/new' as never)}
+          />
         )}
       </Card>
 
-      <Card style={styles.menuCard}>
-        <MenuItem
-          title="Edit profile"
-          subtitle="Update name, email, avatar"
-          onPress={() => router.push('/settings/edit-profile' as never)}
-        />
-      </Card>
+      {/* Manage section */}
+      {visibleManageRows.length > 0 && (
+        <>
+          <SectionHeader title="Manage" />
+          <Card style={styles.menuCard}>
+            {visibleManageRows.map((row) => (
+              <MenuItem
+                key={row.route}
+                title={row.label}
+                subtitle={row.subtitle}
+                onPress={() => router.push(row.route as never)}
+              />
+            ))}
+          </Card>
+        </>
+      )}
 
+      {/* Settings section */}
+      {visibleSettingsRows.length > 0 && (
+        <>
+          <SectionHeader title="Settings" />
+          <Card style={styles.menuCard}>
+            {visibleSettingsRows.map((row) => (
+              <MenuItem
+                key={row.route}
+                title={row.label}
+                subtitle={row.subtitle}
+                onPress={() => router.push(row.route as never)}
+              />
+            ))}
+          </Card>
+        </>
+      )}
+
+      {/* DPDP & Account */}
+      <SectionHeader title="Account & Privacy" />
       <Card style={styles.menuCard}>
         <MenuItem
           title="Become a dealer"
@@ -195,6 +314,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   roleText: { fontSize: 12, fontWeight: '600' },
+  sectionHeader: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  sectionHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6b7280',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   menuCard: { marginHorizontal: 16, marginBottom: 8 },
   menuItem: {
     flexDirection: 'row',
