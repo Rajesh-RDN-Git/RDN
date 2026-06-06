@@ -11,4 +11,6 @@ export const dealersApi = {
   completeTraining: (id: string) => apiClient.patch(`/dealers/${id}/training-complete`),
   setActive: (id: string, isActive: boolean) =>
     apiClient.patch(`/dealers/${id}/active`, { isActive }),
+  certify: (id: string) => apiClient.patch(`/dealers/${id}/certify`),
+  revokeCertification: (id: string) => apiClient.patch(`/dealers/${id}/revoke-certification`),
 };

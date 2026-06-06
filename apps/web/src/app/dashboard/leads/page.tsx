@@ -14,15 +14,28 @@ import { Input } from '@/components/ui/input';
 import { CheckIcon, PhoneIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 
-// Maps the current lead status to the next allowed status + button label.
-// Excludes CLOSED (handled by close-deal endpoint) and terminal states.
-const NEXT_STATUS: Record<string, { next: string; label: string }> = {
-  NEW: { next: 'CONTACTED', label: 'Mark Contacted' },
-  CONTACTED: { next: 'VISIT_SCHEDULED', label: 'Schedule Visit' },
-  VISIT_SCHEDULED: { next: 'VISITED', label: 'Mark Visited' },
-  VISITED: { next: 'NEGOTIATING', label: 'Start Negotiation' },
-  NEGOTIATING: { next: 'CLOSING', label: 'Move to Closing' },
+// The dealer CRM pipeline. Each status maps to the actions available from it.
+// CLOSED/LOST are terminal; closing the deal uses the close-deal endpoint.
+// "Plan Visit" (-> VISIT_SCHEDULED) opens an inline date picker.
+type LeadAction = { next: string; label: string };
+const NEXT_ACTIONS: Record<string, LeadAction[]> = {
+  NEW: [{ next: 'CONTACTED', label: 'Mark Called' }],
+  CONTACTED: [
+    { next: 'QUALIFIED', label: 'Qualified' },
+    { next: 'INTERESTED', label: 'Interested' },
+    { next: 'NOT_PICKED', label: 'Not Picked' },
+  ],
+  NOT_PICKED: [{ next: 'CONTACTED', label: 'Call Again' }],
+  INTERESTED: [{ next: 'QUALIFIED', label: 'Qualified' }],
+  QUALIFIED: [{ next: 'VISIT_SCHEDULED', label: 'Plan Visit' }],
+  VISIT_SCHEDULED: [{ next: 'VISITED', label: 'Mark Visit Done' }],
+  VISITED: [{ next: 'NEGOTIATING', label: 'Start Negotiation' }],
+  NEGOTIATING: [{ next: 'MEETING_ARRANGED', label: 'Arrange Meeting' }],
+  MEETING_ARRANGED: [{ next: 'DEAL_OPEN', label: 'Open Deal' }],
 };
+
+// Statuses from which a deal can be closed (creates txn + commission).
+const CLOSEABLE = ['NEGOTIATING', 'MEETING_ARRANGED', 'DEAL_OPEN', 'CLOSING'];
 
 const tomorrowISO = () => {
   const d = new Date();
@@ -35,16 +48,21 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const statusVariant = (s: string) => {
   switch (s) {
     case 'NEW':
+    case 'INTERESTED':
       return 'info';
     case 'CONTACTED':
+    case 'QUALIFIED':
     case 'VISIT_SCHEDULED':
     case 'VISITED':
       return 'warning';
     case 'NEGOTIATING':
+    case 'MEETING_ARRANGED':
+    case 'DEAL_OPEN':
     case 'CLOSING':
       return 'info';
     case 'CLOSED':
       return 'success';
+    case 'NOT_PICKED':
     case 'LOST':
       return 'error';
     default:
@@ -55,10 +73,15 @@ const statusVariant = (s: string) => {
 const priorityConfig: Record<string, { label: string; color: string }> = {
   NEW: { label: 'HOT', color: 'bg-error-bg text-error-text' },
   CONTACTED: { label: 'WARM', color: 'bg-warning-bg text-warning-text' },
+  NOT_PICKED: { label: 'RETRY', color: 'bg-warning-bg text-warning-text' },
+  INTERESTED: { label: 'WARM', color: 'bg-warning-bg text-warning-text' },
+  QUALIFIED: { label: 'HOT', color: 'bg-error-bg text-error-text' },
   VISIT_SCHEDULED: { label: 'WARM', color: 'bg-warning-bg text-warning-text' },
-  NEGOTIATING: { label: 'HOT', color: 'bg-error-bg text-error-text' },
-  CLOSING: { label: 'URGENT', color: 'bg-error-bg text-error-text font-bold' },
   VISITED: { label: 'FOLLOW UP', color: 'bg-info-bg text-info-text' },
+  NEGOTIATING: { label: 'HOT', color: 'bg-error-bg text-error-text' },
+  MEETING_ARRANGED: { label: 'HOT', color: 'bg-error-bg text-error-text' },
+  DEAL_OPEN: { label: 'URGENT', color: 'bg-error-bg text-error-text font-bold' },
+  CLOSING: { label: 'URGENT', color: 'bg-error-bg text-error-text font-bold' },
   CLOSED: { label: 'DONE', color: 'bg-success-bg text-success-text' },
   LOST: { label: 'COLD', color: 'bg-subtle text-muted-foreground' },
 };
@@ -210,9 +233,10 @@ export default function LeadsPage() {
       header: '',
       render: (item: any) => {
         const canAdvance = user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN';
-        const nextStep = NEXT_STATUS[item.status];
+        const actions = NEXT_ACTIONS[item.status] || [];
         const isScheduling = scheduleFor === item.id;
         const isAdvancing = advancingId === item.id;
+        const isTerminal = item.status === 'CLOSED' || item.status === 'LOST';
         // Dealers can place a masked call to the buyer on any open lead.
         const canCall =
           user?.role === 'DEALER' &&
@@ -248,69 +272,73 @@ export default function LeadsPage() {
                 Call
               </Button>
             )}
-            {canAdvance && nextStep && (
-              <>
-                {item.status === 'CONTACTED' && isScheduling ? (
-                  <div className="flex items-center gap-1.5">
-                    <input
-                      type="date"
-                      min={todayISO()}
-                      value={scheduleDate}
-                      onChange={(e) => setScheduleDate(e.target.value)}
-                      className="rounded-md border border-border bg-background px-2 py-1 text-body-sm text-foreground"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        handleAdvanceStatus(item.id, 'VISIT_SCHEDULED', {
-                          visitDate: new Date(scheduleDate).toISOString(),
-                        })
-                      }
-                      isLoading={isAdvancing}
-                      disabled={!scheduleDate}
-                    >
-                      Confirm
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setScheduleFor(null);
-                        setScheduleDate(tomorrowISO());
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                ) : item.status === 'VISIT_SCHEDULED' && !item.visitApprovedByOwner ? (
-                  <span className="text-caption-md text-muted-foreground">
-                    Awaiting owner approval
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (item.status === 'CONTACTED') {
-                        setScheduleFor(item.id);
-                        setScheduleDate(tomorrowISO());
-                      } else {
-                        handleAdvanceStatus(item.id, nextStep.next);
-                      }
-                    }}
-                    isLoading={isAdvancing && !isScheduling}
-                  >
-                    {nextStep.label}
-                  </Button>
-                )}
-              </>
-            )}
-            {(item.status === 'NEGOTIATING' || item.status === 'CLOSING') &&
-              (user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN') && (
-                <Button size="sm" onClick={() => setCloseDealModal(item)}>
-                  Close Deal
+            {canAdvance && isScheduling ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  min={todayISO()}
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="rounded-md border border-border bg-background px-2 py-1 text-body-sm text-foreground"
+                />
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    handleAdvanceStatus(item.id, 'VISIT_SCHEDULED', {
+                      visitDate: new Date(scheduleDate).toISOString(),
+                    })
+                  }
+                  isLoading={isAdvancing}
+                  disabled={!scheduleDate}
+                >
+                  Confirm
                 </Button>
-              )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setScheduleFor(null);
+                    setScheduleDate(tomorrowISO());
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              canAdvance &&
+              actions.map((a) => (
+                <Button
+                  key={a.next}
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (a.next === 'VISIT_SCHEDULED') {
+                      setScheduleFor(item.id);
+                      setScheduleDate(tomorrowISO());
+                    } else {
+                      handleAdvanceStatus(item.id, a.next);
+                    }
+                  }}
+                  isLoading={isAdvancing}
+                >
+                  {a.label}
+                </Button>
+              ))
+            )}
+            {canAdvance && CLOSEABLE.includes(item.status) && (
+              <Button size="sm" onClick={() => setCloseDealModal(item)}>
+                Close Deal
+              </Button>
+            )}
+            {canAdvance && !isTerminal && !isScheduling && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleAdvanceStatus(item.id, 'LOST')}
+              >
+                Lost
+              </Button>
+            )}
             {(user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') &&
               item.status === 'VISIT_SCHEDULED' &&
               (item.visitApprovedByOwner ? (
@@ -372,12 +400,16 @@ export default function LeadsPage() {
         >
           <option value="">All Status</option>
           <option value="NEW">New</option>
-          <option value="CONTACTED">Contacted</option>
-          <option value="VISIT_SCHEDULED">Visit Scheduled</option>
-          <option value="VISITED">Visited</option>
+          <option value="CONTACTED">Called</option>
+          <option value="NOT_PICKED">Not Picked</option>
+          <option value="INTERESTED">Interested</option>
+          <option value="QUALIFIED">Qualified</option>
+          <option value="VISIT_SCHEDULED">Visit Planned</option>
+          <option value="VISITED">Visit Done</option>
           <option value="NEGOTIATING">Negotiating</option>
-          <option value="CLOSING">Closing</option>
-          <option value="CLOSED">Closed</option>
+          <option value="MEETING_ARRANGED">Meeting Arranged</option>
+          <option value="DEAL_OPEN">Deal Open</option>
+          <option value="CLOSED">Deal Closed</option>
           <option value="LOST">Lost</option>
         </Select>
       </div>

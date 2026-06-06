@@ -104,6 +104,17 @@ export default function DealersPage() {
     }
   };
 
+  const handleCertify = async (id: string, certify: boolean) => {
+    setActionError(null);
+    try {
+      if (certify) await dealersApi.certify(id);
+      else await dealersApi.revokeCertification(id);
+      fetchDealers();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.message || 'Failed to update certification.');
+    }
+  };
+
   const columns = [
     {
       key: 'dealer',
@@ -142,6 +153,27 @@ export default function DealersPage() {
       header: 'Active',
       render: (item: any) => (
         <Badge variant={item.isActive ? 'success' : 'error'}>{item.isActive ? 'Yes' : 'No'}</Badge>
+      ),
+    },
+    {
+      key: 'certification',
+      header: 'Certification',
+      render: (item: any) => (
+        <Badge
+          variant={
+            item.certificationStatus === 'CERTIFIED'
+              ? 'success'
+              : item.certificationStatus === 'REVOKED'
+                ? 'error'
+                : 'default'
+          }
+        >
+          {item.certificationStatus === 'CERTIFIED'
+            ? 'Certified'
+            : item.certificationStatus === 'REVOKED'
+              ? 'Revoked'
+              : 'Not certified'}
+        </Badge>
       ),
     },
     {
@@ -195,6 +227,18 @@ export default function DealersPage() {
               item.trainingStatus === 'COMPLETED' && (
                 <Button size="sm" onClick={() => handleSetActive(item.id, true)}>
                   Activate
+                </Button>
+              )
+            ))}
+          {user?.role === 'SUPER_ADMIN' &&
+            (item.certificationStatus === 'CERTIFIED' ? (
+              <Button size="sm" variant="outline" onClick={() => handleCertify(item.id, false)}>
+                Revoke Cert
+              </Button>
+            ) : (
+              item.trainingStatus === 'COMPLETED' && (
+                <Button size="sm" variant="secondary" onClick={() => handleCertify(item.id, true)}>
+                  Certify
                 </Button>
               )
             ))}

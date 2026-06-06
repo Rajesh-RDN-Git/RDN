@@ -49,6 +49,12 @@ const GRIEVANCES_LINK: NavItem = {
   icon: ShieldIcon,
 };
 
+const RAISE_GRIEVANCE_LINK: NavItem = {
+  href: '/dashboard/grievances/new',
+  label: 'Raise Grievance',
+  icon: ShieldIcon,
+};
+
 const SOCIETIES_LINK: NavItem = {
   href: '/dashboard/societies',
   label: 'Societies',
@@ -94,6 +100,7 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     { href: '/dashboard/properties', label: 'My Properties', icon: HomeIcon },
     { href: '/dashboard/leads', label: 'Tracking', icon: BriefcaseIcon },
+    RAISE_GRIEVANCE_LINK,
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],
@@ -102,6 +109,7 @@ const navByRole: Record<string, NavItem[]> = {
     CHAT_LINK,
     { href: '/dashboard/properties', label: 'Saved', icon: HeartIcon },
     { href: '/dashboard/leads', label: 'My Inquiries', icon: FileTextIcon },
+    RAISE_GRIEVANCE_LINK,
     NOTIFICATIONS_LINK,
     { href: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ],

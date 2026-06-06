@@ -55,8 +55,11 @@ function formatDate(value?: string | null): string {
   }
 }
 
-function statusVariant(status: CommissionStatus): 'default' | 'success' | 'error' | 'warning' {
+function statusVariant(
+  status: CommissionStatus,
+): 'default' | 'success' | 'error' | 'warning' | 'info' {
   if (status === 'SETTLED') return 'success';
+  if (status === 'DISTRIBUTED') return 'info';
   if (status === 'CANCELLED') return 'error';
   return 'warning';
 }
@@ -120,6 +123,15 @@ export default function CommissionsPage() {
     setCancelError(null);
   };
 
+  const handleDistribute = async (c: Commission) => {
+    try {
+      await commissionsApi.distribute(c.id);
+      await fetchData();
+    } catch {
+      /* surfaced by the list refresh; keep UI resilient */
+    }
+  };
+
   const handleSettle = async () => {
     if (!settleTarget) return;
     if (!paymentRef.trim()) {
@@ -166,6 +178,7 @@ export default function CommissionsPage() {
     { key: 'ALL', label: 'All' },
     { key: 'PENDING', label: 'Pending' },
     { key: 'SETTLED', label: 'Settled' },
+    { key: 'DISTRIBUTED', label: 'Distributed' },
     { key: 'CANCELLED', label: 'Cancelled' },
   ];
 
@@ -227,7 +240,17 @@ export default function CommissionsPage() {
       key: 'actions',
       header: 'Actions',
       render: (c: Commission) => {
-        if (!isSuperAdmin || c.status !== 'PENDING') {
+        if (!isSuperAdmin) {
+          return <span className="text-xs text-muted-foreground">-</span>;
+        }
+        if (c.status === 'SETTLED') {
+          return (
+            <Button size="sm" onClick={() => handleDistribute(c)}>
+              Mark Distributed
+            </Button>
+          );
+        }
+        if (c.status !== 'PENDING') {
           return <span className="text-xs text-muted-foreground">-</span>;
         }
         return (

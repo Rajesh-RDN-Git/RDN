@@ -6,6 +6,9 @@ export type GrievanceCategory =
   | 'COMMISSION'
   | 'SERVICE'
   | 'SAFETY'
+  | 'KEY_ARRANGEMENT'
+  | 'VISIT_TIME'
+  | 'MEETING_AVAILABILITY'
   | 'OTHER';
 
 export type GrievanceSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
