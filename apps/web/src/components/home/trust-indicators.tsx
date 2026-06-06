@@ -24,7 +24,7 @@ export function TrustIndicators() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const { data } = await reportsApi.dashboard();
+        const { data } = await reportsApi.publicStats();
         setStats(data as Stats);
       } catch {
         // Use fallbacks

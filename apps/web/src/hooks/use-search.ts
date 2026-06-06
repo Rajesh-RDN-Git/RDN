@@ -65,7 +65,7 @@ export function useSearch() {
       try {
         const { data } = await searchApi.searchProperties(newFilters as Record<string, unknown>);
         setResults(data.data || []);
-        setTotal(data.total || 0);
+        setTotal(data.pagination?.total ?? data.total ?? 0);
       } catch (err: any) {
         setResults([]);
         setTotal(0);
@@ -90,12 +90,10 @@ export function useSearch() {
     [search],
   );
 
-  // Load initial search from URL params
+  // Load initial search on mount. Run even with no filters so a bare /search
+  // shows all listings instead of an empty "no properties" state.
   useEffect(() => {
-    const filters = getFiltersFromParams();
-    if (Object.keys(filters).length > 0) {
-      search(filters);
-    }
+    search(getFiltersFromParams());
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filters = getFiltersFromParams();

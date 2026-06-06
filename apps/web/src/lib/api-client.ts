@@ -45,7 +45,12 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    // Only handle 401s for requests that actually carried a token (i.e. the user
+    // believed they were authenticated). Anonymous/optional calls from public
+    // pages must reject quietly so the caller's own catch can fall back — never
+    // hijack the whole page with a redirect to /login.
+    const sentToken = !!originalRequest.headers?.Authorization;
+    if (error.response?.status !== 401 || originalRequest._retry || !sentToken) {
       return Promise.reject(error);
     }
 

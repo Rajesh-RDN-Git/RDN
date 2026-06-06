@@ -146,7 +146,12 @@ export default function ChatPage() {
   };
 
   const selectedConvo = conversations.find((c) => c.id === selectedId);
-  const messageGroups = groupMessagesByDate(messages);
+  // Render oldest-first so the newest message sits at the bottom, matching the
+  // auto-scroll-to-bottom behaviour (the API returns newest-first).
+  const orderedMessages = [...messages].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+  const messageGroups = groupMessagesByDate(orderedMessages);
 
   return (
     <div>
