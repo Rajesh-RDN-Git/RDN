@@ -13,7 +13,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:seed:uat": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-uat.ts"
+    "db:seed:uat": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-uat.ts",
+    "db:seed:gurgaon": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed-gurgaon.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"
