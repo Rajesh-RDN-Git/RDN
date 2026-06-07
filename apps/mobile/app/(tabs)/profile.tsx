@@ -83,7 +83,7 @@ const MANAGE_ROWS: ManageRow[] = [
     label: 'Reports',
     subtitle: 'Analytics & reports',
     route: '/reports',
-    roles: ALL_ROLES,
+    roles: ['SUPER_ADMIN', 'RWA_ADMIN'],
   },
 ];
 

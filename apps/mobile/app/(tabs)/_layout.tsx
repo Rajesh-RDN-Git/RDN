@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import { useAuthStore } from '@/stores/auth-store';
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
@@ -16,7 +17,20 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   );
 }
 
+// The leads route is shared by all roles but means different things \u2014 mirror the
+// web sidebar labels (BUYER_TENANT \u2192 "My Inquiries", OWNER \u2192 "Tracking").
+function leadsLabels(role?: string): { tab: string; header: string } {
+  if (role === 'BUYER_TENANT') return { tab: 'Inquiries', header: 'My Inquiries' };
+  if (role === 'OWNER') return { tab: 'Tracking', header: 'Tracking' };
+  return { tab: 'Leads', header: 'Leads' };
+}
+
 export default function TabLayout() {
+  const role = useAuthStore((s) => s.user?.role);
+  const leads = leadsLabels(role);
+  // Chat is only available to roles that have masked communication on web.
+  const showChat = role === 'SUPER_ADMIN' || role === 'DEALER' || role === 'BUYER_TENANT';
+
   return (
     <Tabs
       screenOptions={{
@@ -53,7 +67,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="leads"
         options={{
-          title: 'Leads',
+          title: leads.header,
+          tabBarLabel: leads.tab,
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
           tabBarIcon: ({ focused }) => <TabIcon name="Leads" focused={focused} />,
@@ -63,6 +78,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: 'Chat',
+          href: showChat ? undefined : null,
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
           tabBarIcon: ({ focused }) => <TabIcon name="Chat" focused={focused} />,
