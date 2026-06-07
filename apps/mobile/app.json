@@ -76,8 +76,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "REPLACE_AFTER_EAS_INIT"
-      }
-    }
+        "projectId": "34d95cac-0585-46f7-a5b0-74d93c122c50"
+      },
+      "router": {}
+    },
+    "owner": "rdn8s-team"
   }
 }
