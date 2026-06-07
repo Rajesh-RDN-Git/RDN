@@ -39,6 +39,9 @@ export class TransactionsService {
     if (lead.status !== 'CLOSED') {
       throw new BadRequestException('Lead must be in CLOSED status to create a transaction');
     }
+    if (!lead.dealerId || !lead.dealer) {
+      throw new BadRequestException('Cannot close a deal on a lead with no assigned dealer');
+    }
 
     // Calculate commissions
     const dealValue = Number(data.dealValue);
@@ -59,6 +62,7 @@ export class TransactionsService {
     );
 
     const dealerGst = calculateGST(dealerShare);
+    const dealerId = lead.dealerId; // narrowed non-null by the guard above
 
     // Create transaction and commission in a DB transaction
     const result = await this.prisma.$transaction(async (tx) => {
@@ -81,7 +85,7 @@ export class TransactionsService {
 
       const commission = await tx.commission.create({
         data: {
-          dealerId: lead.dealerId,
+          dealerId,
           transactionId: transaction.id,
           amount: dealerShare,
           gst: dealerGst,

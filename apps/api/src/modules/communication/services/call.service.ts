@@ -22,6 +22,7 @@ export class CallService {
     });
 
     if (!lead) throw new BadRequestException('Lead not found');
+    if (!lead.dealer) throw new BadRequestException('This lead has no assigned dealer yet');
     if (lead.dealer.userId !== dealerUserId) {
       throw new BadRequestException('Only the assigned dealer can initiate calls');
     }

@@ -150,6 +150,31 @@ describe('LeadsService', () => {
       );
     });
 
+    it('should create an unassigned lead when society has no active dealer', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({
+        ...mockProperty,
+        assignedDealerId: null,
+      });
+      mockPrisma.dealer.findFirst.mockResolvedValue(null);
+      mockPrisma.lead.create.mockResolvedValue({
+        id: 'lead-1',
+        dealer: null,
+        property: { flatNumber: 'A-101', towerBlock: 'Tower A' },
+      });
+
+      await service.create({ propertyId: 'prop-1', source: 'WEBSITE' }, 'buyer-1');
+
+      expect(mockPrisma.lead.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            propertyId: 'prop-1',
+            buyerId: 'buyer-1',
+            dealerId: null,
+          }),
+        }),
+      );
+    });
+
     it('should throw if property not found', async () => {
       mockPrisma.property.findUnique.mockResolvedValue(null);
 

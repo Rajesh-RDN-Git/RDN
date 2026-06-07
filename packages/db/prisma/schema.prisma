@@ -463,7 +463,7 @@ model Lead {
   id                   String     @id @default(uuid()) @db.Uuid
   propertyId           String     @map("property_id") @db.Uuid
   buyerId              String     @map("buyer_id") @db.Uuid
-  dealerId             String     @map("dealer_id") @db.Uuid
+  dealerId             String?    @map("dealer_id") @db.Uuid
   societyId            String     @map("society_id") @db.Uuid
   source               LeadSource
   status               LeadStatus @default(NEW)
@@ -477,7 +477,7 @@ model Lead {
   // Relations
   property      Property       @relation(fields: [propertyId], references: [id])
   buyer         User           @relation("LeadBuyer", fields: [buyerId], references: [id])
-  dealer        Dealer         @relation(fields: [dealerId], references: [id])
+  dealer        Dealer?        @relation(fields: [dealerId], references: [id])
   society       Society        @relation(fields: [societyId], references: [id])
   transactions  Transaction[]
   conversations Conversation[]

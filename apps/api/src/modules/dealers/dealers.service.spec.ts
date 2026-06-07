@@ -15,6 +15,7 @@ describe('DealersService', () => {
       update: jest.fn(),
       count: jest.fn(),
     },
+    lead: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
     society: { findUnique: jest.fn() },
   };
 
@@ -175,6 +176,46 @@ describe('DealersService', () => {
         where: { id: 'd-1' },
         data: { trainingStatus: 'COMPLETED', isActive: true },
       });
+    });
+  });
+
+  describe('claimUnassignedLeads on activation', () => {
+    it('claims queued leads in the society when a dealer becomes active', async () => {
+      mockPrisma.dealer.findUnique
+        .mockResolvedValueOnce({
+          id: 'd-1',
+          userId: 'user-1',
+          societyId: 'soc-1',
+          isActive: false,
+          kycStatus: 'APPROVED',
+          trainingStatus: 'COMPLETED',
+        })
+        .mockResolvedValueOnce({ userId: 'user-1' });
+      mockPrisma.dealer.update.mockResolvedValue({ id: 'd-1', isActive: true });
+      mockPrisma.lead.updateMany.mockResolvedValueOnce({ count: 2 });
+
+      await service.approve('d-1');
+
+      expect(mockPrisma.lead.updateMany).toHaveBeenCalledWith({
+        where: { societyId: 'soc-1', dealerId: null },
+        data: { dealerId: 'd-1' },
+      });
+    });
+
+    it('does not claim leads if dealer was already active', async () => {
+      mockPrisma.dealer.findUnique.mockResolvedValue({
+        id: 'd-1',
+        userId: 'user-1',
+        societyId: 'soc-1',
+        isActive: true,
+        kycStatus: 'APPROVED',
+        trainingStatus: 'COMPLETED',
+      });
+      mockPrisma.dealer.update.mockResolvedValue({ id: 'd-1', isActive: true });
+
+      await service.approve('d-1');
+
+      expect(mockPrisma.lead.updateMany).not.toHaveBeenCalled();
     });
   });
 });

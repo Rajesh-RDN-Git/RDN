@@ -114,6 +114,10 @@ export class DealersService {
       })
       .catch(() => {});
 
+    if (updated.isActive && !dealer.isActive) {
+      await this.claimUnassignedLeads(updated.id, dealer.societyId);
+    }
+
     return updated;
   }
 
@@ -145,7 +149,7 @@ export class DealersService {
     if (!dealer) throw new NotFoundException('Dealer not found');
 
     const kycStatus = status === 'APPROVED' ? 'APPROVED' : 'REJECTED';
-    return this.prisma.dealer.update({
+    const updated = await this.prisma.dealer.update({
       where: { id },
       data: {
         kycStatus: kycStatus as any,
@@ -155,19 +159,31 @@ export class DealersService {
           dealer.trainingStatus === 'COMPLETED',
       },
     });
+
+    if (updated.isActive && !dealer.isActive) {
+      await this.claimUnassignedLeads(updated.id, dealer.societyId);
+    }
+
+    return updated;
   }
 
   async completeTraining(id: string) {
     const dealer = await this.prisma.dealer.findUnique({ where: { id } });
     if (!dealer) throw new NotFoundException('Dealer not found');
 
-    return this.prisma.dealer.update({
+    const updated = await this.prisma.dealer.update({
       where: { id },
       data: {
         trainingStatus: 'COMPLETED',
         isActive: dealer.kycStatus === 'APPROVED' && dealer.rwaApprovalStatus === 'APPROVED',
       },
     });
+
+    if (updated.isActive && !dealer.isActive) {
+      await this.claimUnassignedLeads(updated.id, dealer.societyId);
+    }
+
+    return updated;
   }
 
   // SUPER_ADMIN explicit activate/deactivate. Reactivating requires the dealer
@@ -188,7 +204,43 @@ export class DealersService {
       }
     }
 
-    return this.prisma.dealer.update({ where: { id }, data: { isActive } });
+    const updated = await this.prisma.dealer.update({ where: { id }, data: { isActive } });
+
+    if (updated.isActive && !dealer.isActive) {
+      await this.claimUnassignedLeads(updated.id, dealer.societyId);
+    }
+
+    return updated;
+  }
+
+  /**
+   * When a dealer becomes active, assign it any enquiries in its society that were
+   * queued while no active dealer existed (lead.dealerId = null). Best-effort:
+   * notification failures never block activation.
+   */
+  private async claimUnassignedLeads(dealerId: string, societyId: string): Promise<void> {
+    const result = await this.prisma.lead.updateMany({
+      where: { societyId, dealerId: null },
+      data: { dealerId },
+    });
+    if (result.count === 0) return;
+
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { id: dealerId },
+      select: { userId: true },
+    });
+    if (dealer) {
+      this.notificationsService
+        .create({
+          userId: dealer.userId,
+          type: 'LEAD',
+          title: 'Pending enquiries assigned',
+          body: `${result.count} enquiry(ies) in your society were assigned to you.`,
+          channel: 'IN_APP',
+          data: { count: result.count },
+        })
+        .catch(() => {});
+    }
   }
 
   // Certify a resident dealer. Only available for dealers who have completed

@@ -109,8 +109,10 @@ export class LeadsService {
       throw new BadRequestException('Property is not available');
     }
 
-    // Find an active dealer for this society
-    let dealerId: string;
+    // Find an active dealer for this society. If none exists yet, the lead is
+    // queued unassigned (dealerId = null) and gets claimed when a dealer becomes
+    // active in the society (see DealersService.claimUnassignedLeads).
+    let dealerId: string | null = null;
     if (property.assignedDealerId) {
       dealerId = property.assignedDealerId;
     } else {
@@ -118,10 +120,7 @@ export class LeadsService {
       const dealer = await this.prisma.dealer.findFirst({
         where: { societyId: property.societyId, isActive: true },
       });
-      if (!dealer) {
-        throw new BadRequestException('No active dealer available for this society');
-      }
-      dealerId = dealer.id;
+      dealerId = dealer?.id ?? null;
     }
 
     const lead = await this.prisma.lead.create({
