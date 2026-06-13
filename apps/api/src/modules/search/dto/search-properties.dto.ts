@@ -1,6 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class SearchPropertiesDto {
+  @ApiPropertyOptional({ description: 'Free-text search: society name, city, flat, or tower' })
+  q?: string;
+
   @ApiPropertyOptional()
   city?: string;
 

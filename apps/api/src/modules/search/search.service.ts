@@ -24,10 +24,31 @@ export class SearchService {
       where.society = { city: { equals: query.city, mode: 'insensitive' } };
     }
 
+    // Free-text search across society name/city, flat number and tower/block.
+    if (query.q) {
+      const q = String(query.q).trim();
+      if (q) {
+        where.OR = [
+          { society: { name: { contains: q, mode: 'insensitive' } } },
+          { society: { city: { contains: q, mode: 'insensitive' } } },
+          { flatNumber: { contains: q, mode: 'insensitive' } },
+          { towerBlock: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+    }
+
     if (query.societyId) where.societyId = query.societyId;
     if (query.type) where.type = query.type as any;
     if (query.transactionType) where.transactionType = query.transactionType as any;
-    if (query.bhk) where.bhk = Number(query.bhk);
+    if (query.bhk) {
+      // Accept a single value (`3`) or a comma-separated multi-select (`2,3,4`).
+      const bhks = String(query.bhk)
+        .split(',')
+        .map((s) => Number(s.trim()))
+        .filter((n) => !Number.isNaN(n));
+      if (bhks.length === 1) where.bhk = bhks[0];
+      else if (bhks.length > 1) where.bhk = { in: bhks };
+    }
     if (query.furnishing) where.furnishing = query.furnishing as any;
     if (query.availabilityStatus) where.availabilityStatus = query.availabilityStatus as any;
 

@@ -5,6 +5,7 @@ import { searchApi } from '../lib/api/search.api';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 interface SearchFilters {
+  q?: string;
   city?: string;
   transactionType?: string;
   propertyType?: string;

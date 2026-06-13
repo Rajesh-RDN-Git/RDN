@@ -22,7 +22,7 @@ const LABEL_MAP: Record<string, string> = {
 const FORMAT_VALUE: Record<string, (v: string) => string> = {
   transactionType: (v) => v.charAt(0) + v.slice(1).toLowerCase(),
   propertyType: (v) => v.charAt(0) + v.slice(1).toLowerCase(),
-  bhk: (v) => `${v} BHK`,
+  bhk: (v) => `${v.split(',').join(', ')} BHK`,
   priceMin: (v) => {
     const n = Number(v);
     if (n >= 10000000) return `${(n / 10000000).toFixed(1)} Cr+`;

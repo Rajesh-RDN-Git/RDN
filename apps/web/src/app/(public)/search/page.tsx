@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearch } from '@/hooks/use-search';
 import { SearchFilters } from '@/components/search/search-filters';
 import { PropertyCard } from '@/components/search/property-card';
@@ -62,6 +62,44 @@ function PageHeader({
   );
 }
 
+function SearchBar({
+  initialValue,
+  onSearch,
+}: {
+  initialValue: string;
+  onSearch: (q: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSearch(value.trim());
+      }}
+      className="relative"
+      role="search"
+    >
+      <SearchIcon
+        size={20}
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+      />
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          // Debounced live search; the hook already debounces by 300ms.
+          onSearch(e.target.value.trim());
+        }}
+        placeholder="Search by society, locality, flat, or tower…"
+        aria-label="Search properties"
+        className="w-full rounded-xl border border-border bg-card py-3 pl-12 pr-4 text-body-md text-foreground shadow-elevation-1 outline-none transition-colors placeholder:text-muted-foreground focus:border-brand focus:ring-1 focus:ring-ring"
+      />
+    </form>
+  );
+}
+
 function ResultsEmptyState({ hasFilters, onClear }: { hasFilters: boolean; onClear: () => void }) {
   return (
     <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card px-6 py-16 text-center">
@@ -116,7 +154,8 @@ function ResultsErrorState({ message, onRetry }: { message: string; onRetry: () 
 }
 
 function SearchContent() {
-  const { filters, results, total, loading, error, search, page, totalPages } = useSearch();
+  const { filters, results, total, loading, error, search, debouncedSearch, page, totalPages } =
+    useSearch();
 
   const title =
     filters.transactionType === 'SALE'
@@ -139,6 +178,14 @@ function SearchContent() {
       />
 
       <div className="mx-auto max-w-content px-4 py-6 lg:px-8">
+        {/* Free-text search */}
+        <div className="mb-6">
+          <SearchBar
+            initialValue={filters.q || ''}
+            onSearch={(q) => debouncedSearch({ ...filters, q: q || undefined, page: undefined })}
+          />
+        </div>
+
         {/* Filter band: quick presets + applied chips */}
         <div className="mb-6 space-y-3">
           <QuickFilters
