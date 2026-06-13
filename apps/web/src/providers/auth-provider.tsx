@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
-import { getAccessToken } from '@/lib/auth';
+import { getAccessToken, getRefreshToken } from '@/lib/auth';
 import { usersApi } from '@/lib/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -10,8 +10,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function hydrate() {
-      const token = getAccessToken();
-      if (!token) {
+      // Treat the user as logged in if EITHER token is present. The access cookie
+      // expires after 15 min; when only the refresh token survives, getProfile
+      // will 401 and the api-client interceptor silently refreshes, then retries.
+      if (!getAccessToken() && !getRefreshToken()) {
         setLoading(false);
         return;
       }
