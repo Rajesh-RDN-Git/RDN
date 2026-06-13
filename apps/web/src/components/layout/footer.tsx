@@ -8,7 +8,7 @@ const footerLinks = {
     { label: 'Careers', href: '/careers' },
   ],
   'For Owners': [
-    { label: 'List Your Property', href: '/dashboard/properties' },
+    { label: 'List Your Property', href: '/dashboard/properties/new' },
     { label: 'Owner Guide', href: '/guides/owners' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'FAQs', href: '/faq' },

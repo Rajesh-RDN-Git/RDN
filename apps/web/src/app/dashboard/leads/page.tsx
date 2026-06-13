@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { leadsApi } from '@/lib/api/leads.api';
 import { communicationApi } from '@/lib/api/communication.api';
 import { useAuthStore } from '@/stores/auth-store';
@@ -11,7 +12,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
-import { CheckIcon, PhoneIcon } from '@/components/ui/icons';
+import { CheckIcon, PhoneIcon, ChatIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 
 // The dealer CRM pipeline. Each status maps to the actions available from it.
@@ -87,6 +88,7 @@ const priorityConfig: Record<string, { label: string; color: string }> = {
 };
 
 export default function LeadsPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   // Buyers see their own enquiries ("My Inquiries"): no internal CRM columns
   // (assigned dealer, lead priority) and no status-advancing actions.
@@ -107,6 +109,7 @@ export default function LeadsPage() {
   const [scheduleDate, setScheduleDate] = useState<string>(tomorrowISO());
   const [advancingId, setAdvancingId] = useState<string | null>(null);
   const [callingId, setCallingId] = useState<string | null>(null);
+  const [messagingId, setMessagingId] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -164,6 +167,25 @@ export default function LeadsPage() {
       setCloseDealError(err?.response?.data?.message || 'Failed to close deal. Please try again.');
     }
     setSubmitting(false);
+  };
+
+  // Buyer-initiated chat: open (or resume) a masked conversation with the
+  // assigned dealer for this lead, then jump to the chat screen.
+  const handleMessageDealer = async (lead: any) => {
+    const dealerUserId = lead.dealer?.user?.id;
+    if (!dealerUserId) return;
+    setMessagingId(lead.id);
+    try {
+      await communicationApi.createConversation({
+        leadId: lead.id,
+        participantId: dealerUserId,
+      });
+      router.push('/dashboard/chat');
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      showToast.error(err?.response?.data?.message || 'Could not start chat right now');
+      setMessagingId(null);
+    }
   };
 
   const columns = [
@@ -227,6 +249,24 @@ export default function LeadsPage() {
           {new Date(item.createdAt).toLocaleDateString('en-IN')}
         </span>
       ),
+    },
+    {
+      key: 'message',
+      header: '',
+      render: (item: any) =>
+        item.dealer?.user?.id ? (
+          <Button
+            size="sm"
+            variant="outline"
+            leftIcon={<ChatIcon size={14} />}
+            isLoading={messagingId === item.id}
+            onClick={() => handleMessageDealer(item)}
+          >
+            Message
+          </Button>
+        ) : (
+          <span className="text-caption-md text-muted-foreground">Awaiting dealer</span>
+        ),
     },
     {
       key: 'actions',
@@ -372,8 +412,8 @@ export default function LeadsPage() {
 
   // For buyers, hide internal CRM columns and the actions column.
   const visibleColumns = isBuyer
-    ? columns.filter((c) => ['property', 'society', 'status', 'date'].includes(c.key))
-    : columns;
+    ? columns.filter((c) => ['property', 'society', 'status', 'date', 'message'].includes(c.key))
+    : columns.filter((c) => c.key !== 'message');
 
   return (
     <div>

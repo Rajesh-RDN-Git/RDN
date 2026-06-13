@@ -1,5 +1,23 @@
 import { z } from 'zod';
 
+// Optional fields submitted by HTML forms arrive as empty strings (''), which
+// `z.string().email()` rejects. Accept '' (and undefined), then normalise blanks
+// to undefined. Kept as a union (not z.preprocess) so the inferred input type
+// stays `string | undefined` for react-hook-form resolvers.
+const optionalEmail = z
+  .string()
+  .email('Invalid email address')
+  .or(z.literal(''))
+  .optional()
+  .transform((v) => (v ? v : undefined));
+
+const optionalUrl = z
+  .string()
+  .url()
+  .or(z.literal(''))
+  .optional()
+  .transform((v) => (v ? v : undefined));
+
 export const sendOtpSchema = z.object({
   phone: z.string().regex(/^\+91\d{10}$/, 'Invalid Indian phone number'),
 });
@@ -12,14 +30,14 @@ export const verifyOtpSchema = z.object({
 export const createUserSchema = z.object({
   phone: z.string().regex(/^\+91\d{10}$/),
   name: z.string().min(2).max(255),
-  email: z.string().email().optional(),
+  email: optionalEmail,
   role: z.enum(['SUPER_ADMIN', 'RWA_ADMIN', 'DEALER', 'OWNER', 'BUYER_TENANT']),
 });
 
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(255).optional(),
-  email: z.string().email().optional(),
-  avatarUrl: z.string().url().optional(),
+  email: optionalEmail,
+  avatarUrl: optionalUrl,
 });
 
 export type SendOtpInput = z.infer<typeof sendOtpSchema>;

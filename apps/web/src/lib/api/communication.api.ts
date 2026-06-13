@@ -4,6 +4,9 @@ export const communicationApi = {
   conversations: (params?: { page?: number; limit?: number }) =>
     apiClient.get('/communication/conversations', { params }),
 
+  createConversation: (data: { leadId: string; participantId: string; message?: string }) =>
+    apiClient.post('/communication/conversations', data),
+
   getConversation: (conversationId: string, params?: { page?: number; limit?: number }) =>
     apiClient.get(`/communication/conversations/${conversationId}`, { params }),
 

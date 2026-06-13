@@ -77,8 +77,8 @@ export function PropertyCard({ property }: PropertyCardProps) {
   };
 
   return (
-    <Link href={`/property/${property.id}`} className="block">
-      <div className="group overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-elevation-2">
+    <Link href={`/property/${property.id}`} className="block h-full">
+      <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:shadow-elevation-2">
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-subtle">
           {imageUrl && !imageError ? (
@@ -124,7 +124,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="flex flex-1 flex-col p-4">
           {/* Price */}
           <p className="text-heading-lg text-foreground">{price}</p>
           {rentSubtitle && <p className="text-body-sm text-muted-foreground">{rentSubtitle}</p>}
@@ -155,9 +155,9 @@ export function PropertyCard({ property }: PropertyCardProps) {
           {/* Society link */}
           <p className="mt-2 text-body-sm text-muted-foreground">{property.society.name}</p>
 
-          {/* Dealer footer */}
+          {/* Dealer footer — pinned to the bottom so cards in a row stay equal height */}
           {property.dealer?.user && (
-            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <div className="mt-auto flex items-center justify-between border-t border-border pt-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-subtle text-xs font-semibold text-brand">
                   {property.dealer.user.name?.charAt(0)?.toUpperCase() || 'D'}
