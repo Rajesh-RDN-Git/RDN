@@ -59,6 +59,10 @@ export default function EditPropertyPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait until auth has hydrated. Running the ownership check with user=null
+    // (e.g. on a hard load/refresh of the edit URL) wrongly set a permanent
+    // "no permission" error that survived even after the user loaded.
+    if (!user) return;
     propertiesApi
       .getById(id)
       .then((r) => {
