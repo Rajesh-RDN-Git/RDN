@@ -19,7 +19,10 @@ describe('DealersService', () => {
     society: { findUnique: jest.fn() },
   };
 
-  const mockNotificationsService = { create: jest.fn().mockResolvedValue({}) };
+  const mockNotificationsService = {
+    create: jest.fn().mockResolvedValue({}),
+    notifySocietyApprovers: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -57,13 +60,21 @@ describe('DealersService', () => {
   });
 
   describe('apply', () => {
-    it('should create dealer application', async () => {
+    it('should create dealer application and alert society approvers', async () => {
       mockPrisma.society.findUnique.mockResolvedValue({ id: 'soc-1' });
       mockPrisma.dealer.findUnique.mockResolvedValue(null);
-      mockPrisma.dealer.create.mockResolvedValue({ id: 'd-1' });
+      mockPrisma.dealer.create.mockResolvedValue({
+        id: 'd-1',
+        user: { name: 'Asha' },
+        society: { name: 'Sunrise Heights' },
+      });
 
       const result = await service.apply({ societyId: 'soc-1' } as any, 'user-1');
-      expect(result).toEqual({ id: 'd-1' });
+      expect(result).toMatchObject({ id: 'd-1' });
+      expect(mockNotificationsService.notifySocietyApprovers).toHaveBeenCalledWith(
+        'soc-1',
+        expect.objectContaining({ type: 'SYSTEM', title: 'New Dealer Application' }),
+      );
     });
 
     it('should throw NotFoundException if society not found', async () => {

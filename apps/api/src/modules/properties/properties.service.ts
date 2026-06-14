@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryPropertiesDto } from './dto/query-properties.dto';
 import type { CreatePropertyDto } from './dto/create-property.dto';
 import type { UpdatePropertyDto } from './dto/update-property.dto';
@@ -7,7 +8,10 @@ import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(query: QueryPropertiesDto) {
     const page = Number(query.page) || 1;
@@ -121,7 +125,7 @@ export class PropertiesService {
     });
     if (!society) throw new NotFoundException('Society not found');
 
-    return this.prisma.property.create({
+    const property = await this.prisma.property.create({
       data: {
         societyId: data.societyId,
         ownerId,
@@ -147,6 +151,20 @@ export class PropertiesService {
         society: { select: { id: true, name: true, slug: true } },
       },
     });
+
+    // Alert the society's approver(s) that a listing awaits verification.
+    // Falls back to all SUPER_ADMINs when the society has no RWA admin.
+    this.notificationsService
+      .notifySocietyApprovers(data.societyId, {
+        type: 'SYSTEM',
+        title: 'New Listing Awaiting Verification',
+        body: `A new property in ${property.society.name} was submitted and needs verification.`,
+        channel: 'IN_APP',
+        data: { propertyId: property.id, societyId: data.societyId },
+      })
+      .catch(() => {});
+
+    return property;
   }
 
   async update(id: string, data: UpdatePropertyDto, userId: string, userRole: string) {

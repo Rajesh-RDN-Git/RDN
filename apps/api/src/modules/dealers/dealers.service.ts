@@ -78,7 +78,7 @@ export class DealersService {
     });
     if (existing) throw new ConflictException('Already applied as dealer for this society');
 
-    return this.prisma.dealer.create({
+    const dealer = await this.prisma.dealer.create({
       data: {
         userId,
         societyId: data.societyId,
@@ -89,6 +89,20 @@ export class DealersService {
         society: { select: { id: true, name: true } },
       },
     });
+
+    // Alert the society's approver(s) so the application doesn't sit unseen.
+    // Falls back to all SUPER_ADMINs when the society has no RWA admin.
+    this.notificationsService
+      .notifySocietyApprovers(data.societyId, {
+        type: 'SYSTEM',
+        title: 'New Dealer Application',
+        body: `${dealer.user.name} applied to be a dealer in ${dealer.society.name}.`,
+        channel: 'IN_APP',
+        data: { dealerId: dealer.id, societyId: data.societyId },
+      })
+      .catch(() => {});
+
+    return dealer;
   }
 
   async approve(id: string) {

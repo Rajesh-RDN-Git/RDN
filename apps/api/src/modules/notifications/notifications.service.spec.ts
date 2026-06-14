@@ -16,6 +16,8 @@ describe('NotificationsService', () => {
       updateMany: jest.fn(),
       count: jest.fn(),
     },
+    society: { findUnique: jest.fn() },
+    user: { findMany: jest.fn() },
   };
 
   const mockGateway = { emitNotification: jest.fn() };
@@ -103,6 +105,54 @@ describe('NotificationsService', () => {
         id: 'n-1',
         userId: 'user-1',
       });
+    });
+  });
+
+  describe('notifySocietyApprovers', () => {
+    const payload = {
+      type: 'SYSTEM',
+      title: 'New Dealer Application',
+      body: 'Asha applied.',
+      channel: 'IN_APP' as const,
+    };
+
+    it('notifies the society RWA admin when one is assigned', async () => {
+      mockPrisma.society.findUnique.mockResolvedValue({ rwaAdminId: 'rwa-1' });
+      mockPrisma.notification.create.mockResolvedValue({ id: 'n-1', userId: 'rwa-1' });
+
+      await service.notifySocietyApprovers('soc-1', payload);
+
+      expect(mockPrisma.user.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.notification.create).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.notification.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: 'rwa-1' }) }),
+      );
+    });
+
+    it('falls back to all active SUPER_ADMINs when no RWA admin is assigned', async () => {
+      mockPrisma.society.findUnique.mockResolvedValue({ rwaAdminId: null });
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 'sa-1' }, { id: 'sa-2' }]);
+      mockPrisma.notification.create.mockResolvedValue({ id: 'n-1' });
+
+      await service.notifySocietyApprovers('soc-1', payload);
+
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+        where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
+        select: { id: true },
+      });
+      expect(mockPrisma.notification.create).toHaveBeenCalledTimes(2);
+      const recipients = mockPrisma.notification.create.mock.calls.map((c) => c[0].data.userId);
+      expect(recipients).toEqual(['sa-1', 'sa-2']);
+    });
+
+    it('falls back to SUPER_ADMINs when the society is missing', async () => {
+      mockPrisma.society.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findMany.mockResolvedValue([{ id: 'sa-1' }]);
+      mockPrisma.notification.create.mockResolvedValue({ id: 'n-1' });
+
+      await service.notifySocietyApprovers('soc-1', payload);
+
+      expect(mockPrisma.notification.create).toHaveBeenCalledTimes(1);
     });
   });
 });

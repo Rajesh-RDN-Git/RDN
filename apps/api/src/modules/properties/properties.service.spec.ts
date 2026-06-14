@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('PropertiesService', () => {
   let service: PropertiesService;
@@ -17,9 +18,17 @@ describe('PropertiesService', () => {
     society: { findUnique: jest.fn() },
   };
 
+  const mockNotificationsService = {
+    notifySocietyApprovers: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PropertiesService, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [
+        PropertiesService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: mockNotificationsService },
+      ],
     }).compile();
 
     service = module.get<PropertiesService>(PropertiesService);
@@ -79,9 +88,12 @@ describe('PropertiesService', () => {
   });
 
   describe('create', () => {
-    it('should create property after verifying society', async () => {
+    it('should create property after verifying society and alert approvers', async () => {
       mockPrisma.society.findUnique.mockResolvedValue({ id: 'soc-1' });
-      mockPrisma.property.create.mockResolvedValue({ id: 'prop-1' });
+      mockPrisma.property.create.mockResolvedValue({
+        id: 'prop-1',
+        society: { name: 'Sunrise Heights' },
+      });
 
       const result = await service.create(
         {
@@ -96,7 +108,11 @@ describe('PropertiesService', () => {
         'owner-1',
       );
 
-      expect(result).toEqual({ id: 'prop-1' });
+      expect(result).toMatchObject({ id: 'prop-1' });
+      expect(mockNotificationsService.notifySocietyApprovers).toHaveBeenCalledWith(
+        'soc-1',
+        expect.objectContaining({ type: 'SYSTEM' }),
+      );
     });
 
     it('should throw if society not found', async () => {
