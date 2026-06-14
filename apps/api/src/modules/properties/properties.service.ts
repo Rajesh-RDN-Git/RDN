@@ -25,7 +25,10 @@ export class PropertiesService {
         where: { userId: query.assignedDealerUserId },
         select: { id: true },
       });
-      where.assignedDealerId = dealer?.id ?? '__no_dealer__';
+      // assignedDealerId is a UUID column — a non-UUID sentinel ('__no_dealer__')
+      // crashes the query with "invalid input syntax for type uuid" (500). Use a
+      // valid all-zero UUID that matches no real dealer so the result is empty.
+      where.assignedDealerId = dealer?.id ?? '00000000-0000-0000-0000-000000000000';
     }
     // RWA "Properties" view: scope to the societies this admin manages.
     if (query.rwaAdminUserId) {
