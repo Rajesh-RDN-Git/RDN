@@ -70,8 +70,19 @@ export class TokenService {
       throw new UnauthorizedException('Token reuse detected, all sessions revoked');
     }
 
-    // Rotate: issue new pair, invalidate old
-    return this.generateTokenPair(user.id, user.phone, user.role);
+    // Issue a fresh access token but DO NOT rotate the refresh token. Rotating on
+    // every refresh meant the same account in two tabs raced: tab A's refresh
+    // invalidated tab B's stored token, and tab B's next refresh tripped the
+    // reuse check and revoked every session. Keeping the refresh token stable
+    // lets all tabs share it (it's still 30-day expiry and cleared on logout).
+    const accessToken = this.jwtService.sign(
+      { sub: user.id, phone: user.phone, role: user.role },
+      {
+        secret: this.configService.get<string>('jwt.secret')!,
+        expiresIn: (this.configService.get<string>('jwt.expiration') ?? '15m') as any,
+      },
+    );
+    return { accessToken, refreshToken };
   }
 
   async revokeRefreshToken(userId: string): Promise<void> {
