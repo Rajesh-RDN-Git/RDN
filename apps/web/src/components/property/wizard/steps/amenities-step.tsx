@@ -35,6 +35,9 @@ export function AmenitiesStep({ societyAmenities }: Props) {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        All fields on this step are optional — add what applies.
+      </p>
       <div>
         <h3 className="text-sm font-medium mb-3">Amenities (society-defined)</h3>
         <div className="flex flex-wrap gap-2">

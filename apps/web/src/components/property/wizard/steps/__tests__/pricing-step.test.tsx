@@ -12,7 +12,7 @@ const Setup = ({ tx }: { tx: 'RENT' | 'SALE' | 'BOTH' }) => {
 };
 
 describe('PricingStep', () => {
-  it('shows rent + deposit + maintenance for RENT', () => {
+  it('shows rent + deposit for RENT', () => {
     render(
       <WizardProvider>
         <Setup tx="RENT" />
@@ -20,7 +20,6 @@ describe('PricingStep', () => {
     );
     expect(screen.getByLabelText(/monthly rent/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/security deposit/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/maintenance/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/sale price/i)).not.toBeInTheDocument();
   });
 

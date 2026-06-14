@@ -38,9 +38,6 @@ export type WizardData = {
   priceRent?: number;
   priceSale?: number;
   securityDeposit?: number;
-  maintenance?: number;
-  negotiable?: boolean;
-  brokerageDisclosed?: boolean;
   // Photos
   photos: PhotoState[];
   // Amenities & Restrictions

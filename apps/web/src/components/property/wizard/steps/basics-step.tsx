@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useWizard } from '../wizard-context';
+import { RequiredMark } from '../field-label';
 import { societiesApi } from '@/lib/api/societies.api';
 
 type Society = { id: string; name: string; city: string };
@@ -17,11 +18,16 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
   const { state, dispatch } = useWizard();
   const { data, errors } = state;
   const [societies, setSocieties] = useState<Society[]>([]);
-  const ownerLocked = userRole === 'OWNER';
+  // Lock the society to the owner's primary society only when we actually know
+  // it. If an owner has no primary society linked, let them pick one instead of
+  // trapping them behind a disabled, empty dropdown.
+  const ownerLocked = userRole === 'OWNER' && !!primarySocietyId;
 
   useEffect(() => {
+    // limit: 50 so the owner's society is in the list even after many societies
+    // are onboarded (default page size of 20 was pushing it off the first page).
     societiesApi
-      .list()
+      .list({ limit: 50 })
       .then((r: { data: Society[] | { data: Society[] } }) => {
         const list = Array.isArray(r.data) ? r.data : (r.data?.data ?? []);
         setSocieties(list);
@@ -42,6 +48,7 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
       <div>
         <label htmlFor="society" className="mb-1.5 block text-sm font-medium text-foreground">
           Society
+          <RequiredMark />
         </label>
         <Select
           id="society"
@@ -64,6 +71,7 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
         <div>
           <label htmlFor="flatNumber" className="mb-1.5 block text-sm font-medium text-foreground">
             Flat number
+            <RequiredMark />
           </label>
           <Input
             id="flatNumber"
@@ -78,6 +86,7 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
         <div>
           <label htmlFor="towerBlock" className="mb-1.5 block text-sm font-medium text-foreground">
             Tower / Block
+            <RequiredMark />
           </label>
           <Input
             id="towerBlock"
@@ -93,6 +102,7 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
       <div>
         <label htmlFor="type" className="mb-1.5 block text-sm font-medium text-foreground">
           Property type
+          <RequiredMark />
         </label>
         <Select
           id="type"
@@ -118,6 +128,7 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
           className="mb-1.5 block text-sm font-medium text-foreground"
         >
           Transaction type
+          <RequiredMark />
         </label>
         <Select
           id="transactionType"

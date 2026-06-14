@@ -3,6 +3,7 @@
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useWizard } from '../wizard-context';
+import { RequiredMark, OptionalTag } from '../field-label';
 
 export function SpecsStep() {
   const { state, dispatch } = useWizard();
@@ -24,6 +25,7 @@ export function SpecsStep() {
         <div>
           <label htmlFor="bhk" className="mb-1.5 block text-sm font-medium text-foreground">
             BHK
+            <RequiredMark />
           </label>
           <Select
             id="bhk"
@@ -49,6 +51,7 @@ export function SpecsStep() {
         <div>
           <label htmlFor="carpetArea" className="mb-1.5 block text-sm font-medium text-foreground">
             Carpet area (sqft)
+            <RequiredMark />
           </label>
           <Input
             id="carpetArea"
@@ -60,6 +63,7 @@ export function SpecsStep() {
         <div>
           <label htmlFor="superArea" className="mb-1.5 block text-sm font-medium text-foreground">
             Super area (sqft)
+            <OptionalTag />
           </label>
           <Input
             id="superArea"
@@ -73,12 +77,14 @@ export function SpecsStep() {
         <div>
           <label htmlFor="floor" className="mb-1.5 block text-sm font-medium text-foreground">
             Floor
+            <OptionalTag />
           </label>
           <Input id="floor" type="number" value={data.floor ?? ''} onChange={setNum('floor')} />
         </div>
         <div>
           <label htmlFor="totalFloors" className="mb-1.5 block text-sm font-medium text-foreground">
             Total floors
+            <OptionalTag />
           </label>
           <Input
             id="totalFloors"
@@ -91,6 +97,7 @@ export function SpecsStep() {
       <div>
         <label htmlFor="facing" className="mb-1.5 block text-sm font-medium text-foreground">
           Facing
+          <OptionalTag />
         </label>
         <Select
           id="facing"
@@ -111,6 +118,7 @@ export function SpecsStep() {
       <div>
         <label htmlFor="furnishing" className="mb-1.5 block text-sm font-medium text-foreground">
           Furnishing
+          <OptionalTag />
         </label>
         <Select
           id="furnishing"

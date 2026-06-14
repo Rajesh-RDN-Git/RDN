@@ -68,7 +68,7 @@ function WizardInner({
   useEffect(() => {
     if (state.data.societyId) {
       societiesApi
-        .list()
+        .list({ limit: 50 })
         .then((r) => {
           const raw = r.data as SocietyResponse[] | { data: SocietyResponse[] };
           const list = Array.isArray(raw) ? raw : (raw?.data ?? []);
@@ -133,9 +133,14 @@ function WizardInner({
   return (
     <div className="max-w-3xl mx-auto pb-24">
       <div className="mb-6">
-        <p className="text-sm text-muted-foreground">
-          Step {currentIndex + 1} of {STEP_ORDER.length}: {STEP_LABELS[state.currentStep]}
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Step {currentIndex + 1} of {STEP_ORDER.length}: {STEP_LABELS[state.currentStep]}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <span className="text-error-icon">*</span> required
+          </p>
+        </div>
         <div className="h-2 bg-muted rounded mt-2">
           <div
             className="h-2 bg-brand rounded transition-all"
