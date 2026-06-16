@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { dealersApi } from '@/lib/api/dealers.api';
+import { societiesApi } from '@/lib/api/societies.api';
 import { useAuthStore } from '@/stores/auth-store';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
+import { Input } from '@/components/ui/input';
+import { SearchIcon } from '@/components/ui/icons';
 
 const kycVariant = (s: string) => {
   switch (s) {
@@ -29,6 +33,15 @@ export default function DealersPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  // Add Dealer modal (SUPER_ADMIN only)
+  const [addOpen, setAddOpen] = useState(false);
+  const [societies, setSocieties] = useState<{ id: string; name: string }[]>([]);
+  const [form, setForm] = useState({ name: '', phone: '', email: '', societyId: '' });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const fetchDealers = async () => {
     setLoading(true);
@@ -114,6 +127,52 @@ export default function DealersPage() {
       setActionError(err?.response?.data?.message || 'Failed to update certification.');
     }
   };
+
+  const openAdd = async () => {
+    setForm({ name: '', phone: '', email: '', societyId: '' });
+    setCreateError(null);
+    setAddOpen(true);
+    if (societies.length === 0) {
+      try {
+        const { data } = await societiesApi.list({ page: 1, limit: 100 });
+        setSocieties((data.data as { id: string; name: string }[]) || []);
+      } catch {
+        /* dropdown stays empty; user can retry by reopening */
+      }
+    }
+  };
+
+  const handleCreate = async () => {
+    setCreateError(null);
+    if (!form.name.trim() || !form.phone.trim() || !form.societyId) {
+      setCreateError('Name, phone, and society are required.');
+      return;
+    }
+    setCreating(true);
+    try {
+      await dealersApi.create({
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim() || undefined,
+        societyId: form.societyId,
+      });
+      setAddOpen(false);
+      fetchDealers();
+    } catch (err: any) {
+      setCreateError(err?.response?.data?.message || 'Failed to add dealer.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const q = search.trim().toLowerCase();
+  const filteredDealers = q
+    ? dealers.filter((d: any) =>
+        [d.user?.name, d.user?.email, d.society?.name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      )
+    : dealers;
 
   const columns = [
     {
@@ -249,9 +308,25 @@ export default function DealersPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold">Dealers</h1>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold">Dealers</h1>
+        {isSuperAdmin && <Button onClick={openAdd}>Add Dealer</Button>}
+      </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <SearchIcon
+            size={18}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            type="text"
+            placeholder="Search by name, email, or society..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-body-md outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-ring"
+          />
+        </div>
         <Select
           value={activeFilter}
           onChange={(e) => {
@@ -298,7 +373,7 @@ export default function DealersPage() {
         <div className="rounded-lg border bg-card">
           <DataTable
             columns={columns}
-            data={dealers}
+            data={filteredDealers}
             isLoading={loading}
             keyExtractor={(item: any) => item.id}
             emptyMessage="No dealers found"
@@ -312,6 +387,67 @@ export default function DealersPage() {
         onPageChange={setPage}
         className="mt-4"
       />
+
+      <Modal
+        isOpen={addOpen}
+        onClose={() => (creating ? null : setAddOpen(false))}
+        title="Add Dealer"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Name"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder="Dealer full name"
+            required
+          />
+          <Input
+            label="Phone"
+            value={form.phone}
+            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+            placeholder="+919876543210"
+            required
+          />
+          <Input
+            label="Email (optional)"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder="dealer@example.com"
+          />
+          <div>
+            <label className="mb-1.5 block text-label-sm text-foreground">Society</label>
+            <Select
+              value={form.societyId}
+              onChange={(e) => setForm((f) => ({ ...f, societyId: e.target.value }))}
+            >
+              <option value="">Select a society</option>
+              {societies.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <p className="text-caption-md text-muted-foreground">
+            Creates the dealer as Pending. Complete KYC, training, approval and activation from the
+            list.
+          </p>
+          {createError && (
+            <div className="rounded-lg border border-error-border bg-error-bg px-4 py-3 text-body-sm text-error-text">
+              {createError}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} isLoading={creating}>
+              Add Dealer
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

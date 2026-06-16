@@ -10,9 +10,10 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { applyDealerSchema, updateDealerKycSchema } from '@rdn/shared';
+import { applyDealerSchema, createDealerSchema, updateDealerKycSchema } from '@rdn/shared';
 import { DealersService } from './dealers.service';
 import { ApplyDealerDto } from './dto/apply-dealer.dto';
+import { CreateDealerDto } from './dto/create-dealer.dto';
 import { QueryDealersDto } from './dto/query-dealers.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -42,6 +43,15 @@ export class DealersController {
   @ApiOperation({ summary: 'Get dealer by ID' })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
     return this.dealersService.findOne(id);
+  }
+
+  @Post()
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Admin: create a dealer (creates user if phone is new)' })
+  async create(
+    @Body(new ZodValidationPipe(createDealerSchema)) body: CreateDealerDto,
+  ): Promise<any> {
+    return this.dealersService.createByAdmin(body);
   }
 
   @Post('apply')

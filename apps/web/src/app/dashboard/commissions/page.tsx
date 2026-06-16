@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { commissionsApi, type CommissionStatus } from '@/lib/api/commissions.api';
+import { SearchIcon } from '@/components/ui/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { Role } from '@rdn/shared';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +73,23 @@ export default function CommissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterKey>('ALL');
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((c) =>
+      [
+        c.dealer?.user?.name,
+        c.transaction?.property?.flatNumber,
+        c.transaction?.property?.towerBlock,
+        c.payoutReference,
+        c.transactionId,
+      ]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [items, search]);
 
   // Settle modal state
   const [settleTarget, setSettleTarget] = useState<Commission | null>(null);
@@ -273,6 +291,20 @@ export default function CommissionsPage() {
         <h1 className="text-3xl font-bold">Commissions</h1>
       </div>
 
+      <div className="relative mb-4 max-w-md">
+        <SearchIcon
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="text"
+          placeholder="Search by dealer, property, or reference..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-body-md outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-ring"
+        />
+      </div>
+
       <div className="mb-6 flex flex-wrap gap-2">
         {filters.map((f) => (
           <Chip
@@ -299,7 +331,7 @@ export default function CommissionsPage() {
       ) : (
         <DataTable
           columns={columns}
-          data={items}
+          data={filtered}
           keyExtractor={(c: Commission) => c.id}
           emptyMessage="No commissions found"
         />

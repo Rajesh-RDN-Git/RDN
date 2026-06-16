@@ -16,7 +16,7 @@ import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { Pagination } from '@/components/ui/pagination';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ShieldIcon } from '@/components/ui/icons';
+import { ShieldIcon, SearchIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 import { FileGrievanceModal } from '@/components/grievance/file-grievance-modal';
 
@@ -96,7 +96,19 @@ export default function GrievancesPage() {
   const [actionSubmitting, setActionSubmitting] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  const [search, setSearch] = useState('');
+
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / limit)), [total, limit]);
+
+  const visibleItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((g) =>
+      [g.description, g.filer?.name, CATEGORY_LABEL[g.category] || g.category, g.society?.name]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [items, search]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -232,6 +244,20 @@ export default function GrievancesPage() {
         </Button>
       </div>
 
+      <div className="relative mb-4 max-w-md">
+        <SearchIcon
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="text"
+          placeholder="Search by description, filer, category, or society..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-body-md outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-ring"
+        />
+      </div>
+
       <div className="mb-5 flex flex-wrap gap-2">
         {STATUS_FILTERS.map((f) => (
           <Chip
@@ -250,19 +276,21 @@ export default function GrievancesPage() {
           <div className="border-b border-error-border bg-error-bg px-4 py-3 text-body-sm text-error-text">
             {error}
           </div>
-        ) : items.length === 0 ? (
+        ) : visibleItems.length === 0 ? (
           <EmptyState
             icon={<ShieldIcon size={32} />}
             title="No grievances found"
             description={
-              statusFilter === 'ALL'
-                ? 'Nothing here yet. Filed grievances will appear in this list.'
-                : `No grievances with status ${STATUS_LABEL[statusFilter as GrievanceStatus] || statusFilter}.`
+              search.trim()
+                ? `No grievances match "${search.trim()}".`
+                : statusFilter === 'ALL'
+                  ? 'Nothing here yet. Filed grievances will appear in this list.'
+                  : `No grievances with status ${STATUS_LABEL[statusFilter as GrievanceStatus] || statusFilter}.`
             }
           />
         ) : (
           <ul className="divide-y divide-border">
-            {items.map((g) => (
+            {visibleItems.map((g) => (
               <li key={g.id} className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">

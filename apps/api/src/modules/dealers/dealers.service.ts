@@ -105,6 +105,63 @@ export class DealersService {
     return dealer;
   }
 
+  // SUPER_ADMIN onboards a dealer directly. Finds or creates the user for the
+  // given phone, then creates a PENDING dealer (same lifecycle as self-apply).
+  async createByAdmin(data: {
+    name: string;
+    phone: string;
+    email?: string;
+    societyId: string;
+    bankAccountDetails?: Record<string, unknown>;
+  }) {
+    const society = await this.prisma.society.findUnique({ where: { id: data.societyId } });
+    if (!society) throw new NotFoundException('Society not found');
+
+    const phone = data.phone.trim();
+    const email = data.email?.trim() ? data.email.trim() : undefined;
+
+    if (email) {
+      const emailOwner = await this.prisma.user.findUnique({ where: { email } });
+      if (emailOwner && emailOwner.phone !== phone) {
+        throw new ConflictException('Email already in use by another account');
+      }
+    }
+
+    // Find or create the user behind this phone.
+    let user = await this.prisma.user.findUnique({ where: { phone } });
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: { phone, name: data.name.trim(), email, role: 'DEALER' },
+      });
+    } else if (user.role === 'BUYER_TENANT') {
+      // Promote a browse-only account to a dealer.
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'DEALER', name: user.name === 'New User' ? data.name.trim() : user.name },
+      });
+    }
+
+    const existing = await this.prisma.dealer.findUnique({
+      where: { userId_societyId: { userId: user.id, societyId: data.societyId } },
+    });
+    if (existing) throw new ConflictException('This person is already a dealer for this society');
+
+    const dealer = await this.prisma.dealer.create({
+      data: {
+        userId: user.id,
+        societyId: data.societyId,
+        bankAccountDetails: (data.bankAccountDetails ?? undefined) as any,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        society: { select: { id: true, name: true, slug: true } },
+        _count: { select: { leads: true, commissions: true } },
+      },
+    });
+
+    return dealer;
+  }
+
   async approve(id: string) {
     const dealer = await this.prisma.dealer.findUnique({ where: { id } });
     if (!dealer) throw new NotFoundException('Dealer not found');

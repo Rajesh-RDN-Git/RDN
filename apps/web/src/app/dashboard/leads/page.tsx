@@ -12,7 +12,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
-import { CheckIcon, PhoneIcon, ChatIcon } from '@/components/ui/icons';
+import { CheckIcon, PhoneIcon, ChatIcon, SearchIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 
 // The dealer CRM pipeline. Each status maps to the actions available from it.
@@ -98,6 +98,7 @@ export default function LeadsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
   const [closeDealModal, setCloseDealModal] = useState<any>(null);
   const [dealType, setDealType] = useState('RENT');
   const [dealValue, setDealValue] = useState('');
@@ -415,6 +416,24 @@ export default function LeadsPage() {
     ? columns.filter((c) => ['property', 'society', 'status', 'date', 'message'].includes(c.key))
     : columns.filter((c) => c.key !== 'message');
 
+  const q = search.trim().toLowerCase();
+  const filteredLeads = q
+    ? leads.filter((l: any) =>
+        [
+          l.property?.flatNumber,
+          l.property?.towerBlock,
+          l.property?.society?.name,
+          l.society?.name,
+          l.name,
+          l.contactName,
+          l.enquirerName,
+          l.dealer?.user?.name,
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      )
+    : leads;
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -428,6 +447,20 @@ export default function LeadsPage() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="relative mb-4 max-w-md">
+        <SearchIcon
+          size={18}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
+        <input
+          type="text"
+          placeholder="Search by property, society, or contact..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-border bg-card py-2 pl-10 pr-4 text-body-md outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-ring"
+        />
       </div>
 
       <div className="mb-4">
@@ -481,7 +514,7 @@ export default function LeadsPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <DataTable
             columns={visibleColumns}
-            data={leads}
+            data={filteredLeads}
             isLoading={loading}
             keyExtractor={(item: any) => item.id}
             emptyMessage={isBuyer ? 'No inquiries yet' : 'No leads found'}

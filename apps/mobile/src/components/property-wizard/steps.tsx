@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Field, TextField, NumberField, OptionRow } from './ui';
 import { useWizard } from './wizard-context';
-import { AMENITIES_OPTIONS, RESTRICTIONS_OPTIONS } from './wizard-types';
+import { AMENITIES_OPTIONS } from './wizard-types';
 import { MediaUploader } from '../MediaUploader';
 import { societiesApi } from '@/lib/api/societies';
 
@@ -236,11 +236,6 @@ export function AmenitiesStep() {
       : [...data.amenities, a];
     set('amenities', next);
   };
-  const toggleRestriction = (r: string) => {
-    const next = { ...data.restrictions, [r]: !data.restrictions[r] };
-    set('restrictions', next);
-  };
-
   return (
     <ScrollView contentContainerStyle={styles.stepContent}>
       <Field label="Amenities">
@@ -254,22 +249,6 @@ export function AmenitiesStep() {
                 onPress={() => toggleAmenity(a)}
               >
                 <Text style={[styles.tagText, active && styles.tagTextOn]}>{a}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </Field>
-      <Field label="Restrictions">
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {RESTRICTIONS_OPTIONS.map((r) => {
-            const active = !!data.restrictions[r];
-            return (
-              <TouchableOpacity
-                key={r}
-                style={[styles.tagChip, active && styles.tagChipOn]}
-                onPress={() => toggleRestriction(r)}
-              >
-                <Text style={[styles.tagText, active && styles.tagTextOn]}>{r}</Text>
               </TouchableOpacity>
             );
           })}

@@ -3,6 +3,13 @@ import { apiClient } from '../api-client';
 export const dealersApi = {
   list: (params?: Record<string, unknown>) => apiClient.get('/dealers', { params }),
   getById: (id: string) => apiClient.get(`/dealers/${id}`),
+  create: (data: {
+    name: string;
+    phone: string;
+    email?: string;
+    societyId: string;
+    bankAccountDetails?: Record<string, unknown>;
+  }) => apiClient.post('/dealers', data),
   apply: (data: { societyId: string; bankAccountDetails?: Record<string, unknown> }) =>
     apiClient.post('/dealers/apply', data),
   approve: (id: string) => apiClient.patch(`/dealers/${id}/approve`),

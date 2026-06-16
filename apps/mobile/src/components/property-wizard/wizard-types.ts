@@ -88,8 +88,6 @@ export const AMENITIES_OPTIONS = [
   'Visitor parking',
 ];
 
-export const RESTRICTIONS_OPTIONS = ['No pets', 'Vegetarian only', 'No bachelors', 'Family only'];
-
 export function validateStep(
   step: WizardStep,
   data: WizardData,
