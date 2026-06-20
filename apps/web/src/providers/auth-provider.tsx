@@ -21,7 +21,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data } = await usersApi.getProfile();
         login(data);
       } catch {
-        logout();
+        // A transient refresh failure no longer clears tokens or redirects, so a
+        // genuinely-logged-in user shouldn't be flipped to logged-out by one blip.
+        // Retry getProfile once before giving up.
+        try {
+          const { data } = await usersApi.getProfile();
+          login(data);
+        } catch {
+          logout();
+        }
       }
     }
     hydrate();

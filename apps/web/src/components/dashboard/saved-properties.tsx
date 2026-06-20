@@ -40,7 +40,7 @@ export function SavedProperties() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-heading-xl text-foreground">Saved Properties</h1>
+        <h1 className="text-heading-xl text-foreground">Shortlist</h1>
         {!loading && properties.length > 0 && (
           <p className="mt-0.5 text-body-sm text-muted-foreground">
             {properties.length} saved {properties.length === 1 ? 'property' : 'properties'}

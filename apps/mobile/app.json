@@ -3,7 +3,7 @@
     "name": "RDN",
     "slug": "rdn-mobile",
     "version": "1.0.0",
-    "description": "RDN — Residential Dealer Network. Browse, list, and rent/buy homes within your society in India. Phone-OTP login, masked chat, RWA-verified listings.",
+    "description": "RDN — Resident Dealer Network. Browse, list, and rent/buy homes within your society in India. Phone-OTP login, masked chat, RWA-verified listings.",
     "primaryColor": "#2563eb",
     "orientation": "portrait",
     "scheme": "rdn",

@@ -22,7 +22,7 @@ import {
 const CITIES = ['Delhi', 'Mumbai', 'Bangalore', 'Gurugram', 'Noida', 'Pune', 'Hyderabad'];
 
 export function Header() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
@@ -140,7 +140,7 @@ export function Header() {
             <HeartIcon size={18} />
           </Link>
 
-          {isAuthenticated && user ? (
+          {isLoading ? null : isAuthenticated && user ? (
             <div className="relative hidden md:block" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
@@ -270,7 +270,7 @@ export function Header() {
 
               <div className="my-4 border-t border-chrome-border" />
 
-              {isAuthenticated && user ? (
+              {isLoading ? null : isAuthenticated && user ? (
                 <>
                   <div className="mb-3 flex items-center gap-3 px-3">
                     <Avatar src={user.avatarUrl} name={user.name} size="md" />

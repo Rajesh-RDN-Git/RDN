@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { ComingSoon } from '@/components/marketing/coming-soon';
 
 export const metadata: Metadata = {
-  title: 'About RDN — Residential Dealer Network',
+  title: 'About RDN — Resident Dealer Network',
   description:
     'RDN is replacing external brokers with a community-driven, society-controlled real estate ecosystem.',
 };

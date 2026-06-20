@@ -123,18 +123,32 @@ export class LeadsService {
       dealerId = dealer?.id ?? null;
     }
 
-    const lead = await this.prisma.lead.create({
-      data: {
-        propertyId: data.propertyId,
-        buyerId,
-        dealerId,
-        societyId: property.societyId,
-        source: data.source as any,
-      },
-      include: {
-        property: { select: { id: true, flatNumber: true, towerBlock: true } },
-        dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
-      },
+    // Allocate a human-readable reference id (R-#### for rent-intent, B-#### for
+    // buy/sale). The counter upsert takes a row-level lock so concurrent creates
+    // get distinct sequential numbers; the lead insert shares the transaction so a
+    // failed insert never burns a number out from under a committed one.
+    const prefix = property.transactionType === 'RENT' ? 'R' : 'B';
+    const lead = await this.prisma.$transaction(async (tx) => {
+      const counter = await tx.counter.upsert({
+        where: { key: `lead_${prefix}` },
+        create: { key: `lead_${prefix}`, value: 1 },
+        update: { value: { increment: 1 } },
+      });
+      const refId = `${prefix}-${String(counter.value).padStart(4, '0')}`;
+      return tx.lead.create({
+        data: {
+          refId,
+          propertyId: data.propertyId,
+          buyerId,
+          dealerId,
+          societyId: property.societyId,
+          source: data.source as any,
+        },
+        include: {
+          property: { select: { id: true, flatNumber: true, towerBlock: true } },
+          dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
+        },
+      });
     });
 
     // Notify dealer about new lead

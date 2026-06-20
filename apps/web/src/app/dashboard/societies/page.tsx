@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Role } from '@rdn/shared';
 import { useAuthStore } from '@/stores/auth-store';
 import { societiesApi } from '@/lib/api/societies.api';
@@ -23,8 +24,12 @@ interface SocietyRow {
   id: string;
   name: string;
   slug: string;
+  address?: string;
   city: string;
   state?: string;
+  pincode?: string;
+  totalUnits?: number | null;
+  amenities?: string[] | unknown;
   status: SocietyStatus;
   verificationStatus: SocietyVerification;
   rwaAdminId?: string | null;
@@ -93,7 +98,21 @@ const emptyCreateForm: CreateForm = {
   amenities: '',
 };
 
+// Edit reuses the create fields minus slug (immutable) and status (managed via Verify).
+type EditForm = Omit<CreateForm, 'slug'>;
+
+const emptyEditForm: EditForm = {
+  name: '',
+  address: '',
+  city: '',
+  state: '',
+  pincode: '',
+  totalUnits: '',
+  amenities: '',
+};
+
 export default function SocietiesPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === Role.SUPER_ADMIN;
 
@@ -109,6 +128,12 @@ export default function SocietiesPage() {
   const [createSlugDirty, setCreateSlugDirty] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Edit modal
+  const [editTarget, setEditTarget] = useState<SocietyRow | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>(emptyEditForm);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Verify modal
   const [verifyTarget, setVerifyTarget] = useState<SocietyRow | null>(null);
@@ -226,6 +251,66 @@ export default function SocietiesPage() {
       );
     } finally {
       setCreateSubmitting(false);
+    }
+  };
+
+  // ----- Edit -----
+  const openEdit = (row: SocietyRow) => {
+    setEditTarget(row);
+    setEditError(null);
+    setEditForm({
+      name: row.name,
+      address: row.address || '',
+      city: row.city,
+      state: row.state || '',
+      pincode: row.pincode || '',
+      totalUnits: row.totalUnits != null ? String(row.totalUnits) : '',
+      amenities: Array.isArray(row.amenities) ? (row.amenities as string[]).join(', ') : '',
+    });
+  };
+
+  const onEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    setEditError(null);
+
+    const totalUnitsNum = editForm.totalUnits ? Number(editForm.totalUnits) : undefined;
+    if (editForm.totalUnits && (!Number.isFinite(totalUnitsNum) || (totalUnitsNum ?? 0) <= 0)) {
+      setEditError('Total units must be a positive number.');
+      return;
+    }
+
+    const amenities = editForm.amenities
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean);
+
+    setEditSubmitting(true);
+    try {
+      await societiesApi.update(editTarget.id, {
+        name: editForm.name,
+        address: editForm.address,
+        city: editForm.city,
+        state: editForm.state,
+        pincode: editForm.pincode,
+        amenities,
+        // totalUnits must be a positive int when present; omit to leave unchanged.
+        ...(totalUnitsNum !== undefined ? { totalUnits: totalUnitsNum } : {}),
+      });
+      showToast.success('Society updated.');
+      setEditTarget(null);
+      fetchSocieties();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      setEditError(
+        Array.isArray(msg)
+          ? msg.join(', ')
+          : typeof msg === 'string'
+            ? msg
+            : 'Failed to update society.',
+      );
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -396,6 +481,16 @@ export default function SocietiesPage() {
       header: '',
       render: (row: SocietyRow) => (
         <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => router.push(`/dashboard/societies/${row.slug}`)}
+          >
+            View
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => openEdit(row)}>
+            Edit
+          </Button>
           {row.verificationStatus === 'PENDING' || row.verificationStatus === 'FLAGGED' ? (
             <Button size="sm" onClick={() => openVerify(row)}>
               Verify
@@ -545,6 +640,100 @@ export default function SocietiesPage() {
             </Button>
             <Button type="submit" isLoading={createSubmitting}>
               Create
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ----- Edit Modal ----- */}
+      <Modal
+        isOpen={editTarget !== null}
+        onClose={() => setEditTarget(null)}
+        title={editTarget ? `Edit ${editTarget.name}` : 'Edit Society'}
+      >
+        <form onSubmit={onEditSubmit} className="space-y-4">
+          {editTarget && (
+            <p className="text-xs text-muted-foreground">
+              Slug <span className="font-mono text-foreground">{editTarget.slug}</span> (not
+              editable)
+            </p>
+          )}
+          <Input
+            label="Name"
+            name="name"
+            value={editForm.name}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+            required
+            minLength={2}
+            maxLength={255}
+          />
+          <Textarea
+            label="Address"
+            name="address"
+            value={editForm.address}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, address: e.target.value }))}
+            required
+            minLength={5}
+            rows={2}
+          />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Input
+              label="City"
+              name="city"
+              value={editForm.city}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, city: e.target.value }))}
+              required
+              minLength={2}
+              maxLength={100}
+            />
+            <Input
+              label="State"
+              name="state"
+              value={editForm.state}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, state: e.target.value }))}
+              required
+              minLength={2}
+              maxLength={100}
+            />
+            <Input
+              label="Pincode"
+              name="pincode"
+              value={editForm.pincode}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, pincode: e.target.value }))}
+              required
+              pattern="^\d{6}$"
+              maxLength={6}
+              hint="6 digits"
+            />
+          </div>
+          <Input
+            label="Total Units"
+            name="totalUnits"
+            type="number"
+            min={1}
+            value={editForm.totalUnits}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, totalUnits: e.target.value }))}
+            placeholder="e.g. 240"
+          />
+          <Input
+            label="Amenities"
+            name="amenities"
+            value={editForm.amenities}
+            onChange={(e) => setEditForm((prev) => ({ ...prev, amenities: e.target.value }))}
+            placeholder="Pool, Gym, Clubhouse"
+            hint="Comma-separated list."
+          />
+          {editError && (
+            <p className="rounded-md border border-error-border bg-error-bg px-3 py-2 text-sm text-error-text">
+              {editError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={editSubmitting}>
+              Save changes
             </Button>
           </div>
         </form>

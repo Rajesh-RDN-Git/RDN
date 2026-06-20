@@ -21,7 +21,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('RDN API')
-    .setDescription('Residential Dealer Network API')
+    .setDescription('Resident Dealer Network API')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

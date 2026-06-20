@@ -107,7 +107,7 @@ const navByRole: Record<string, NavItem[]> = {
   [Role.BUYER_TENANT]: [
     { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
     CHAT_LINK,
-    { href: '/dashboard/properties', label: 'Saved', icon: HeartIcon },
+    { href: '/dashboard/properties', label: 'Shortlist', icon: HeartIcon },
     { href: '/dashboard/leads', label: 'My Inquiries', icon: FileTextIcon },
     RAISE_GRIEVANCE_LINK,
     NOTIFICATIONS_LINK,

@@ -82,8 +82,18 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      clearTokens();
-      if (typeof window !== 'undefined') window.location.href = '/login';
+      // Only treat an EXPLICIT auth rejection from /auth/refresh as a real logout.
+      // The refresh token is a 30-day cookie; a transient failure (no response,
+      // network blip, timeout, or 5xx) must NOT nuke a still-valid session or bounce
+      // the page to /login — that was the spurious-logout bug. Reject quietly and let
+      // the caller's catch (and hydration retry) recover on the next request.
+      const status = (refreshError as AxiosError).response?.status;
+      if (status === 401 || status === 403) {
+        clearTokens();
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

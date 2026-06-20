@@ -8,7 +8,7 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'RDN - Residential Dealer Network',
+  title: 'RDN - Resident Dealer Network',
   description: 'Community-driven real estate platform for residential societies',
 };
 

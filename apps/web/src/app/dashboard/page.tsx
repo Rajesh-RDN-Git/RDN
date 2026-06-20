@@ -219,7 +219,7 @@ export default function DashboardPage() {
         {role === Role.BUYER_TENANT && (
           <>
             <StatCard
-              label="Saved Properties"
+              label="Shortlist"
               value={stats.savedProperties ?? 0}
               icon={<HomeIcon size={20} />}
             />

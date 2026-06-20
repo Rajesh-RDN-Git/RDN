@@ -191,6 +191,13 @@ export default function LeadsPage() {
 
   const columns = [
     {
+      key: 'refId',
+      header: 'ID',
+      render: (item: any) => (
+        <span className="font-mono text-label-md text-foreground">{item.refId || '-'}</span>
+      ),
+    },
+    {
       key: 'property',
       header: 'Property',
       render: (item: any) => (

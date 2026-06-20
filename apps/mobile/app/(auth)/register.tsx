@@ -68,7 +68,7 @@ export default function RegisterScreen() {
         <Text style={styles.subtitle}>
           {otpSent
             ? `Enter the 6-digit code sent to +91${phone.replace('+91', '')}`
-            : 'Join the Residential Dealer Network'}
+            : 'Join the Resident Dealer Network'}
         </Text>
 
         {!otpSent ? (

@@ -289,7 +289,7 @@ function DashboardStats({ dashData, role }: { dashData: any; role: string }) {
   if (role === 'BUYER_TENANT') {
     return (
       <View style={styles.statsGrid}>
-        <StatCard label="Saved Properties" value={dashData.savedProperties ?? 0} color="#2563eb" />
+        <StatCard label="Shortlist" value={dashData.savedProperties ?? 0} color="#2563eb" />
         <StatCard label="Active Inquiries" value={dashData.activeInquiries ?? 0} color="#10b981" />
       </View>
     );

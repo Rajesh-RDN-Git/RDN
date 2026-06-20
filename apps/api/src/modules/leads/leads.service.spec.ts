@@ -8,7 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 describe('LeadsService', () => {
   let service: LeadsService;
 
-  const mockPrisma = {
+  const mockPrisma: any = {
     lead: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -22,7 +22,13 @@ describe('LeadsService', () => {
     dealer: {
       findFirst: jest.fn(),
     },
+    counter: {
+      upsert: jest.fn().mockResolvedValue({ key: 'lead_B', value: 1 }),
+    },
   };
+  // create() wraps the counter increment + lead insert in a transaction; run the
+  // callback against the same mock prisma.
+  mockPrisma.$transaction = jest.fn((cb: any) => cb(mockPrisma));
 
   const mockTransactionsService = { create: jest.fn() };
   const mockNotificationsService = { create: jest.fn().mockResolvedValue({}) };

@@ -79,7 +79,7 @@ export default function HomeScreen() {
         <Text style={styles.welcome}>
           {isAuthenticated ? `Hello, ${user?.name || 'User'}` : 'Welcome to RDN'}
         </Text>
-        <Text style={styles.tagline}>Residential Dealer Network</Text>
+        <Text style={styles.tagline}>Resident Dealer Network</Text>
       </View>
 
       {/* Stats for authenticated users */}

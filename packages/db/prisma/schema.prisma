@@ -461,6 +461,9 @@ model PropertyMedia {
 
 model Lead {
   id                   String     @id @default(uuid()) @db.Uuid
+  // Human-readable reference, e.g. B-0024 (buy/sale intent) or R-0024 (rent).
+  // Allocated at creation from a per-prefix Counter. Nullable only for legacy rows.
+  refId                String?    @unique @map("ref_id") @db.VarChar(16)
   propertyId           String     @map("property_id") @db.Uuid
   buyerId              String     @map("buyer_id") @db.Uuid
   dealerId             String?    @map("dealer_id") @db.Uuid
@@ -490,6 +493,15 @@ model Lead {
   @@index([source])
   @@index([createdAt])
   @@map("leads")
+}
+
+// Generic atomic counter (row-level lock via upsert-increment). Used to allocate
+// sequential human-readable lead reference ids per prefix (keys: lead_B, lead_R).
+model Counter {
+  key   String @id
+  value Int    @default(0)
+
+  @@map("counters")
 }
 
 model Transaction {
