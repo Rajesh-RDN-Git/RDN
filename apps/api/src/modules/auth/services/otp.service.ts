@@ -17,7 +17,13 @@ export class OtpService {
   ) {
     const environment = configService.get<string>('app.environment');
     const explicitBypass = configService.get<string>('auth.otpDevBypass') === 'true';
-    this.isDev = environment === 'development' || explicitBypass;
+    const isProd = environment === 'production';
+    // Hard safety: the OTP bypass (accept any 6-digit code) must never be
+    // reachable in production. Fail fast on boot if someone set it there.
+    if (isProd && explicitBypass) {
+      throw new Error('OTP_DEV_BYPASS must not be enabled in production — refusing to start.');
+    }
+    this.isDev = !isProd && (environment === 'development' || explicitBypass);
   }
 
   async sendOtp(phone: string): Promise<{ hash: string; expiresAt: Date }> {

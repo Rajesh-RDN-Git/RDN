@@ -3,6 +3,12 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
+  // Safety: this seed creates known test users (fixed phones, *.rdn.dev emails).
+  // It must never run against production. Override only with an explicit flag.
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PROD_SEED !== 'true') {
+    throw new Error('Refusing to seed in production. Set ALLOW_PROD_SEED=true to override.');
+  }
+
   console.log('Seeding database...');
 
   // ─── Users ──────────────────────────────────────────

@@ -8,8 +8,17 @@ resource "aws_s3_bucket_cors_configuration" "media" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST"]
-    allowed_origins = ["*"]
+    allowed_origins = var.cors_allowed_origins
     max_age_seconds = 3600
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "media" {
+  bucket = aws_s3_bucket.media.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
   }
 }
 
