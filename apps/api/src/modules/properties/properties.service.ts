@@ -137,9 +137,14 @@ export class PropertiesService {
         carpetArea: data.carpetArea,
         superArea: data.superArea,
         floor: data.floor,
+        floorLabel: data.floorLabel,
         totalFloors: data.totalFloors,
         facing: data.facing,
         furnishing: data.furnishing as any,
+        furnishingDetails: (data.furnishingDetails || {}) as any,
+        additionalRooms: (data.additionalRooms || []) as any,
+        propertyView: (data.propertyView || []) as any,
+        description: data.description,
         priceRent: data.priceRent,
         priceSale: data.priceSale,
         securityDeposit: data.securityDeposit,
@@ -177,6 +182,8 @@ export class PropertiesService {
     }
 
     const updateData: any = {};
+    // Listing-content fields. Editing any of these on an already-reviewed
+    // property sends it back to the verification queue.
     if (data.flatNumber !== undefined) updateData.flatNumber = data.flatNumber;
     if (data.towerBlock !== undefined) updateData.towerBlock = data.towerBlock;
     if (data.type !== undefined) updateData.type = data.type;
@@ -185,23 +192,51 @@ export class PropertiesService {
     if (data.carpetArea !== undefined) updateData.carpetArea = data.carpetArea;
     if (data.superArea !== undefined) updateData.superArea = data.superArea;
     if (data.floor !== undefined) updateData.floor = data.floor;
+    if (data.floorLabel !== undefined) updateData.floorLabel = data.floorLabel;
     if (data.totalFloors !== undefined) updateData.totalFloors = data.totalFloors;
     if (data.facing !== undefined) updateData.facing = data.facing;
     if (data.furnishing !== undefined) updateData.furnishing = data.furnishing;
+    if (data.furnishingDetails !== undefined) updateData.furnishingDetails = data.furnishingDetails;
+    if (data.additionalRooms !== undefined) updateData.additionalRooms = data.additionalRooms;
+    if (data.propertyView !== undefined) updateData.propertyView = data.propertyView;
+    if (data.description !== undefined) updateData.description = data.description;
     if (data.priceRent !== undefined) updateData.priceRent = data.priceRent;
     if (data.priceSale !== undefined) updateData.priceSale = data.priceSale;
     if (data.securityDeposit !== undefined) updateData.securityDeposit = data.securityDeposit;
     if (data.availableFrom !== undefined) updateData.availableFrom = new Date(data.availableFrom);
-    if (data.availabilityStatus !== undefined)
-      updateData.availabilityStatus = data.availabilityStatus;
     if (data.restrictions !== undefined) updateData.restrictions = data.restrictions;
     if (data.amenities !== undefined) updateData.amenities = data.amenities;
+
+    const touchedListing = Object.keys(updateData).length > 0;
+
+    // Non-content operational fields — do NOT trigger re-verification.
+    if (data.availabilityStatus !== undefined)
+      updateData.availabilityStatus = data.availabilityStatus;
     if (data.status !== undefined) updateData.status = data.status;
 
-    return this.prisma.property.update({
+    // Any content edit on a reviewed listing re-enters the verification queue.
+    const reVerify = touchedListing && property.verificationStatus !== 'PENDING';
+    if (reVerify) updateData.verificationStatus = 'PENDING';
+
+    const updated = await this.prisma.property.update({
       where: { id },
       data: updateData,
+      include: { society: { select: { id: true, name: true } } },
     });
+
+    if (reVerify) {
+      this.notificationsService
+        .notifySocietyApprovers(updated.societyId, {
+          type: 'SYSTEM',
+          title: 'Listing Edited — Re-verification Needed',
+          body: `A property in ${updated.society?.name ?? 'your society'} was edited and needs re-verification.`,
+          channel: 'IN_APP',
+          data: { propertyId: updated.id, societyId: updated.societyId },
+        })
+        .catch(() => {});
+    }
+
+    return updated;
   }
 
   async getVerificationQueue(userId: string, role: string) {

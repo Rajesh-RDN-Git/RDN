@@ -9,11 +9,46 @@ import {
 } from 'react-native';
 import { Field, TextField, NumberField, OptionRow } from './ui';
 import { useWizard } from './wizard-context';
-import { AMENITIES_OPTIONS } from './wizard-types';
 import { MediaUploader } from '../MediaUploader';
 import { societiesApi } from '@/lib/api/societies';
+import {
+  BHK_OPTIONS,
+  ADDITIONAL_ROOMS,
+  PROPERTY_VIEWS,
+  FURNISHING_ITEMS,
+  AMENITY_CATEGORIES,
+  formatBhk,
+} from '@rdn/shared';
 
 type SocietyOption = { id: string; name: string; city: string };
+
+/** Multi-select chip group (string values). */
+function ChipMulti({
+  options,
+  selected,
+  onToggle,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {options.map((opt) => {
+        const active = selected.includes(opt);
+        return (
+          <TouchableOpacity
+            key={opt}
+            style={[styles.tagChip, active && styles.tagChipOn]}
+            onPress={() => onToggle(opt)}
+          >
+            <Text style={[styles.tagText, active && styles.tagTextOn]}>{opt}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
 
 export function BasicsStep() {
   const { state, dispatch } = useWizard();
@@ -87,7 +122,7 @@ export function BasicsStep() {
       </Field>
       <Field label="Listing for" error={errors.transactionType}>
         <OptionRow
-          options={['RENT', 'SALE', 'BOTH'] as const}
+          options={['RENT', 'SALE'] as const}
           selected={data.transactionType}
           onSelect={(v) => set('transactionType', v)}
         />
@@ -102,11 +137,30 @@ export function SpecsStep() {
   const set = <K extends keyof typeof data>(f: K, v: (typeof data)[K]) =>
     dispatch({ type: 'SET_FIELD', field: f, value: v });
 
+  const toggleList = (field: 'additionalRooms' | 'propertyView', value: string) => {
+    const current = (data[field] as string[]) ?? [];
+    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+    set(field, next as never);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.stepContent}>
       {(data.type === 'APARTMENT' || data.type === 'VILLA' || data.type === '') && (
         <Field label="BHK" error={errors.bhk}>
-          <NumberField value={data.bhk} onChange={(n) => set('bhk', n)} placeholder="e.g. 2" />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {BHK_OPTIONS.map((o) => {
+              const active = data.bhk === o.value;
+              return (
+                <TouchableOpacity
+                  key={o.value}
+                  style={[styles.tagChip, active && styles.tagChipOn]}
+                  onPress={() => set('bhk', o.value)}
+                >
+                  <Text style={[styles.tagText, active && styles.tagTextOn]}>{o.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </Field>
       )}
       <Field label="Carpet area (sq ft)" error={errors.carpetArea}>
@@ -119,9 +173,18 @@ export function SpecsStep() {
       <Field label="Super-built-up area (sq ft, optional)">
         <NumberField value={data.superArea} onChange={(n) => set('superArea', n)} />
       </Field>
-      <Field label="Floor">
-        <NumberField value={data.floor} onChange={(n) => set('floor', n)} />
+      <Field label="Floor type">
+        <OptionRow
+          options={['GROUND', 'TOP'] as const}
+          selected={data.floorLabel ?? ''}
+          onSelect={(v) => set('floorLabel', data.floorLabel === v ? undefined : v)}
+        />
       </Field>
+      {!data.floorLabel && (
+        <Field label="Floor number">
+          <NumberField value={data.floor} onChange={(n) => set('floor', n)} />
+        </Field>
+      )}
       <Field label="Total floors">
         <NumberField value={data.totalFloors} onChange={(n) => set('totalFloors', n)} />
       </Field>
@@ -137,6 +200,28 @@ export function SpecsStep() {
           options={['FURNISHED', 'SEMI', 'UNFURNISHED'] as const}
           selected={data.furnishing ?? ''}
           onSelect={(v) => set('furnishing', v)}
+        />
+      </Field>
+      <Field label="Additional rooms">
+        <ChipMulti
+          options={ADDITIONAL_ROOMS}
+          selected={data.additionalRooms ?? []}
+          onToggle={(v) => toggleList('additionalRooms', v)}
+        />
+      </Field>
+      <Field label="View">
+        <ChipMulti
+          options={PROPERTY_VIEWS}
+          selected={data.propertyView ?? []}
+          onToggle={(v) => toggleList('propertyView', v)}
+        />
+      </Field>
+      <Field label="Description">
+        <TextField
+          value={data.description ?? ''}
+          onChangeText={(v) => set('description', v)}
+          placeholder="Describe the property — highlights, neighbourhood…"
+          multiline
         />
       </Field>
     </ScrollView>
@@ -230,29 +315,65 @@ export function AmenitiesStep() {
   const set = <K extends keyof typeof data>(f: K, v: (typeof data)[K]) =>
     dispatch({ type: 'SET_FIELD', field: f, value: v });
 
+  const furnishing = data.furnishingDetails ?? {};
+
   const toggleAmenity = (a: string) => {
     const next = data.amenities.includes(a)
       ? data.amenities.filter((x) => x !== a)
       : [...data.amenities, a];
     set('amenities', next);
   };
+
+  const setCount = (item: string, count: number) => {
+    const next = { ...furnishing };
+    if (count <= 0) delete next[item];
+    else next[item] = count;
+    set('furnishingDetails', next as never);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.stepContent}>
-      <Field label="Amenities">
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {AMENITIES_OPTIONS.map((a) => {
-            const active = data.amenities.includes(a);
-            return (
-              <TouchableOpacity
-                key={a}
-                style={[styles.tagChip, active && styles.tagChipOn]}
-                onPress={() => toggleAmenity(a)}
-              >
-                <Text style={[styles.tagText, active && styles.tagTextOn]}>{a}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+      {AMENITY_CATEGORIES.map((cat) => (
+        <Field key={cat.category} label={cat.category}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {cat.items.map((a) => {
+              const active = data.amenities.includes(a);
+              return (
+                <TouchableOpacity
+                  key={a}
+                  style={[styles.tagChip, active && styles.tagChipOn]}
+                  onPress={() => toggleAmenity(a)}
+                >
+                  <Text style={[styles.tagText, active && styles.tagTextOn]}>{a}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Field>
+      ))}
+
+      <Field label="Furnishing details">
+        {FURNISHING_ITEMS.map((item) => {
+          const count = furnishing[item] ?? 0;
+          return (
+            <View key={item} style={styles.furnishingRow}>
+              <Text style={styles.furnishingName}>{item}</Text>
+              <View style={styles.stepper}>
+                <TouchableOpacity
+                  style={[styles.stepBtn, count <= 0 && styles.stepBtnDisabled]}
+                  disabled={count <= 0}
+                  onPress={() => setCount(item, count - 1)}
+                >
+                  <Text style={styles.stepBtnText}>−</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepCount}>{count}</Text>
+                <TouchableOpacity style={styles.stepBtn} onPress={() => setCount(item, count + 1)}>
+                  <Text style={styles.stepBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
       </Field>
     </ScrollView>
   );
@@ -266,14 +387,26 @@ export function ReviewStep() {
     { label: 'Tower / Flat', value: `${data.towerBlock || '—'} / ${data.flatNumber || '—'}` },
     { label: 'Type', value: data.type || '—' },
     { label: 'For', value: data.transactionType || '—' },
-    { label: 'BHK', value: data.bhk ? String(data.bhk) : '—' },
+    { label: 'BHK', value: data.bhk ? formatBhk(data.bhk) : '—' },
     { label: 'Carpet area', value: data.carpetArea ? `${data.carpetArea} sq ft` : '—' },
-    { label: 'Floor', value: data.floor ? `${data.floor}/${data.totalFloors ?? '?'}` : '—' },
+    {
+      label: 'Floor',
+      value: data.floorLabel
+        ? data.floorLabel === 'GROUND'
+          ? 'Ground'
+          : 'Top'
+        : data.floor
+          ? `${data.floor}/${data.totalFloors ?? '?'}`
+          : '—',
+    },
     { label: 'Furnishing', value: data.furnishing ?? '—' },
+    { label: 'Rooms', value: data.additionalRooms.length ? data.additionalRooms.join(', ') : '—' },
+    { label: 'View', value: data.propertyView.length ? data.propertyView.join(', ') : '—' },
     { label: 'Rent', value: data.priceRent ? `₹${data.priceRent.toLocaleString('en-IN')}` : '—' },
     { label: 'Sale', value: data.priceSale ? `₹${data.priceSale.toLocaleString('en-IN')}` : '—' },
     { label: 'Photos', value: String(data.photos.length) },
     { label: 'Amenities', value: data.amenities.length ? data.amenities.join(', ') : '—' },
+    { label: 'Description', value: data.description?.trim() || '—' },
   ];
 
   return (
@@ -331,6 +464,29 @@ const styles = StyleSheet.create({
   tagChipOn: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
   tagText: { fontSize: 13, color: '#374151' },
   tagTextOn: { color: '#fff', fontWeight: '600' },
+  furnishingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
+  },
+  furnishingName: { fontSize: 14, color: '#111827' },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  stepBtnDisabled: { opacity: 0.4 },
+  stepBtnText: { fontSize: 18, color: '#111827' },
+  stepCount: { minWidth: 20, textAlign: 'center', fontSize: 14, color: '#111827' },
   reviewIntro: { fontSize: 14, color: '#6b7280', marginBottom: 12, lineHeight: 20 },
   reviewRow: {
     flexDirection: 'row',

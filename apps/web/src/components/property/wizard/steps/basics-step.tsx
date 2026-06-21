@@ -145,7 +145,6 @@ export function BasicsStep({ userRole, primarySocietyId }: Props) {
           <option value="">Select transaction</option>
           <option value="RENT">Rent</option>
           <option value="SALE">Sale</option>
-          <option value="BOTH">Both</option>
         </Select>
       </div>
     </div>

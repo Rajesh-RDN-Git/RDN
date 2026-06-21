@@ -28,7 +28,9 @@ export class CallService {
     }
 
     const dealerPhone = lead.dealer.user.phone;
-    const buyerPhone = lead.buyer.phone;
+    // Registered buyer's phone, or the free-form contact phone on a manual lead.
+    const buyerPhone = lead.buyer?.phone ?? lead.contactPhone;
+    if (!buyerPhone) throw new BadRequestException('This lead has no contact phone to call');
 
     const apiKey = this.configService.get<string>('exotel.apiKey');
     const apiToken = this.configService.get<string>('exotel.apiToken');

@@ -42,6 +42,16 @@ export class TransactionsService {
     if (!lead.dealerId || !lead.dealer) {
       throw new BadRequestException('Cannot close a deal on a lead with no assigned dealer');
     }
+    // Manual/call-back leads may lack a linked property or registered buyer; a deal
+    // can only be transacted against a real property + buyer.
+    if (!lead.propertyId || !lead.property) {
+      throw new BadRequestException('Cannot close a deal on a lead with no linked property');
+    }
+    if (!lead.buyerId) {
+      throw new BadRequestException('Cannot close a deal on a lead with no registered buyer');
+    }
+    const propertyId = lead.propertyId; // narrowed non-null by the guard above
+    const buyerId = lead.buyerId; // narrowed non-null by the guard above
 
     // Calculate commissions
     const dealValue = Number(data.dealValue);
@@ -69,7 +79,7 @@ export class TransactionsService {
       const transaction = await tx.transaction.create({
         data: {
           leadId: data.leadId,
-          propertyId: lead.propertyId,
+          propertyId,
           type: data.type as any,
           dealValue: dealValue,
           buyerCommission: 0,
@@ -96,7 +106,7 @@ export class TransactionsService {
       // Update property availability if sale
       if (data.type === 'SALE') {
         await tx.property.update({
-          where: { id: lead.propertyId },
+          where: { id: propertyId },
           data: {
             availabilityStatus: 'SOLD',
             status: 'CLOSED',
@@ -104,7 +114,7 @@ export class TransactionsService {
         });
       } else {
         await tx.property.update({
-          where: { id: lead.propertyId },
+          where: { id: propertyId },
           data: { availabilityStatus: 'OCCUPIED' },
         });
       }
@@ -126,7 +136,7 @@ export class TransactionsService {
 
     this.notificationsService
       .create({
-        userId: lead.buyerId,
+        userId: buyerId,
         type: 'DEAL',
         title: 'Deal Confirmed',
         body: `Your ${data.type.toLowerCase()} deal has been confirmed.`,
@@ -142,7 +152,7 @@ export class TransactionsService {
         title: 'Property Deal Completed',
         body: `Your property ${lead.property.flatNumber}, ${lead.property.towerBlock} has been ${data.type === 'SALE' ? 'sold' : 'rented'}.`,
         channel: 'IN_APP',
-        data: { transactionId: result.transaction.id, propertyId: lead.propertyId },
+        data: { transactionId: result.transaction.id, propertyId },
       })
       .catch(() => {});
 

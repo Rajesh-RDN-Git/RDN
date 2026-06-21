@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { leadsApi } from '@/lib/api/leads.api';
+import { dealersApi } from '@/lib/api/dealers.api';
 import { communicationApi } from '@/lib/api/communication.api';
 import { useAuthStore } from '@/stores/auth-store';
 import { DataTable } from '@/components/ui/data-table';
@@ -37,6 +38,18 @@ const NEXT_ACTIONS: Record<string, LeadAction[]> = {
 
 // Statuses from which a deal can be closed (creates txn + commission).
 const CLOSEABLE = ['NEGOTIATING', 'MEETING_ARRANGED', 'DEAL_OPEN', 'CLOSING'];
+
+// Human-friendly labels for the lead's origin so admins can tell an in-app
+// enquiry from a call-back / manual entry at a glance.
+const SOURCE_LABELS: Record<string, string> = {
+  APP_SEARCH: 'Enquiry',
+  CALLBACK: 'Call Back',
+  WHATSAPP: 'WhatsApp',
+  REFERRAL: 'Referral',
+  WALK_IN: 'Walk-in',
+  MANUAL: 'Manual',
+};
+const sourceLabel = (s?: string) => (s ? (SOURCE_LABELS[s] ?? s) : '-');
 
 const tomorrowISO = () => {
   const d = new Date();
@@ -93,7 +106,21 @@ export default function LeadsPage() {
   // Buyers see their own enquiries ("My Inquiries"): no internal CRM columns
   // (assigned dealer, lead priority) and no status-advancing actions.
   const isBuyer = user?.role === 'BUYER_TENANT';
+  // Super admins can add leads by hand, forward them to any dealer, and see the
+  // prospect's phone number (the sole role exempted from phone masking).
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [leads, setLeads] = useState<any[]>([]);
+  const [dealers, setDealers] = useState<any[]>([]);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    contactName: '',
+    contactPhone: '',
+    source: 'CALLBACK',
+    dealerId: '',
+  });
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addSubmitting, setAddSubmitting] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -135,6 +162,59 @@ export default function LeadsPage() {
   useEffect(() => {
     fetchLeads();
   }, [page, statusFilter]);
+
+  // Load active dealers once for the assign dropdown + add-lead modal (SA only).
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    dealersApi
+      .list({ limit: 200 })
+      .then(({ data }) => {
+        const raw = data?.data ?? data;
+        setDealers(Array.isArray(raw) ? raw : []);
+      })
+      .catch(() => setDealers([]));
+  }, [isSuperAdmin]);
+
+  const handleAssign = async (leadId: string, dealerId: string) => {
+    if (!dealerId) return;
+    setAssigningId(leadId);
+    try {
+      await leadsApi.assign(leadId, dealerId);
+      showToast.success('Lead assigned to dealer');
+      fetchLeads();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      showToast.error(err?.response?.data?.message || 'Failed to assign lead');
+    }
+    setAssigningId(null);
+  };
+
+  const handleAddLead = async () => {
+    if (!addForm.contactName.trim() || !addForm.contactPhone.trim()) {
+      setAddError('Name and phone are required.');
+      return;
+    }
+    setAddSubmitting(true);
+    setAddError(null);
+    try {
+      await leadsApi.createManual({
+        contactName: addForm.contactName.trim(),
+        contactPhone: addForm.contactPhone.trim(),
+        source: addForm.source,
+        ...(addForm.dealerId ? { dealerId: addForm.dealerId } : {}),
+      });
+      showToast.success('Lead added');
+      setAddLeadOpen(false);
+      setAddForm({ contactName: '', contactPhone: '', source: 'CALLBACK', dealerId: '' });
+      fetchLeads();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setAddError(err?.response?.data?.message || 'Failed to add lead.');
+    }
+    setAddSubmitting(false);
+  };
+
+  const dealerName = (d: any) => d.user?.name || d.name || 'Dealer';
 
   const handleAdvanceStatus = async (
     leadId: string,
@@ -214,12 +294,47 @@ export default function LeadsPage() {
     {
       key: 'buyer',
       header: 'Buyer',
-      render: (item: any) => <span className="text-body-md">{item.buyer?.name || '-'}</span>,
+      render: (item: any) => (
+        <span className="text-body-md">{item.buyer?.name || item.contactName || '-'}</span>
+      ),
+    },
+    {
+      key: 'phone',
+      header: 'Phone',
+      render: (item: any) => {
+        const phone = item.buyer?.phone || item.contactPhone;
+        return phone ? (
+          <a href={`tel:${phone}`} className="text-body-md text-brand hover:underline">
+            {phone}
+          </a>
+        ) : (
+          <span className="text-body-md text-muted-foreground">-</span>
+        );
+      },
     },
     {
       key: 'dealer',
       header: 'Dealer',
       render: (item: any) => <span className="text-body-md">{item.dealer?.user?.name || '-'}</span>,
+    },
+    {
+      key: 'assign',
+      header: 'Assign',
+      render: (item: any) => (
+        <Select
+          value=""
+          disabled={assigningId === item.id}
+          onChange={(e) => handleAssign(item.id, e.target.value)}
+          className="min-w-[140px]"
+        >
+          <option value="">{item.dealer?.user?.name ? 'Reassign…' : 'Assign dealer…'}</option>
+          {dealers.map((d) => (
+            <option key={d.id} value={d.id}>
+              {dealerName(d)}
+            </option>
+          ))}
+        </Select>
+      ),
     },
     {
       key: 'society',
@@ -243,7 +358,11 @@ export default function LeadsPage() {
         );
       },
     },
-    { key: 'source', header: 'Source', render: (item: any) => <Badge>{item.source}</Badge> },
+    {
+      key: 'source',
+      header: 'Source',
+      render: (item: any) => <Badge>{sourceLabel(item.source)}</Badge>,
+    },
     {
       key: 'status',
       header: 'Status',
@@ -419,9 +538,12 @@ export default function LeadsPage() {
   ];
 
   // For buyers, hide internal CRM columns and the actions column.
+  // Phone (unmasked) + manual Assign are SUPER_ADMIN-only.
   const visibleColumns = isBuyer
     ? columns.filter((c) => ['property', 'society', 'status', 'date', 'message'].includes(c.key))
-    : columns.filter((c) => c.key !== 'message');
+    : columns.filter(
+        (c) => c.key !== 'message' && (isSuperAdmin || (c.key !== 'phone' && c.key !== 'assign')),
+      );
 
   const q = search.trim().toLowerCase();
   const filteredLeads = q
@@ -454,6 +576,7 @@ export default function LeadsPage() {
             </p>
           )}
         </div>
+        {isSuperAdmin && <Button onClick={() => setAddLeadOpen(true)}>Add Lead</Button>}
       </div>
 
       <div className="relative mb-4 max-w-md">
@@ -586,6 +709,69 @@ export default function LeadsPage() {
               className="flex-1"
             >
               Close Deal
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={addLeadOpen} onClose={() => setAddLeadOpen(false)} title="Add Lead">
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-label-sm text-foreground">Contact name</label>
+            <Input
+              value={addForm.contactName}
+              onChange={(e) => setAddForm((f) => ({ ...f, contactName: e.target.value }))}
+              placeholder="e.g. Ramesh Kumar"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-label-sm text-foreground">Phone</label>
+            <Input
+              value={addForm.contactPhone}
+              onChange={(e) => setAddForm((f) => ({ ...f, contactPhone: e.target.value }))}
+              placeholder="e.g. +919876543210"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-label-sm text-foreground">Source</label>
+            <Select
+              value={addForm.source}
+              onChange={(e) => setAddForm((f) => ({ ...f, source: e.target.value }))}
+            >
+              <option value="CALLBACK">Call Back</option>
+              <option value="MANUAL">Manual</option>
+              <option value="WHATSAPP">WhatsApp</option>
+              <option value="WALK_IN">Walk-in</option>
+              <option value="REFERRAL">Referral</option>
+            </Select>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-label-sm text-foreground">
+              Assign to dealer (optional)
+            </label>
+            <Select
+              value={addForm.dealerId}
+              onChange={(e) => setAddForm((f) => ({ ...f, dealerId: e.target.value }))}
+            >
+              <option value="">Unassigned</option>
+              {dealers.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {dealerName(d)}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {addError && (
+            <div className="rounded-lg border border-error-border bg-error-bg px-4 py-3 text-body-sm text-error-text">
+              {addError}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={() => setAddLeadOpen(false)} className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={handleAddLead} isLoading={addSubmitting} className="flex-1">
+              Add Lead
             </Button>
           </div>
         </div>

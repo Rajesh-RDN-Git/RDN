@@ -125,12 +125,60 @@ describe('PropertiesService', () => {
 
   describe('update', () => {
     it('should allow SUPER_ADMIN to update any property', async () => {
-      mockPrisma.property.findUnique.mockResolvedValue({ id: 'prop-1', ownerId: 'other' });
+      mockPrisma.property.findUnique.mockResolvedValue({
+        id: 'prop-1',
+        ownerId: 'other',
+        verificationStatus: 'PENDING',
+      });
       mockPrisma.property.update.mockResolvedValue({ id: 'prop-1' });
 
       await service.update('prop-1', { bhk: 4 } as any, 'admin-1', 'SUPER_ADMIN');
 
       expect(mockPrisma.property.update).toHaveBeenCalled();
+    });
+
+    it('re-enters the verification queue when a reviewed listing is edited', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({
+        id: 'prop-1',
+        ownerId: 'owner-1',
+        societyId: 'soc-1',
+        verificationStatus: 'VERIFIED',
+      });
+      mockPrisma.property.update.mockResolvedValue({
+        id: 'prop-1',
+        societyId: 'soc-1',
+        society: { id: 'soc-1', name: 'Sunrise' },
+      });
+
+      await service.update('prop-1', { bhk: 4 } as any, 'owner-1', 'OWNER');
+
+      // verificationStatus reset back to PENDING on the update payload
+      expect(mockPrisma.property.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ verificationStatus: 'PENDING' }),
+        }),
+      );
+      expect(mockNotificationsService.notifySocietyApprovers).toHaveBeenCalledWith(
+        'soc-1',
+        expect.objectContaining({ title: expect.stringContaining('Re-verification') }),
+      );
+    });
+
+    it('does NOT re-verify when only operational status changes', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({
+        id: 'prop-1',
+        ownerId: 'owner-1',
+        verificationStatus: 'VERIFIED',
+      });
+      mockPrisma.property.update.mockResolvedValue({ id: 'prop-1' });
+
+      await service.update('prop-1', { status: 'DELISTED' } as any, 'owner-1', 'OWNER');
+
+      expect(mockPrisma.property.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.not.objectContaining({ verificationStatus: 'PENDING' }),
+        }),
+      );
     });
 
     it('should throw ForbiddenException for OWNER updating others property', async () => {

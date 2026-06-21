@@ -28,6 +28,12 @@ export class CreatePropertyDto {
   @ApiPropertyOptional({ example: 5 })
   floor?: number;
 
+  @ApiPropertyOptional({
+    enum: ['GROUND', 'TOP'],
+    description: 'Overrides numeric floor for display',
+  })
+  floorLabel?: string;
+
   @ApiPropertyOptional({ example: 20 })
   totalFloors?: number;
 
@@ -36,6 +42,21 @@ export class CreatePropertyDto {
 
   @ApiPropertyOptional({ enum: ['FURNISHED', 'SEMI', 'UNFURNISHED'] })
   furnishing?: string;
+
+  @ApiPropertyOptional({
+    example: { AC: 2, Geyser: 1 },
+    description: 'Furnishing items with counts',
+  })
+  furnishingDetails?: Record<string, number>;
+
+  @ApiPropertyOptional({ example: ['Puja Room', 'Store Room'], type: [String] })
+  additionalRooms?: string[];
+
+  @ApiPropertyOptional({ example: ['Park Facing', 'Pool Facing'], type: [String] })
+  propertyView?: string[];
+
+  @ApiPropertyOptional({ example: 'Spacious south-facing flat...' })
+  description?: string;
 
   @ApiPropertyOptional({ example: 25000 })
   priceRent?: number;

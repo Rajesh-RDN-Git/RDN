@@ -43,6 +43,9 @@ export function useSearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+  // Tracks the param string we last fetched for, so the router.replace() that
+  // search() itself performs doesn't re-trigger the URL-driven effect below.
+  const lastParamsRef = useRef<string | null>(null);
 
   const getFiltersFromParams = useCallback((): SearchFilters => {
     const filters: SearchFilters = {};
@@ -59,6 +62,7 @@ export function useSearch() {
       for (const [key, value] of Object.entries(newFilters)) {
         if (value) params.set(key, value);
       }
+      lastParamsRef.current = params.toString();
       router.replace(`/search?${params.toString()}`, { scroll: false });
 
       setLoading(true);
@@ -91,11 +95,16 @@ export function useSearch() {
     [search],
   );
 
-  // Load initial search on mount. Run even with no filters so a bare /search
-  // shows all listings instead of an empty "no properties" state.
+  // Fetch whenever the URL params change — on first mount AND on client-side
+  // navigation (e.g. clicking Buy/Rent on the home page pushes /search?
+  // transactionType=… without remounting this hook). The lastParamsRef guard
+  // skips the echo from search()'s own router.replace so we don't double-fetch.
   useEffect(() => {
+    const current = searchParams.toString();
+    if (current === lastParamsRef.current) return;
+    lastParamsRef.current = current;
     search(getFiltersFromParams());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, search, getFiltersFromParams]);
 
   const filters = getFiltersFromParams();
   const page = Number(filters.page) || 1;

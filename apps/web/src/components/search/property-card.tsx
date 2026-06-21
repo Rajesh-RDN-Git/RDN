@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { HeartIcon, BedIcon, AreaIcon, FloorIcon, BuildingIcon } from '../ui/icons';
 import { Button } from '../ui/button';
+import { formatBhk } from '@rdn/shared';
 
 interface PropertyCardProps {
   property: {
@@ -15,6 +16,7 @@ interface PropertyCardProps {
     bhk: number;
     carpetArea: string;
     floor?: number;
+    floorLabel?: 'GROUND' | 'TOP' | null;
     totalFloors?: number;
     priceRent: string | null;
     priceSale: string | null;
@@ -133,20 +135,23 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <div className="mt-1.5 flex items-center gap-3 overflow-hidden text-body-md text-muted-foreground">
             <span className="flex shrink-0 items-center gap-1">
               <BedIcon size={15} className="text-muted-foreground" />
-              {property.bhk} BHK
+              {formatBhk(property.bhk) || `${property.bhk} BHK`}
             </span>
             <span className="shrink-0 text-muted-foreground">|</span>
             <span className="flex shrink-0 items-center gap-1">
               <AreaIcon size={15} className="text-muted-foreground" />
               {property.carpetArea} sq.ft.
             </span>
-            {property.floor != null && (
+            {(property.floorLabel || property.floor != null) && (
               <>
                 <span className="shrink-0 text-muted-foreground">|</span>
                 <span className="flex shrink-0 items-center gap-1">
                   <FloorIcon size={15} className="text-muted-foreground" />
-                  Floor {property.floor}
-                  {property.totalFloors ? `/${property.totalFloors}` : ''}
+                  {property.floorLabel === 'GROUND'
+                    ? 'Ground Floor'
+                    : property.floorLabel === 'TOP'
+                      ? 'Top Floor'
+                      : `Floor ${property.floor}${property.totalFloors ? `/${property.totalFloors}` : ''}`}
                 </span>
               </>
             )}

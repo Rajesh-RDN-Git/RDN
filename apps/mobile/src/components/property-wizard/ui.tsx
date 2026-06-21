@@ -24,11 +24,13 @@ export function TextField({
   onChangeText,
   placeholder,
   keyboardType = 'default',
+  multiline = false,
 }: {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
   keyboardType?: 'default' | 'number-pad' | 'decimal-pad';
+  multiline?: boolean;
 }) {
   return (
     <TextInput
@@ -37,7 +39,8 @@ export function TextField({
       placeholder={placeholder}
       placeholderTextColor="#9ca3af"
       keyboardType={keyboardType}
-      style={uiStyles.input}
+      multiline={multiline}
+      style={[uiStyles.input, multiline && uiStyles.inputMultiline]}
     />
   );
 }
@@ -105,6 +108,7 @@ export const uiStyles = StyleSheet.create({
     color: '#111827',
     backgroundColor: '#fff',
   },
+  inputMultiline: { minHeight: 90, textAlignVertical: 'top' },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionChip: {
     paddingHorizontal: 14,

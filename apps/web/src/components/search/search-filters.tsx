@@ -101,7 +101,6 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           <option value="">All</option>
           <option value="RENT">Rent</option>
           <option value="SALE">Sale</option>
-          <option value="BOTH">Both</option>
         </Select>
       </FilterSection>
 

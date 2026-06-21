@@ -25,15 +25,23 @@ describe('AmenitiesStep', () => {
     expect(poolChip.closest('button')).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('renders restriction toggles', () => {
+  it('renders furnishing detail steppers from the fixed catalog', () => {
     render(
       <WizardProvider>
         <AmenitiesStep societyAmenities={societyAmenities} />
       </WizardProvider>,
     );
-    expect(screen.getByLabelText(/vegetarian only/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/family only/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/no pets/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/bachelors allowed/i)).toBeInTheDocument();
+    expect(screen.getByText(/furnishing details/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/increase ac/i)).toBeInTheDocument();
+  });
+
+  it('renders categorized amenities from the fixed catalog', () => {
+    render(
+      <WizardProvider>
+        <AmenitiesStep societyAmenities={societyAmenities} />
+      </WizardProvider>,
+    );
+    expect(screen.getByText('Gymnasium')).toBeInTheDocument();
+    expect(screen.getByText('24 x 7 Security')).toBeInTheDocument();
   });
 });

@@ -104,6 +104,8 @@ enum LeadSource {
   REFERRAL
   WHATSAPP
   WALK_IN
+  CALLBACK
+  MANUAL
 }
 
 enum DealTransactionType {
@@ -406,9 +408,19 @@ model Property {
   carpetArea         Decimal?                   @map("carpet_area") @db.Decimal(10, 2)
   superArea          Decimal?                   @map("super_area") @db.Decimal(10, 2)
   floor              Int?                       @db.SmallInt
+  // Optional label override for floor: 'GROUND' | 'TOP'. When set, takes display
+  // precedence over the numeric `floor` (which stays for sorting/filtering).
+  floorLabel         String?                    @map("floor_label") @db.VarChar(20)
   totalFloors        Int?                       @map("total_floors") @db.SmallInt
   facing             String?                    @db.VarChar(20)
   furnishing         FurnishingType?
+  // Itemised furnishing with counts, e.g. { "AC": 2, "Geyser": 1 }
+  furnishingDetails  Json                       @default("{}") @map("furnishing_details")
+  // Extra rooms as string list, e.g. ["Puja Room","Store Room","Servant Room"]
+  additionalRooms    Json                       @default("[]") @map("additional_rooms")
+  // View tags, e.g. ["Park Facing","Pool Facing"]
+  propertyView       Json                       @default("[]") @map("property_view")
+  description        String?                    @db.Text
   priceRent          Decimal?                   @map("price_rent") @db.Decimal(12, 2)
   priceSale          Decimal?                   @map("price_sale") @db.Decimal(14, 2)
   securityDeposit    Decimal?                   @map("security_deposit") @db.Decimal(12, 2)
@@ -464,10 +476,15 @@ model Lead {
   // Human-readable reference, e.g. B-0024 (buy/sale intent) or R-0024 (rent).
   // Allocated at creation from a per-prefix Counter. Nullable only for legacy rows.
   refId                String?    @unique @map("ref_id") @db.VarChar(16)
-  propertyId           String     @map("property_id") @db.Uuid
-  buyerId              String     @map("buyer_id") @db.Uuid
+  // Nullable for manually-added / call-back leads that may have no linked
+  // property, registered buyer, or society yet.
+  propertyId           String?    @map("property_id") @db.Uuid
+  buyerId              String?    @map("buyer_id") @db.Uuid
   dealerId             String?    @map("dealer_id") @db.Uuid
-  societyId            String     @map("society_id") @db.Uuid
+  societyId            String?    @map("society_id") @db.Uuid
+  // Free-form prospect contact for manual/call-back leads with no registered buyer.
+  contactName          String?    @map("contact_name") @db.VarChar(120)
+  contactPhone         String?    @map("contact_phone") @db.VarChar(20)
   source               LeadSource
   status               LeadStatus @default(NEW)
   visitDate            DateTime?  @map("visit_date")
@@ -478,10 +495,10 @@ model Lead {
   updatedAt            DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  property      Property       @relation(fields: [propertyId], references: [id])
-  buyer         User           @relation("LeadBuyer", fields: [buyerId], references: [id])
+  property      Property?      @relation(fields: [propertyId], references: [id])
+  buyer         User?          @relation("LeadBuyer", fields: [buyerId], references: [id])
   dealer        Dealer?        @relation(fields: [dealerId], references: [id])
-  society       Society        @relation(fields: [societyId], references: [id])
+  society       Society?       @relation(fields: [societyId], references: [id])
   transactions  Transaction[]
   conversations Conversation[]
 

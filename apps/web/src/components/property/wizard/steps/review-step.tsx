@@ -36,10 +36,15 @@ export function ReviewStep({ onPublished, userId, mode = 'create', propertyId }:
         bhk: data.bhk,
         carpetArea: data.carpetArea,
         superArea: data.superArea,
-        floor: data.floor,
+        floor: data.floorLabel ? undefined : data.floor,
+        floorLabel: data.floorLabel,
         totalFloors: data.totalFloors,
         facing: data.facing,
         furnishing: data.furnishing,
+        furnishingDetails: data.furnishingDetails,
+        additionalRooms: data.additionalRooms,
+        propertyView: data.propertyView,
+        description: data.description,
         priceRent: data.priceRent,
         priceSale: data.priceSale,
         securityDeposit: data.securityDeposit,
@@ -87,8 +92,18 @@ export function ReviewStep({ onPublished, userId, mode = 'create', propertyId }:
         </p>
         <p className="text-sm text-muted-foreground">
           {data.type} · {data.transactionType}
-          {data.bhk ? ` · ${data.bhk} BHK` : ''}
+          {data.bhk ? ` · ${data.bhk >= 7 ? '6+' : data.bhk} BHK` : ''}
+          {data.floorLabel ? ` · ${data.floorLabel === 'GROUND' ? 'Ground' : 'Top'} Floor` : ''}
         </p>
+        {data.additionalRooms.length > 0 && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Rooms: {data.additionalRooms.join(', ')}
+          </p>
+        )}
+        {data.propertyView.length > 0 && (
+          <p className="text-sm text-muted-foreground">View: {data.propertyView.join(', ')}</p>
+        )}
+        {data.description && <p className="text-sm text-foreground mt-2">{data.description}</p>}
       </section>
       <section className="border border-border rounded p-4">
         <h3 className="font-semibold mb-2">Pricing</h3>
