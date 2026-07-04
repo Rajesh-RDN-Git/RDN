@@ -84,7 +84,6 @@ jobs:
 
       - name: E2E tests
         run: pnpm --filter api test:e2e -- --passWithNoTests
-        continue-on-error: true
 
       - name: Build
         run: pnpm build
