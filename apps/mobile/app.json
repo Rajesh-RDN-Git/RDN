@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.rdn.mobile",
       "buildNumber": "1",
-      "associatedDomains": ["applinks:rdn-web-one.vercel.app"],
+      "associatedDomains": ["applinks:www.rdnetwork.in", "applinks:rdnetwork.in"],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "RDN needs access to your photo library to upload property photos.",
         "NSCameraUsageDescription": "RDN needs camera access to capture property photos.",
@@ -45,12 +45,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "rdn-web-one.vercel.app",
+              "host": "www.rdnetwork.in",
               "pathPrefix": "/property"
             },
             {
               "scheme": "https",
-              "host": "rdn-web-one.vercel.app",
+              "host": "www.rdnetwork.in",
               "pathPrefix": "/society"
             }
           ],

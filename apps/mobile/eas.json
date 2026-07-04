@@ -33,7 +33,7 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-uat-10d1.up.railway.app/v1",
+        "EXPO_PUBLIC_API_URL": "https://api.rdnetwork.in/v1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
       "android": {
