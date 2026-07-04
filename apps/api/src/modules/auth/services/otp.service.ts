@@ -24,6 +24,18 @@ export class OtpService {
       throw new Error('OTP_DEV_BYPASS must not be enabled in production — refusing to start.');
     }
     this.isDev = !isProd && (environment === 'development' || explicitBypass);
+
+    // In production OTP delivery MUST work — without MSG91 creds sendViaMSG91 is a
+    // silent no-op and every user would be locked out. Fail fast on boot instead.
+    if (isProd) {
+      const authKey = configService.get<string>('msg91.authKey');
+      const templateId = configService.get<string>('msg91.templateId');
+      if (!authKey || !templateId) {
+        throw new Error(
+          'MSG91_AUTH_KEY and MSG91_TEMPLATE_ID must be set in production — refusing to start (OTP delivery would silently fail).',
+        );
+      }
+    }
   }
 
   async sendOtp(phone: string): Promise<{ hash: string; expiresAt: Date }> {

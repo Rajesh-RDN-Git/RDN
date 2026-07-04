@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import { getFieldKeys } from '../src/field-crypto';
+import { applyFieldEncryption, makeCipher } from '../src/field-encryption';
 
 const prisma = new PrismaClient();
+// Encrypt PII on write + remap phone lookups to the blind index, same as the API.
+const cipher = makeCipher(getFieldKeys());
+applyFieldEncryption(prisma, cipher);
+// Look up existing users by the phone blind index (phone itself is encrypted, not unique).
+const byPhone = (phone: string) => ({ phoneHash: cipher.blindIndex(phone) });
 
 async function main() {
   // Safety: this seed creates known test users (fixed phones, *.rdn.dev emails).
@@ -14,7 +21,7 @@ async function main() {
   // ─── Users ──────────────────────────────────────────
 
   const superAdmin = await prisma.user.upsert({
-    where: { phone: '+919999900001' },
+    where: byPhone('+919999900001'),
     update: {},
     create: {
       phone: '+919999900001',
@@ -26,7 +33,7 @@ async function main() {
   });
 
   const rwaAdmin1 = await prisma.user.upsert({
-    where: { phone: '+919999900002' },
+    where: byPhone('+919999900002'),
     update: {},
     create: {
       phone: '+919999900002',
@@ -38,7 +45,7 @@ async function main() {
   });
 
   const rwaAdmin2 = await prisma.user.upsert({
-    where: { phone: '+919999900006' },
+    where: byPhone('+919999900006'),
     update: {},
     create: {
       phone: '+919999900006',
@@ -50,7 +57,7 @@ async function main() {
   });
 
   const dealerUser1 = await prisma.user.upsert({
-    where: { phone: '+919999900003' },
+    where: byPhone('+919999900003'),
     update: {},
     create: {
       phone: '+919999900003',
@@ -62,7 +69,7 @@ async function main() {
   });
 
   const dealerUser2 = await prisma.user.upsert({
-    where: { phone: '+919999900007' },
+    where: byPhone('+919999900007'),
     update: {},
     create: {
       phone: '+919999900007',
@@ -74,7 +81,7 @@ async function main() {
   });
 
   const dealerUser3 = await prisma.user.upsert({
-    where: { phone: '+919999900008' },
+    where: byPhone('+919999900008'),
     update: {},
     create: {
       phone: '+919999900008',
@@ -86,7 +93,7 @@ async function main() {
   });
 
   const ownerUser1 = await prisma.user.upsert({
-    where: { phone: '+919999900004' },
+    where: byPhone('+919999900004'),
     update: {},
     create: {
       phone: '+919999900004',
@@ -98,7 +105,7 @@ async function main() {
   });
 
   const ownerUser2 = await prisma.user.upsert({
-    where: { phone: '+919999900009' },
+    where: byPhone('+919999900009'),
     update: {},
     create: {
       phone: '+919999900009',
@@ -110,7 +117,7 @@ async function main() {
   });
 
   const buyerUser1 = await prisma.user.upsert({
-    where: { phone: '+919999900005' },
+    where: byPhone('+919999900005'),
     update: {},
     create: {
       phone: '+919999900005',
@@ -122,7 +129,7 @@ async function main() {
   });
 
   const buyerUser2 = await prisma.user.upsert({
-    where: { phone: '+919999900010' },
+    where: byPhone('+919999900010'),
     update: {},
     create: {
       phone: '+919999900010',
@@ -195,7 +202,11 @@ async function main() {
       rwaApprovalStatus: 'APPROVED',
       trainingStatus: 'COMPLETED',
       isActive: true,
-      bankAccountDetails: { accountNumber: '****1234', ifsc: 'HDFC0001234', bankName: 'HDFC Bank' },
+      bankAccountDetails: {
+        accountNumber: '****1234',
+        ifsc: 'HDFC0001234',
+        bankName: 'HDFC Bank',
+      } as any,
     },
   });
 
@@ -213,7 +224,7 @@ async function main() {
         accountNumber: '****5678',
         ifsc: 'ICIC0005678',
         bankName: 'ICICI Bank',
-      },
+      } as any,
     },
   });
 

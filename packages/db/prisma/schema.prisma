@@ -188,7 +188,9 @@ enum NotificationChannel {
 
 model User {
   id               String     @id @default(uuid()) @db.Uuid
-  phone            String     @unique @db.VarChar(255)
+  // phone holds AES-256-GCM ciphertext ("v1:…"). Equality lookups (login) use phoneHash.
+  phone            String     @db.VarChar(512)
+  phoneHash        String?    @unique @map("phone_hash") @db.VarChar(64)
   email            String?    @unique @db.VarChar(255)
   name             String     @db.VarChar(255)
   role             Role
@@ -217,8 +219,8 @@ model User {
   referralsReceived  Referral[]      @relation("Referred")
   deviceTokens       DeviceToken[]
   consentRecords     ConsentRecord[]
-  nomineeName        String?         @map("nominee_name") @db.VarChar(255)
-  nomineePhone       String?         @map("nominee_phone") @db.VarChar(255)
+  nomineeName        String?         @map("nominee_name") @db.VarChar(512)
+  nomineePhone       String?         @map("nominee_phone") @db.VarChar(512)
 
   @@index([role])
   @@index([status])
@@ -254,7 +256,7 @@ model DpdpGrievance {
   userId         String?               @map("user_id") @db.Uuid
   category       DpdpGrievanceCategory
   description    String
-  contact        String?               @db.VarChar(200)
+  contact        String?               @db.VarChar(512)
   ip             String?               @db.VarChar(64)
   userAgent      String?               @map("user_agent") @db.VarChar(512)
   status         DpdpGrievanceStatus   @default(RECEIVED)
@@ -354,7 +356,8 @@ model Dealer {
   certificationStatus CertificationStatus @default(NOT_CERTIFIED) @map("certification_status")
   certifiedAt        DateTime?           @map("certified_at")
   isActive           Boolean             @default(false) @map("is_active")
-  bankAccountDetails Json?          @map("bank_account_details")
+  // AES-256-GCM ciphertext of the JSON-stringified bank details (KYC/bank PII at rest).
+  bankAccountDetails String?        @map("bank_account_details") @db.Text
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
 
@@ -483,8 +486,8 @@ model Lead {
   dealerId             String?    @map("dealer_id") @db.Uuid
   societyId            String?    @map("society_id") @db.Uuid
   // Free-form prospect contact for manual/call-back leads with no registered buyer.
-  contactName          String?    @map("contact_name") @db.VarChar(120)
-  contactPhone         String?    @map("contact_phone") @db.VarChar(20)
+  contactName          String?    @map("contact_name") @db.VarChar(512)
+  contactPhone         String?    @map("contact_phone") @db.VarChar(512)
   source               LeadSource
   status               LeadStatus @default(NEW)
   visitDate            DateTime?  @map("visit_date")

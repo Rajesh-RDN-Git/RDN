@@ -1,4 +1,6 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { formatPhone } from '@rdn/shared';
+import { EncryptionService } from '../../common/crypto/encryption.service';
 import { PrismaService } from '../../database/prisma.service';
 import { OtpService } from './services/otp.service';
 import { TokenService, TokenPair } from './services/token.service';
@@ -11,14 +13,16 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly otpService: OtpService,
     private readonly tokenService: TokenService,
+    private readonly encryption: EncryptionService,
   ) {}
 
   async sendOtp(phone: string): Promise<{ message: string }> {
     const { hash, expiresAt } = await this.otpService.sendOtp(phone);
 
-    // Upsert: store OTP hash for existing user, or create placeholder for new user
+    // Upsert keyed on the phone blind index (phone itself is encrypted, not unique).
+    // create.phone / create.phoneHash are encrypted+hashed by the Prisma middleware.
     await this.prisma.user.upsert({
-      where: { phone },
+      where: { phoneHash: this.encryption.blindIndex(phone) },
       update: { otpHash: hash, otpExpiresAt: expiresAt },
       create: {
         phone,
@@ -36,8 +40,8 @@ export class AuthService {
     phone: string,
     otp: string,
   ): Promise<TokenPair & { user: Record<string, unknown> }> {
-    const user = await this.prisma.user.findUnique({
-      where: { phone },
+    const user = await this.prisma.user.findFirst({
+      where: { phone }, // middleware remaps to phoneHash blind index
     });
 
     if (!user || !user.otpHash || !user.otpExpiresAt) {
@@ -64,7 +68,8 @@ export class AuthService {
       ...tokens,
       user: {
         id: user.id,
-        phone: user.phone,
+        // never return the raw phone to any client — mask to last 4 digits
+        phone: formatPhone(user.phone),
         name: user.name,
         role: user.role,
         email: user.email,

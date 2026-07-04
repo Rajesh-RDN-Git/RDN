@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../../database/prisma.service';
 import { OtpService } from './services/otp.service';
 import { TokenService } from './services/token.service';
+import { EncryptionService } from '../../common/crypto/encryption.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -14,9 +15,16 @@ describe('AuthService', () => {
   const mockPrisma = {
     user: {
       upsert: jest.fn(),
-      findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
     },
+  };
+
+  const mockEncryption = {
+    blindIndex: jest.fn((v: string) => `hash(${v})`),
+    encrypt: jest.fn((v: string) => `v1:${v}`),
+    decrypt: jest.fn((v: string) => v),
+    isEncrypted: jest.fn((v: string) => v.startsWith('v1:')),
   };
 
   const mockOtpService = {
@@ -37,6 +45,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: OtpService, useValue: mockOtpService },
         { provide: TokenService, useValue: mockTokenService },
+        { provide: EncryptionService, useValue: mockEncryption },
       ],
     }).compile();
 
@@ -61,7 +70,7 @@ describe('AuthService', () => {
       expect(mockOtpService.sendOtp).toHaveBeenCalledWith('+919999900001');
       expect(mockPrisma.user.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { phone: '+919999900001' },
+          where: { phoneHash: 'hash(+919999900001)' },
           update: expect.objectContaining({ otpHash: 'hash123' }),
           create: expect.objectContaining({ phone: '+919999900001', role: 'BUYER_TENANT' }),
         }),
@@ -81,7 +90,7 @@ describe('AuthService', () => {
     };
 
     it('should verify OTP and return tokens with user', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockOtpService.verifyOtp.mockResolvedValue(true);
       mockTokenService.generateTokenPair.mockResolvedValue({
         accessToken: 'access-token',
@@ -98,7 +107,7 @@ describe('AuthService', () => {
     });
 
     it('should throw if no user found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue(null);
 
       await expect(service.verifyOtp('+919999900001', '123456')).rejects.toThrow(
         UnauthorizedException,
@@ -106,7 +115,7 @@ describe('AuthService', () => {
     });
 
     it('should throw if OTP is invalid', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       mockOtpService.verifyOtp.mockResolvedValue(false);
 
       await expect(service.verifyOtp('+919999900001', '000000')).rejects.toThrow(

@@ -127,8 +127,9 @@ export class DealersService {
       }
     }
 
-    // Find or create the user behind this phone.
-    let user = await this.prisma.user.findUnique({ where: { phone } });
+    // Find or create the user behind this phone. (findFirst — phone is not a unique
+    // column anymore; the Prisma middleware remaps this to the phoneHash blind index.)
+    let user = await this.prisma.user.findFirst({ where: { phone } });
     if (!user) {
       user = await this.prisma.user.create({
         data: { phone, name: data.name.trim(), email, role: 'DEALER' },

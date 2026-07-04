@@ -1,15 +1,23 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../database/prisma.service';
 
 @Injectable()
 export class CallService {
   private readonly logger = new Logger(CallService.name);
+  private readonly isProd: boolean;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    this.isProd = configService.get<string>('app.environment') === 'production';
+  }
 
   async initiateCall(dealerUserId: string, leadId: string): Promise<any> {
     // Fetch lead with buyer and dealer phones (from DB, never exposed to client)
@@ -38,7 +46,12 @@ export class CallService {
     const callerId = this.configService.get<string>('exotel.callerId');
     const subdomain = this.configService.get<string>('exotel.subdomain');
 
-    if (!apiKey || !apiToken || !sid) {
+    if (!apiKey || !apiToken || !sid || !callerId) {
+      // In production a "mock" success would lie to the dealer that a call was placed.
+      if (this.isProd) {
+        this.logger.error('Exotel not configured in production — cannot initiate masked call.');
+        throw new ServiceUnavailableException('Calling is temporarily unavailable');
+      }
       this.logger.warn('Exotel not configured. Call not initiated.');
       return {
         status: 'mock',

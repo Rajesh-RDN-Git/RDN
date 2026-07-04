@@ -13,7 +13,13 @@ const PII_KEYS = new Set([
   'password',
   'aadhaar',
   'pan',
-  'bankAccountDetails',
+  'bankaccountdetails',
+  'phonehash',
+  'nomineephone',
+  'nomineename',
+  'contactphone',
+  'contactname',
+  'contact',
   'authorization',
 ]);
 

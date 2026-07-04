@@ -21,10 +21,22 @@ describe('OtpService — production safety', () => {
     );
   });
 
+  it('refuses to construct when MSG91 credentials are missing in production', () => {
+    const config = makeConfig({
+      'app.environment': 'production',
+      'auth.otpDevBypass': 'false',
+    });
+    expect(() => new OtpService(config, redisStub)).toThrow(
+      /MSG91_AUTH_KEY and MSG91_TEMPLATE_ID must be set in production/,
+    );
+  });
+
   it('never accepts an arbitrary 6-digit code in production', async () => {
     const config = makeConfig({
       'app.environment': 'production',
       'auth.otpDevBypass': 'false',
+      'msg91.authKey': 'test-key',
+      'msg91.templateId': 'test-template',
     });
     const service = new OtpService(config, redisStub);
     const future = new Date(Date.now() + 60_000);

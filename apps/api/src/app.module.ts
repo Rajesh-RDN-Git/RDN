@@ -19,7 +19,9 @@ import {
   msg91Config,
   exotelConfig,
   authConfig,
+  cryptoConfig,
 } from './config';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { SocietyScopeMiddleware } from './common/middleware/society-scope.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -53,12 +55,14 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
         msg91Config,
         exotelConfig,
         authConfig,
+        cryptoConfig,
       ],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
+    CryptoModule,
     AuthModule,
     UsersModule,
     SocietiesModule,

@@ -190,6 +190,9 @@ export class UsersService {
           status: 'INACTIVE',
           name: anonymousName,
           phone: anonymousPhone,
+          // clear the blind index so the anonymized row can't be found by the old phone
+          // (and to avoid a unique-collision — the tombstone has no phone digits to hash)
+          phoneHash: null,
           email: null,
           avatarUrl: null,
           otpHash: null,

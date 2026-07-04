@@ -6,3 +6,4 @@ export { default as jwtConfig } from './jwt.config';
 export { default as msg91Config } from './msg91.config';
 export { default as exotelConfig } from './exotel.config';
 export { default as authConfig } from './auth.config';
+export { default as cryptoConfig } from './crypto.config';
