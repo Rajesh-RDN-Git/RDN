@@ -25,14 +25,30 @@ async function backfill<T extends { id: string }>(
   update: (id: string, data: Record<string, unknown>) => Promise<unknown>,
 ): Promise<void> {
   let changed = 0;
+  let skipped = 0;
   for (const row of rows) {
     const data = build(row);
     if (data && Object.keys(data).length > 0) {
-      await update(row.id, data);
-      changed++;
+      try {
+        await update(row.id, data);
+        changed++;
+      } catch (e: any) {
+        // A duplicate blind index (e.g. two rows share a phone) can't both take the
+        // unique phone_hash — skip the offender and keep going rather than abort.
+        if (e?.code === 'P2002') {
+          skipped++;
+          console.warn(
+            `  ${label}: skipped ${row.id} (duplicate ${JSON.stringify(e.meta?.target)})`,
+          );
+        } else {
+          throw e;
+        }
+      }
     }
   }
-  console.log(`  ${label}: ${changed}/${rows.length} rows encrypted`);
+  console.log(
+    `  ${label}: ${changed}/${rows.length} rows encrypted${skipped ? `, ${skipped} skipped (dupes)` : ''}`,
+  );
 }
 
 async function main() {
