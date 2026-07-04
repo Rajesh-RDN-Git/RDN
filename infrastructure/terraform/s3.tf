@@ -27,7 +27,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
   rule {
     id     = "transition-to-ia"
     status = "Enabled"
-    transition { days = 90; storage_class = "STANDARD_IA" }
+    filter {} # applies to all objects in the bucket
+    transition {
+      days          = 90
+      storage_class = "STANDARD_IA"
+    }
   }
 }
 

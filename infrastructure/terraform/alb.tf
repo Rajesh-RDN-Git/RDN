@@ -4,7 +4,7 @@ resource "aws_lb" "api" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = aws_subnet.public[*].id
-  tags = { Name = "${var.app_name}-${var.environment}-alb" }
+  tags               = { Name = "${var.app_name}-${var.environment}-alb" }
 }
 
 resource "aws_lb_target_group" "api" {
@@ -30,7 +30,11 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
   default_action {
     type = "redirect"
-    redirect { port = "443"; protocol = "HTTPS"; status_code = "HTTP_301" }
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }
 
@@ -39,7 +43,7 @@ resource "aws_lb_listener" "https" {
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.domain_name != "" ? aws_acm_certificate.api[0].arn : null
+  certificate_arn   = var.domain_name != "" ? aws_acm_certificate_validation.api[0].certificate_arn : null
 
   default_action {
     type             = "forward"
