@@ -60,7 +60,7 @@ export class AuthService {
     });
 
     // Generate token pair
-    const tokens = await this.tokenService.generateTokenPair(user.id, user.phone, user.role);
+    const tokens = await this.tokenService.generateTokenPair(user.id, user.role);
 
     this.logger.log(`User authenticated: ${user.id} (${user.role})`);
 
