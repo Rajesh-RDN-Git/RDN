@@ -104,6 +104,8 @@ enum LeadSource {
   REFERRAL
   WHATSAPP
   WALK_IN
+  CALLBACK
+  MANUAL
 }
 
 enum DealTransactionType {
@@ -186,7 +188,9 @@ enum NotificationChannel {
 
 model User {
   id               String     @id @default(uuid()) @db.Uuid
-  phone            String     @unique @db.VarChar(255)
+  // phone holds AES-256-GCM ciphertext ("v1:…"). Equality lookups (login) use phoneHash.
+  phone            String     @db.VarChar(512)
+  phoneHash        String?    @unique @map("phone_hash") @db.VarChar(64)
   email            String?    @unique @db.VarChar(255)
   name             String     @db.VarChar(255)
   role             Role
@@ -215,8 +219,8 @@ model User {
   referralsReceived  Referral[]      @relation("Referred")
   deviceTokens       DeviceToken[]
   consentRecords     ConsentRecord[]
-  nomineeName        String?         @map("nominee_name") @db.VarChar(255)
-  nomineePhone       String?         @map("nominee_phone") @db.VarChar(255)
+  nomineeName        String?         @map("nominee_name") @db.VarChar(512)
+  nomineePhone       String?         @map("nominee_phone") @db.VarChar(512)
 
   @@index([role])
   @@index([status])
@@ -252,7 +256,7 @@ model DpdpGrievance {
   userId         String?               @map("user_id") @db.Uuid
   category       DpdpGrievanceCategory
   description    String
-  contact        String?               @db.VarChar(200)
+  contact        String?               @db.VarChar(512)
   ip             String?               @db.VarChar(64)
   userAgent      String?               @map("user_agent") @db.VarChar(512)
   status         DpdpGrievanceStatus   @default(RECEIVED)
@@ -352,7 +356,8 @@ model Dealer {
   certificationStatus CertificationStatus @default(NOT_CERTIFIED) @map("certification_status")
   certifiedAt        DateTime?           @map("certified_at")
   isActive           Boolean             @default(false) @map("is_active")
-  bankAccountDetails Json?          @map("bank_account_details")
+  // AES-256-GCM ciphertext of the JSON-stringified bank details (KYC/bank PII at rest).
+  bankAccountDetails String?        @map("bank_account_details") @db.Text
   createdAt          DateTime       @default(now()) @map("created_at")
   updatedAt          DateTime       @updatedAt @map("updated_at")
 
@@ -406,9 +411,19 @@ model Property {
   carpetArea         Decimal?                   @map("carpet_area") @db.Decimal(10, 2)
   superArea          Decimal?                   @map("super_area") @db.Decimal(10, 2)
   floor              Int?                       @db.SmallInt
+  // Optional label override for floor: 'GROUND' | 'TOP'. When set, takes display
+  // precedence over the numeric `floor` (which stays for sorting/filtering).
+  floorLabel         String?                    @map("floor_label") @db.VarChar(20)
   totalFloors        Int?                       @map("total_floors") @db.SmallInt
   facing             String?                    @db.VarChar(20)
   furnishing         FurnishingType?
+  // Itemised furnishing with counts, e.g. { "AC": 2, "Geyser": 1 }
+  furnishingDetails  Json                       @default("{}") @map("furnishing_details")
+  // Extra rooms as string list, e.g. ["Puja Room","Store Room","Servant Room"]
+  additionalRooms    Json                       @default("[]") @map("additional_rooms")
+  // View tags, e.g. ["Park Facing","Pool Facing"]
+  propertyView       Json                       @default("[]") @map("property_view")
+  description        String?                    @db.Text
   priceRent          Decimal?                   @map("price_rent") @db.Decimal(12, 2)
   priceSale          Decimal?                   @map("price_sale") @db.Decimal(14, 2)
   securityDeposit    Decimal?                   @map("security_deposit") @db.Decimal(12, 2)
@@ -461,10 +476,18 @@ model PropertyMedia {
 
 model Lead {
   id                   String     @id @default(uuid()) @db.Uuid
-  propertyId           String     @map("property_id") @db.Uuid
-  buyerId              String     @map("buyer_id") @db.Uuid
-  dealerId             String     @map("dealer_id") @db.Uuid
-  societyId            String     @map("society_id") @db.Uuid
+  // Human-readable reference, e.g. B-0024 (buy/sale intent) or R-0024 (rent).
+  // Allocated at creation from a per-prefix Counter. Nullable only for legacy rows.
+  refId                String?    @unique @map("ref_id") @db.VarChar(16)
+  // Nullable for manually-added / call-back leads that may have no linked
+  // property, registered buyer, or society yet.
+  propertyId           String?    @map("property_id") @db.Uuid
+  buyerId              String?    @map("buyer_id") @db.Uuid
+  dealerId             String?    @map("dealer_id") @db.Uuid
+  societyId            String?    @map("society_id") @db.Uuid
+  // Free-form prospect contact for manual/call-back leads with no registered buyer.
+  contactName          String?    @map("contact_name") @db.VarChar(512)
+  contactPhone         String?    @map("contact_phone") @db.VarChar(512)
   source               LeadSource
   status               LeadStatus @default(NEW)
   visitDate            DateTime?  @map("visit_date")
@@ -475,10 +498,10 @@ model Lead {
   updatedAt            DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  property      Property       @relation(fields: [propertyId], references: [id])
-  buyer         User           @relation("LeadBuyer", fields: [buyerId], references: [id])
-  dealer        Dealer         @relation(fields: [dealerId], references: [id])
-  society       Society        @relation(fields: [societyId], references: [id])
+  property      Property?      @relation(fields: [propertyId], references: [id])
+  buyer         User?          @relation("LeadBuyer", fields: [buyerId], references: [id])
+  dealer        Dealer?        @relation(fields: [dealerId], references: [id])
+  society       Society?       @relation(fields: [societyId], references: [id])
   transactions  Transaction[]
   conversations Conversation[]
 
@@ -490,6 +513,15 @@ model Lead {
   @@index([source])
   @@index([createdAt])
   @@map("leads")
+}
+
+// Generic atomic counter (row-level lock via upsert-increment). Used to allocate
+// sequential human-readable lead reference ids per prefix (keys: lead_B, lead_R).
+model Counter {
+  key   String @id
+  value Int    @default(0)
+
+  @@map("counters")
 }
 
 model Transaction {

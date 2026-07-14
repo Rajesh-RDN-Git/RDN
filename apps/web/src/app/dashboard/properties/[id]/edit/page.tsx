@@ -38,9 +38,15 @@ function toWizardData(p: any): WizardData {
     carpetArea: num(p.carpetArea),
     superArea: num(p.superArea),
     floor: num(p.floor),
+    floorLabel: p.floorLabel || undefined,
     totalFloors: num(p.totalFloors),
     facing: p.facing || undefined,
     furnishing: p.furnishing || undefined,
+    description: p.description || undefined,
+    additionalRooms: Array.isArray(p.additionalRooms) ? p.additionalRooms : [],
+    propertyView: Array.isArray(p.propertyView) ? p.propertyView : [],
+    furnishingDetails:
+      p.furnishingDetails && typeof p.furnishingDetails === 'object' ? p.furnishingDetails : {},
     priceRent: num(p.priceRent),
     priceSale: num(p.priceSale),
     securityDeposit: num(p.securityDeposit),
@@ -59,6 +65,10 @@ export default function EditPropertyPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait until auth has hydrated. Running the ownership check with user=null
+    // (e.g. on a hard load/refresh of the edit URL) wrongly set a permanent
+    // "no permission" error that survived even after the user loaded.
+    if (!user) return;
     propertiesApi
       .getById(id)
       .then((r) => {

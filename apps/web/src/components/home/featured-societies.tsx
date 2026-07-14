@@ -98,11 +98,11 @@ export function FeaturedSocieties() {
                   )}
                 </div>
                 <div className="p-4">
-                  <h3 className="text-heading-sm text-foreground group-hover:text-brand">
+                  <h3 className="line-clamp-2 min-h-[3rem] text-heading-sm text-foreground group-hover:text-brand">
                     {society.name}
                   </h3>
                   <div className="mt-1 flex items-center gap-1 text-body-sm text-muted-foreground">
-                    <LocationIcon size={14} /> {society.city}
+                    <LocationIcon size={14} /> <span className="truncate">{society.city}</span>
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-caption-md text-muted-foreground">
                     <BuildingIcon size={14} />

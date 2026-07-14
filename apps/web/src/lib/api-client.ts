@@ -45,19 +45,14 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // Only handle 401s for requests that actually carried a token (i.e. the user
-    // believed they were authenticated). Anonymous/optional calls from public
-    // pages must reject quietly so the caller's own catch can fall back — never
-    // hijack the whole page with a redirect to /login.
-    const sentToken = !!originalRequest.headers?.Authorization;
-    if (error.response?.status !== 401 || originalRequest._retry || !sentToken) {
-      return Promise.reject(error);
-    }
-
+    // Attempt a token refresh only when the user is genuinely logged in — i.e. a
+    // refresh token exists. The access-token cookie expires after 15 min, after
+    // which requests go out with no Authorization header and the API 401s; we
+    // must still refresh in that case. Anonymous/optional calls from public pages
+    // have no refresh token and reject quietly so the caller's own catch can fall
+    // back — never hijack the whole page with a redirect to /login.
     const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-      clearTokens();
-      if (typeof window !== 'undefined') window.location.href = '/login';
+    if (error.response?.status !== 401 || originalRequest._retry || !refreshToken) {
       return Promise.reject(error);
     }
 
@@ -87,8 +82,18 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      clearTokens();
-      if (typeof window !== 'undefined') window.location.href = '/login';
+      // Only treat an EXPLICIT auth rejection from /auth/refresh as a real logout.
+      // The refresh token is a 30-day cookie; a transient failure (no response,
+      // network blip, timeout, or 5xx) must NOT nuke a still-valid session or bounce
+      // the page to /login — that was the spurious-logout bug. Reject quietly and let
+      // the caller's catch (and hydration retry) recover on the next request.
+      const status = (refreshError as AxiosError).response?.status;
+      if (status === 401 || status === 403) {
+        clearTokens();
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+      }
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

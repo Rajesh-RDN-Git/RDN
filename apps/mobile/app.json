@@ -3,7 +3,7 @@
     "name": "RDN",
     "slug": "rdn-mobile",
     "version": "1.0.0",
-    "description": "RDN — Residential Dealer Network. Browse, list, and rent/buy homes within your society in India. Phone-OTP login, masked chat, RWA-verified listings.",
+    "description": "RDN — Resident Dealer Network. Browse, list, and rent/buy homes within your society in India. Phone-OTP login, masked chat, RWA-verified listings.",
     "primaryColor": "#2563eb",
     "orientation": "portrait",
     "scheme": "rdn",
@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.rdn.mobile",
       "buildNumber": "1",
-      "associatedDomains": ["applinks:rdn-web-one.vercel.app"],
+      "associatedDomains": ["applinks:www.rdnetwork.in", "applinks:rdnetwork.in"],
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "RDN needs access to your photo library to upload property photos.",
         "NSCameraUsageDescription": "RDN needs camera access to capture property photos.",
@@ -45,12 +45,12 @@
           "data": [
             {
               "scheme": "https",
-              "host": "rdn-web-one.vercel.app",
+              "host": "www.rdnetwork.in",
               "pathPrefix": "/property"
             },
             {
               "scheme": "https",
-              "host": "rdn-web-one.vercel.app",
+              "host": "www.rdnetwork.in",
               "pathPrefix": "/society"
             }
           ],
@@ -76,8 +76,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "REPLACE_AFTER_EAS_INIT"
-      }
-    }
+        "projectId": "34d95cac-0585-46f7-a5b0-74d93c122c50"
+      },
+      "router": {}
+    },
+    "owner": "rdn8s-team"
   }
 }

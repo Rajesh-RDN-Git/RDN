@@ -7,6 +7,6 @@ resource "aws_secretsmanager_secret" "jwt_secret" {
 }
 
 resource "aws_secretsmanager_secret" "api_keys" {
-  name = "${var.app_name}/${var.environment}/api-keys"
+  name        = "${var.app_name}/${var.environment}/api-keys"
   description = "Third-party API keys (MSG91, Exotel, Razorpay, FCM)"
 }

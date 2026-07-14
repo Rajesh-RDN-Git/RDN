@@ -38,7 +38,32 @@ export default function ReportsPage() {
               ? reportsApi.transactions
               : reportsApi.commissions;
         const { data } = await api(params);
-        setReportData(data.data || data || []);
+        // The report tabs render GROUPED summary rows (status/type → count + total),
+        // but the API returns raw record lists. Leads ships a ready breakdown; group
+        // transactions/commissions client-side so counts/totals reconcile with the
+        // dashboard tab (previously every Count rendered as "-").
+        const rows: any[] = data?.data || [];
+        if (activeTab === 'leads') {
+          setReportData(data?.breakdown?.byStatus || []);
+        } else if (activeTab === 'transactions') {
+          const groups = new Map<string, { type: string; count: number; totalValue: number }>();
+          for (const t of rows) {
+            const g = groups.get(t.type) || { type: t.type, count: 0, totalValue: 0 };
+            g.count += 1;
+            g.totalValue += Number(t.dealValue || 0);
+            groups.set(t.type, g);
+          }
+          setReportData([...groups.values()]);
+        } else {
+          const groups = new Map<string, { status: string; count: number; totalAmount: number }>();
+          for (const c of rows) {
+            const g = groups.get(c.status) || { status: c.status, count: 0, totalAmount: 0 };
+            g.count += 1;
+            g.totalAmount += Number(c.amount || 0);
+            groups.set(c.status, g);
+          }
+          setReportData([...groups.values()]);
+        }
       }
     } catch (err: any) {
       setError(

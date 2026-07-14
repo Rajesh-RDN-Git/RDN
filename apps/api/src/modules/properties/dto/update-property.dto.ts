@@ -25,6 +25,9 @@ export class UpdatePropertyDto {
   @ApiPropertyOptional({ example: 5 })
   floor?: number;
 
+  @ApiPropertyOptional({ enum: ['GROUND', 'TOP'] })
+  floorLabel?: string;
+
   @ApiPropertyOptional({ example: 20 })
   totalFloors?: number;
 
@@ -33,6 +36,18 @@ export class UpdatePropertyDto {
 
   @ApiPropertyOptional({ enum: ['FURNISHED', 'SEMI', 'UNFURNISHED'] })
   furnishing?: string;
+
+  @ApiPropertyOptional({ example: { AC: 2 } })
+  furnishingDetails?: Record<string, number>;
+
+  @ApiPropertyOptional({ type: [String] })
+  additionalRooms?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  propertyView?: string[];
+
+  @ApiPropertyOptional()
+  description?: string;
 
   @ApiPropertyOptional({ example: 25000 })
   priceRent?: number;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { propertiesApi } from '@/lib/api/properties.api';
 
 type PendingProperty = {
@@ -51,6 +52,13 @@ export default function VerificationQueuePage() {
                 <p className="text-sm text-muted-foreground">{p.society.name}</p>
               </div>
               <div className="flex gap-2">
+                <Link
+                  href={`/property/${p.id}`}
+                  target="_blank"
+                  className="px-3 py-1 border border-border text-foreground rounded text-sm hover:bg-muted"
+                >
+                  View
+                </Link>
                 <button
                   type="button"
                   onClick={() => decide(p.id, 'RWA_APPROVED')}

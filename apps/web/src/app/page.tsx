@@ -5,6 +5,7 @@ import { FeaturedSocieties } from '@/components/home/featured-societies';
 import { RecentListings } from '@/components/home/recent-listings';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { ContactWidget } from '@/components/layout/contact-widget';
 
 export const metadata: Metadata = {
   title: 'RDN — Community-Driven Real Estate for Residential Societies',
@@ -21,7 +22,7 @@ export default function HomePage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'RDN - Residential Dealer Network',
+    name: 'RDN - Resident Dealer Network',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://rdn.in',
     potentialAction: {
       '@type': 'SearchAction',
@@ -47,6 +48,7 @@ export default function HomePage() {
         <RecentListings />
       </main>
       <Footer />
+      <ContactWidget />
     </>
   );
 }

@@ -25,7 +25,7 @@ export interface ILead {
   id: string;
   propertyId: string;
   buyerId: string;
-  dealerId: string;
+  dealerId: string | null;
   societyId: string;
   source: LeadSource;
   status: LeadStatus;

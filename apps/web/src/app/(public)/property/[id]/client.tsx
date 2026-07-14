@@ -24,6 +24,25 @@ import { leadsApi } from '@/lib/api/leads.api';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { useAuthStore } from '@/stores/auth-store';
 import { showToast } from '@/stores/toast-store';
+import { formatBhk } from '@rdn/shared';
+
+// Amenities are stored either as a {name:true} map (current wizard) or a legacy
+// string[]. Normalize to a list of selected names.
+const toAmenityList = (a: string[] | Record<string, boolean> | null | undefined): string[] => {
+  if (!a) return [];
+  if (Array.isArray(a)) return a;
+  return Object.entries(a)
+    .filter(([, v]) => Boolean(v))
+    .map(([k]) => k);
+};
+
+const floorDisplay = (property: Property): string => {
+  if (property.floorLabel === 'GROUND') return 'Ground Floor';
+  if (property.floorLabel === 'TOP') return 'Top Floor';
+  if (property.floor && property.totalFloors) return `${property.floor} of ${property.totalFloors}`;
+  if (property.floor) return String(property.floor);
+  return 'N/A';
+};
 
 interface Property {
   id: string;
@@ -43,7 +62,12 @@ interface Property {
   securityDeposit: string | null;
   availabilityStatus: string;
   availableFrom: string | null;
-  amenities: string[];
+  floorLabel?: 'GROUND' | 'TOP' | null;
+  description?: string | null;
+  additionalRooms?: string[] | null;
+  propertyView?: string[] | null;
+  furnishingDetails?: Record<string, number> | null;
+  amenities: string[] | Record<string, boolean>;
   viewsCount: number;
   society: {
     id: string;
@@ -69,7 +93,7 @@ const formatPrice = (price: string | null) => {
 };
 
 const specItems = (property: Property) => [
-  { icon: BedIcon, label: 'Bedrooms', value: `${property.bhk} BHK` },
+  { icon: BedIcon, label: 'Bedrooms', value: formatBhk(property.bhk) || `${property.bhk} BHK` },
   { icon: AreaIcon, label: 'Carpet Area', value: `${property.carpetArea} sq.ft.` },
   {
     icon: AreaIcon,
@@ -79,10 +103,7 @@ const specItems = (property: Property) => [
   {
     icon: FloorIcon,
     label: 'Floor',
-    value:
-      property.floor && property.totalFloors
-        ? `${property.floor} of ${property.totalFloors}`
-        : 'N/A',
+    value: floorDisplay(property),
   },
   { icon: CompassIcon, label: 'Facing', value: property.facing || 'N/A' },
   { icon: HomeIcon, label: 'Furnishing', value: property.furnishing?.replace('_', '-') || 'N/A' },
@@ -227,7 +248,7 @@ export function PropertyDetailClient({ property }: { property: Property }) {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-display-sm text-foreground">
-                {property.bhk} BHK {property.type}
+                {formatBhk(property.bhk) || `${property.bhk} BHK`} {property.type}
               </h1>
               <Badge variant={property.transactionType === 'SALE' ? 'success' : 'info'}>
                 For {property.transactionType}
@@ -262,12 +283,79 @@ export function PropertyDetailClient({ property }: { property: Property }) {
             ))}
           </div>
 
+          {/* Description */}
+          {property.description?.trim() && (
+            <div>
+              <h2 className="mb-3 text-heading-md text-foreground">About this property</h2>
+              <p className="whitespace-pre-line text-body-md leading-relaxed text-muted-foreground">
+                {property.description}
+              </p>
+            </div>
+          )}
+
+          {/* Additional rooms & views */}
+          {((property.additionalRooms?.length ?? 0) > 0 ||
+            (property.propertyView?.length ?? 0) > 0) && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              {(property.additionalRooms?.length ?? 0) > 0 && (
+                <div>
+                  <h2 className="mb-3 text-heading-md text-foreground">Additional Rooms</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {property.additionalRooms!.map((r) => (
+                      <span
+                        key={r}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-body-sm text-foreground"
+                      >
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(property.propertyView?.length ?? 0) > 0 && (
+                <div>
+                  <h2 className="mb-3 text-heading-md text-foreground">View</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {property.propertyView!.map((v) => (
+                      <span
+                        key={v}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-body-sm text-foreground"
+                      >
+                        {v}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Furnishing details */}
+          {property.furnishingDetails && Object.keys(property.furnishingDetails).length > 0 && (
+            <div>
+              <h2 className="mb-4 text-heading-md text-foreground">Furnishing Details</h2>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(property.furnishingDetails)
+                  .filter(([, count]) => count > 0)
+                  .map(([item, count]) => (
+                    <span
+                      key={item}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-body-sm text-foreground"
+                    >
+                      {item}
+                      <span className="font-semibold text-brand">×{count}</span>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Amenities */}
-          {property.amenities && (property.amenities as string[]).length > 0 && (
+          {toAmenityList(property.amenities).length > 0 && (
             <div>
               <h2 className="mb-4 text-heading-md text-foreground">Property Amenities</h2>
               <div className="flex flex-wrap gap-2">
-                {(property.amenities as string[]).map((a) => (
+                {toAmenityList(property.amenities).map((a) => (
                   <span
                     key={a}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-2 text-body-sm text-foreground"

@@ -116,3 +116,4 @@ temp/
 .playwright-mcp/
 
 .vercel
+*.tfplan

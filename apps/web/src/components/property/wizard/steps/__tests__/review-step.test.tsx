@@ -52,6 +52,9 @@ const Setup = () => {
         ],
         amenities: ['Pool', 'Gym'],
         restrictions: {},
+        additionalRooms: [],
+        propertyView: [],
+        furnishingDetails: {},
       },
     });
   }, [dispatch]);

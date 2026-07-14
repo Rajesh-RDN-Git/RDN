@@ -79,7 +79,7 @@ export default function HomeScreen() {
         <Text style={styles.welcome}>
           {isAuthenticated ? `Hello, ${user?.name || 'User'}` : 'Welcome to RDN'}
         </Text>
-        <Text style={styles.tagline}>Residential Dealer Network</Text>
+        <Text style={styles.tagline}>Resident Dealer Network</Text>
       </View>
 
       {/* Stats for authenticated users */}
@@ -113,9 +113,13 @@ export default function HomeScreen() {
               onPress={() => router.push(`/society/${society.slug}`)}
             >
               <Card style={styles.societyCard}>
-                <Text style={styles.societyName}>{society.name}</Text>
-                <Text style={styles.societyCity}>{society.city}</Text>
-                <Text style={styles.societyUnits}>{society.totalUnits} units</Text>
+                <Text style={styles.societyName} numberOfLines={2}>
+                  {society.name}
+                </Text>
+                <Text style={styles.societyCity} numberOfLines={1}>
+                  {society.city}
+                </Text>
+                <Text style={styles.societyUnits}>{society.totalUnits ?? '—'} units</Text>
               </Card>
             </TouchableOpacity>
           ))}
@@ -189,7 +193,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '600', color: '#111827' },
   viewAll: { fontSize: 14, color: '#2563eb', fontWeight: '500' },
   societyCard: { width: 180, marginRight: 12 },
-  societyName: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  societyName: { fontSize: 15, fontWeight: '600', color: '#111827', minHeight: 40, lineHeight: 20 },
   societyCity: { fontSize: 13, color: '#6b7280', marginTop: 2 },
   societyUnits: { fontSize: 12, color: '#2563eb', marginTop: 4 },
   propertyCard: { marginBottom: 10 },

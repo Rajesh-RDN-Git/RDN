@@ -14,3 +14,5 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 export { PrismaClient } from '@prisma/client';
 export * from '@prisma/client';
+export * from './field-crypto';
+export * from './field-encryption';

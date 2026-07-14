@@ -2,7 +2,9 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SentryModule } from '@sentry/nestjs/setup';
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
@@ -17,7 +19,9 @@ import {
   msg91Config,
   exotelConfig,
   authConfig,
+  cryptoConfig,
 } from './config';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { SocietyScopeMiddleware } from './common/middleware/society-scope.middleware';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -39,6 +43,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
@@ -50,12 +55,14 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
         msg91Config,
         exotelConfig,
         authConfig,
+        cryptoConfig,
       ],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
+    CryptoModule,
     AuthModule,
     UsersModule,
     SocietiesModule,
@@ -77,6 +84,10 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditLogInterceptor,

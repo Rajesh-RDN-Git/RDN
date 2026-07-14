@@ -31,16 +31,18 @@ export type WizardData = {
   carpetArea?: number;
   superArea?: number;
   floor?: number;
+  floorLabel?: 'GROUND' | 'TOP';
   totalFloors?: number;
   facing?: string;
   furnishing?: 'FURNISHED' | 'SEMI' | 'UNFURNISHED';
+  description?: string;
+  additionalRooms: string[];
+  propertyView: string[];
+  furnishingDetails: Record<string, number>;
   // Pricing
   priceRent?: number;
   priceSale?: number;
   securityDeposit?: number;
-  maintenance?: number;
-  negotiable?: boolean;
-  brokerageDisclosed?: boolean;
   // Photos
   photos: PhotoState[];
   // Amenities & Restrictions
@@ -70,6 +72,9 @@ export const INITIAL_DATA: WizardData = {
   towerBlock: '',
   type: '',
   transactionType: '',
+  additionalRooms: [],
+  propertyView: [],
+  furnishingDetails: {},
   photos: [],
   amenities: [],
   restrictions: {},

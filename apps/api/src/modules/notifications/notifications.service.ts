@@ -74,4 +74,35 @@ export class NotificationsService {
 
     return notification;
   }
+
+  /**
+   * Notify the society-level approver(s) about an event needing attention.
+   * If the society has an RWA_ADMIN assigned, notify that admin. Otherwise fall
+   * back to every active SUPER_ADMIN so dealer applications / listings never
+   * stall silently in societies without an RWA admin. Best-effort.
+   */
+  async notifySocietyApprovers(
+    societyId: string,
+    payload: Omit<CreateNotificationDto, 'userId'>,
+  ): Promise<void> {
+    const society = await this.prisma.society.findUnique({
+      where: { id: societyId },
+      select: { rwaAdminId: true },
+    });
+
+    let recipientIds: string[];
+    if (society?.rwaAdminId) {
+      recipientIds = [society.rwaAdminId];
+    } else {
+      const admins = await this.prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
+        select: { id: true },
+      });
+      recipientIds = admins.map((a) => a.id);
+    }
+
+    await Promise.all(
+      recipientIds.map((userId) => this.create({ ...payload, userId }).catch(() => {})),
+    );
+  }
 }

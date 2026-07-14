@@ -47,7 +47,9 @@ describe('Auth, Users, Societies (e2e)', () => {
 
       expect(res.body.data.accessToken).toBeDefined();
       expect(res.body.data.refreshToken).toBeDefined();
-      expect(res.body.data.user.phone).toBe(testPhone);
+      // phone is masked in responses, never returned raw (last 4 digits kept)
+      expect(res.body.data.user.phone).toContain('*');
+      expect(res.body.data.user.phone).toMatch(/0001$/);
       expect(res.body.data.user.role).toBe('SUPER_ADMIN');
 
       accessToken = res.body.data.accessToken;

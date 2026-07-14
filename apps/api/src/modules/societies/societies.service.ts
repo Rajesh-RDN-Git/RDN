@@ -58,6 +58,7 @@ export class SocietiesService {
       where: { slug },
       include: {
         _count: { select: { properties: true, dealers: true } },
+        rwaAdmin: { select: { id: true, name: true } },
       },
     });
 

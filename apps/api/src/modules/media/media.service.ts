@@ -43,6 +43,13 @@ export class MediaService {
           accessKeyId: accessKeyId || '',
           secretAccessKey: secretAccessKey || '',
         },
+        // AWS SDK v3 (>=3.729) defaults to WHEN_SUPPORTED, which bakes an
+        // x-amz-sdk-checksum-algorithm=CRC32 param into presigned PUT URLs.
+        // Cloudflare R2 (and other S3-compatible stores) reject/abort those
+        // uploads (net::ERR_FAILED). Only attach checksums when the operation
+        // actually requires them so presigned PUTs stay plain.
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
       });
     } catch {
       this.logger.warn('AWS SDK not available. S3 operations will use mock URLs.');

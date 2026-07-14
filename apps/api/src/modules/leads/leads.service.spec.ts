@@ -8,7 +8,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 describe('LeadsService', () => {
   let service: LeadsService;
 
-  const mockPrisma = {
+  const mockPrisma: any = {
     lead: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
@@ -22,7 +22,13 @@ describe('LeadsService', () => {
     dealer: {
       findFirst: jest.fn(),
     },
+    counter: {
+      upsert: jest.fn().mockResolvedValue({ key: 'lead_B', value: 1 }),
+    },
   };
+  // create() wraps the counter increment + lead insert in a transaction; run the
+  // callback against the same mock prisma.
+  mockPrisma.$transaction = jest.fn((cb: any) => cb(mockPrisma));
 
   const mockTransactionsService = { create: jest.fn() };
   const mockNotificationsService = { create: jest.fn().mockResolvedValue({}) };
@@ -146,6 +152,31 @@ describe('LeadsService', () => {
       expect(mockPrisma.dealer.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { societyId: 'soc-1', isActive: true },
+        }),
+      );
+    });
+
+    it('should create an unassigned lead when society has no active dealer', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({
+        ...mockProperty,
+        assignedDealerId: null,
+      });
+      mockPrisma.dealer.findFirst.mockResolvedValue(null);
+      mockPrisma.lead.create.mockResolvedValue({
+        id: 'lead-1',
+        dealer: null,
+        property: { flatNumber: 'A-101', towerBlock: 'Tower A' },
+      });
+
+      await service.create({ propertyId: 'prop-1', source: 'WEBSITE' }, 'buyer-1');
+
+      expect(mockPrisma.lead.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            propertyId: 'prop-1',
+            buyerId: 'buyer-1',
+            dealerId: null,
+          }),
         }),
       );
     });

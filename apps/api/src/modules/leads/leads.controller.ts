@@ -11,9 +11,16 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { createLeadSchema, updateLeadSchema } from '@rdn/shared';
+import {
+  createLeadSchema,
+  updateLeadSchema,
+  createManualLeadSchema,
+  assignLeadSchema,
+} from '@rdn/shared';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
+import { CreateManualLeadDto } from './dto/create-manual-lead.dto';
+import { AssignLeadDto } from './dto/assign-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { QueryLeadsDto } from './dto/query-leads.dto';
 import { CloseDealDto } from './dto/close-deal.dto';
@@ -41,8 +48,11 @@ export class LeadsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get lead by ID' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
-    return this.leadsService.findOne(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('role') role: string,
+  ): Promise<any> {
+    return this.leadsService.findOne(id, role);
   }
 
   @Post()
@@ -53,6 +63,25 @@ export class LeadsController {
     @CurrentUser('id') userId: string,
   ): Promise<any> {
     return this.leadsService.create(body, userId);
+  }
+
+  @Post('manual')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Super-admin adds a lead by hand (e.g. a call-back prospect)' })
+  async createManual(
+    @Body(new ZodValidationPipe(createManualLeadSchema)) body: CreateManualLeadDto,
+  ): Promise<any> {
+    return this.leadsService.createManual(body);
+  }
+
+  @Patch(':id/assign')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Super-admin forwards/assigns a lead to a chosen dealer' })
+  async assign(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(assignLeadSchema)) body: AssignLeadDto,
+  ): Promise<any> {
+    return this.leadsService.assign(id, body.dealerId);
   }
 
   @Patch(':id')

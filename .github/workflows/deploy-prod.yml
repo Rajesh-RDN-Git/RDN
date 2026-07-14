@@ -81,29 +81,13 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
         run: pnpm --filter api prisma migrate deploy
 
-  deploy-web:
-    name: Deploy Web (Prod)
-    needs: ci
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to Vercel (Production)
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
-          vercel-args: '--prod'
-          working-directory: apps/web
+  # Web (apps/web) deploys to AWS Amplify Hosting via Amplify's GitHub connection
+  # (enable_auto_build on the main branch — see infrastructure/terraform/amplify.tf).
+  # Amplify builds + deploys on every push to main, so no CI job is needed here.
 
   release:
     name: Create GitHub Release
-    needs: [deploy-api, deploy-web, migrate-db]
+    needs: [deploy-api, migrate-db]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

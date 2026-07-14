@@ -101,7 +101,6 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
           <option value="">All</option>
           <option value="RENT">Rent</option>
           <option value="SALE">Sale</option>
-          <option value="BOTH">Both</option>
         </Select>
       </FilterSection>
 
@@ -119,19 +118,34 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
 
       <FilterSection title="BHK">
         <div className="flex flex-wrap gap-2">
-          {['', '1', '2', '3', '4', '5'].map((val) => (
-            <button
-              key={val}
-              onClick={() => update('bhk', val)}
-              className={`rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
-                (filters.bhk || '') === val
-                  ? 'border-brand bg-brand-subtle text-brand-text'
-                  : 'border-border text-muted-foreground hover:border-border-strong'
-              }`}
-            >
-              {val ? `${val} BHK` : 'Any'}
-            </button>
-          ))}
+          {(() => {
+            const selected = (filters.bhk || '').split(',').filter(Boolean);
+            const toggle = (val: string) => {
+              const next = selected.includes(val)
+                ? selected.filter((v) => v !== val)
+                : [...selected, val];
+              // keep numeric order so the value is stable / readable
+              next.sort((a, b) => Number(a) - Number(b));
+              update('bhk', next.join(','));
+            };
+            return ['1', '2', '3', '4', '5'].map((val) => {
+              const active = selected.includes(val);
+              return (
+                <button
+                  key={val}
+                  onClick={() => toggle(val)}
+                  aria-pressed={active}
+                  className={`rounded-lg border px-3 py-1.5 text-body-sm transition-colors ${
+                    active
+                      ? 'border-brand bg-brand-subtle text-brand-text'
+                      : 'border-border text-muted-foreground hover:border-border-strong'
+                  }`}
+                >
+                  {val} BHK
+                </button>
+              );
+            });
+          })()}
         </div>
       </FilterSection>
 

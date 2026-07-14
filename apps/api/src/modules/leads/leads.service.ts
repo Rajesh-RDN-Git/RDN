@@ -4,6 +4,7 @@ import { TransactionsService } from '../transactions/transactions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryLeadsDto } from './dto/query-leads.dto';
 import type { CreateLeadDto } from './dto/create-lead.dto';
+import type { CreateManualLeadDto } from './dto/create-manual-lead.dto';
 import type { UpdateLeadDto } from './dto/update-lead.dto';
 import type { CloseDealDto } from './dto/close-deal.dto';
 import type { Prisma } from '@rdn/db';
@@ -44,6 +45,14 @@ export class LeadsService {
       where.societyId = { in: societies.map((s) => s.id) };
     }
 
+    // Phone numbers are masked everywhere by default. The platform owner
+    // (SUPER_ADMIN) is the sole exception — they see the raw buyer/contact phone
+    // for manual follow-up. Every other role keeps the masked-call flow.
+    const isSuperAdmin = userRole === 'SUPER_ADMIN';
+    const buyerSelect = isSuperAdmin
+      ? { id: true, name: true, phone: true }
+      : { id: true, name: true };
+
     const [data, total] = await Promise.all([
       this.prisma.lead.findMany({
         where,
@@ -62,7 +71,7 @@ export class LeadsService {
               priceSale: true,
             },
           },
-          buyer: { select: { id: true, name: true } },
+          buyer: { select: buyerSelect },
           dealer: {
             select: { id: true, user: { select: { id: true, name: true } } },
           },
@@ -72,10 +81,16 @@ export class LeadsService {
       this.prisma.lead.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    // contactPhone is a scalar on the lead; redact it for non-super-admins.
+    const rows = isSuperAdmin
+      ? data
+      : data.map((l) => ({ ...l, contactPhone: l.contactPhone ? '••••••' : null }));
+
+    return { data: rows, total, page, limit };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userRole?: string) {
+    const isSuperAdmin = userRole === 'SUPER_ADMIN';
     const lead = await this.prisma.lead.findUnique({
       where: { id },
       include: {
@@ -85,7 +100,9 @@ export class LeadsService {
             media: { take: 3, orderBy: { order: 'asc' } },
           },
         },
-        buyer: { select: { id: true, name: true } },
+        buyer: {
+          select: isSuperAdmin ? { id: true, name: true, phone: true } : { id: true, name: true },
+        },
         dealer: {
           select: { id: true, user: { select: { id: true, name: true } } },
         },
@@ -94,6 +111,9 @@ export class LeadsService {
     });
 
     if (!lead) throw new NotFoundException('Lead not found');
+    if (!isSuperAdmin && lead.contactPhone) {
+      return { ...lead, contactPhone: '••••••' };
+    }
     return lead;
   }
 
@@ -109,8 +129,10 @@ export class LeadsService {
       throw new BadRequestException('Property is not available');
     }
 
-    // Find an active dealer for this society
-    let dealerId: string;
+    // Find an active dealer for this society. If none exists yet, the lead is
+    // queued unassigned (dealerId = null) and gets claimed when a dealer becomes
+    // active in the society (see DealersService.claimUnassignedLeads).
+    let dealerId: string | null = null;
     if (property.assignedDealerId) {
       dealerId = property.assignedDealerId;
     } else {
@@ -118,24 +140,35 @@ export class LeadsService {
       const dealer = await this.prisma.dealer.findFirst({
         where: { societyId: property.societyId, isActive: true },
       });
-      if (!dealer) {
-        throw new BadRequestException('No active dealer available for this society');
-      }
-      dealerId = dealer.id;
+      dealerId = dealer?.id ?? null;
     }
 
-    const lead = await this.prisma.lead.create({
-      data: {
-        propertyId: data.propertyId,
-        buyerId,
-        dealerId,
-        societyId: property.societyId,
-        source: data.source as any,
-      },
-      include: {
-        property: { select: { id: true, flatNumber: true, towerBlock: true } },
-        dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
-      },
+    // Allocate a human-readable reference id (R-#### for rent-intent, B-#### for
+    // buy/sale). The counter upsert takes a row-level lock so concurrent creates
+    // get distinct sequential numbers; the lead insert shares the transaction so a
+    // failed insert never burns a number out from under a committed one.
+    const prefix = property.transactionType === 'RENT' ? 'R' : 'B';
+    const lead = await this.prisma.$transaction(async (tx) => {
+      const counter = await tx.counter.upsert({
+        where: { key: `lead_${prefix}` },
+        create: { key: `lead_${prefix}`, value: 1 },
+        update: { value: { increment: 1 } },
+      });
+      const refId = `${prefix}-${String(counter.value).padStart(4, '0')}`;
+      return tx.lead.create({
+        data: {
+          refId,
+          propertyId: data.propertyId,
+          buyerId,
+          dealerId,
+          societyId: property.societyId,
+          source: data.source as any,
+        },
+        include: {
+          property: { select: { id: true, flatNumber: true, towerBlock: true } },
+          dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
+        },
+      });
     });
 
     // Notify dealer about new lead
@@ -145,7 +178,7 @@ export class LeadsService {
           userId: lead.dealer.user.id,
           type: 'LEAD',
           title: 'New Lead Assigned',
-          body: `New enquiry for ${lead.property.flatNumber}, ${lead.property.towerBlock}`,
+          body: `New enquiry for ${property.flatNumber}, ${property.towerBlock}`,
           channel: 'IN_APP',
           data: { leadId: lead.id, propertyId: data.propertyId },
         })
@@ -158,13 +191,119 @@ export class LeadsService {
         userId: property.ownerId,
         type: 'LEAD',
         title: 'New Enquiry on Your Property',
-        body: `Someone is interested in your property at ${lead.property.flatNumber}, ${lead.property.towerBlock}`,
+        body: `Someone is interested in your property at ${property.flatNumber}, ${property.towerBlock}`,
         channel: 'IN_APP',
         data: { leadId: lead.id, propertyId: data.propertyId },
       })
       .catch(() => {});
 
     return lead;
+  }
+
+  // Super-admin adds a lead by hand (e.g. a call-back prospect rung the helpline).
+  // Buyer/property are optional; the contact is stored free-form on the lead.
+  async createManual(data: CreateManualLeadDto) {
+    let societyId = data.societyId ?? null;
+    let dealerId = data.dealerId ?? null;
+    let prefix = 'B';
+
+    if (data.propertyId) {
+      const property = await this.prisma.property.findUnique({
+        where: { id: data.propertyId },
+      });
+      if (!property) throw new NotFoundException('Property not found');
+      societyId = societyId ?? property.societyId;
+      prefix = property.transactionType === 'RENT' ? 'R' : 'B';
+      if (!dealerId) dealerId = property.assignedDealerId ?? null;
+    }
+
+    if (dealerId) {
+      const dealer = await this.prisma.dealer.findUnique({ where: { id: dealerId } });
+      if (!dealer) throw new NotFoundException('Dealer not found');
+    }
+
+    const notes = data.note ? [{ at: new Date().toISOString(), text: data.note }] : [];
+
+    const lead = await this.prisma.$transaction(async (tx) => {
+      const counter = await tx.counter.upsert({
+        where: { key: `lead_${prefix}` },
+        create: { key: `lead_${prefix}`, value: 1 },
+        update: { value: { increment: 1 } },
+      });
+      const refId = `${prefix}-${String(counter.value).padStart(4, '0')}`;
+      return tx.lead.create({
+        data: {
+          refId,
+          propertyId: data.propertyId ?? null,
+          buyerId: null,
+          dealerId,
+          societyId,
+          contactName: data.contactName,
+          contactPhone: data.contactPhone,
+          source: (data.source as any) ?? 'MANUAL',
+          notes: notes as any,
+        },
+        include: {
+          property: { select: { id: true, flatNumber: true, towerBlock: true } },
+          dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
+        },
+      });
+    });
+
+    if (lead.dealer?.user?.id) {
+      this.notificationsService
+        .create({
+          userId: lead.dealer.user.id,
+          type: 'LEAD',
+          title: 'New Lead Assigned',
+          body: `A lead was assigned to you by the admin (${data.contactName})`,
+          channel: 'IN_APP',
+          data: { leadId: lead.id },
+        })
+        .catch(() => {});
+    }
+
+    return lead;
+  }
+
+  // Super-admin forwards/assigns an existing lead to a chosen dealer.
+  async assign(id: string, dealerId: string) {
+    const lead = await this.prisma.lead.findUnique({ where: { id } });
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    const dealer = await this.prisma.dealer.findUnique({
+      where: { id: dealerId },
+      include: { user: { select: { id: true, name: true } } },
+    });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+
+    const updated = await this.prisma.lead.update({
+      where: { id },
+      data: { dealerId, autoReassigned: false },
+      include: {
+        property: { select: { id: true, flatNumber: true, towerBlock: true } },
+        dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
+        buyer: { select: { id: true, name: true } },
+        society: { select: { id: true, name: true } },
+      },
+    });
+
+    if (dealer.user?.id) {
+      this.notificationsService
+        .create({
+          userId: dealer.user.id,
+          type: 'LEAD',
+          title: 'Lead Assigned to You',
+          body: updated.property
+            ? `You were assigned a lead for ${updated.property.flatNumber}, ${updated.property.towerBlock}`
+            : 'You were assigned a new lead by the admin',
+          channel: 'IN_APP',
+          data: { leadId: updated.id },
+        })
+        .catch(() => {});
+    }
+
+    return updated;
   }
 
   async update(id: string, data: UpdateLeadDto) {
@@ -199,6 +338,7 @@ export class LeadsService {
     });
 
     if (!lead) throw new NotFoundException('Lead not found');
+    if (!lead.property) throw new BadRequestException('Lead has no linked property');
     // SUPER_ADMIN can approve on behalf of any owner; OWNER can only approve their own.
     const isSuperAdmin = callerRole === 'SUPER_ADMIN';
     if (!isSuperAdmin && lead.property.ownerId !== callerId) {

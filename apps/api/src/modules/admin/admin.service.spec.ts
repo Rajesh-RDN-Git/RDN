@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../../database/prisma.service';
+import { EncryptionService } from '../../common/crypto/encryption.service';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -15,9 +16,15 @@ describe('AdminService', () => {
     grievance: { count: jest.fn() },
   };
 
+  const mockEncryption = { blindIndex: jest.fn((v: string) => `hash(${v})`) };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AdminService, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [
+        AdminService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: EncryptionService, useValue: mockEncryption },
+      ],
     }).compile();
 
     service = module.get<AdminService>(AdminService);
@@ -73,6 +80,17 @@ describe('AdminService', () => {
           }),
         }),
       );
+    });
+
+    it('matches a phone-shaped search against the blind index', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      await service.getUsers({ search: '+919999900001' } as any);
+
+      expect(mockEncryption.blindIndex).toHaveBeenCalledWith('+919999900001');
+      const arg = mockPrisma.user.findMany.mock.calls[0][0];
+      expect(arg.where.OR).toEqual(expect.arrayContaining([{ phoneHash: 'hash(+919999900001)' }]));
     });
   });
 

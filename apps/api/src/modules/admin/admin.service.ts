@@ -1,12 +1,16 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { EncryptionService } from '../../common/crypto/encryption.service';
 import type { QueryAdminUsersDto } from './dto/query-admin-users.dto';
 import type { OnboardSocietyDto } from './dto/onboard-society.dto';
 import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryption: EncryptionService,
+  ) {}
 
   async getStats(): Promise<any> {
     const [
@@ -58,9 +62,14 @@ export class AdminService {
     if (query.search) {
       where.OR = [
         { name: { contains: query.search, mode: 'insensitive' } },
-        { phone: { contains: query.search } },
         { email: { contains: query.search, mode: 'insensitive' } },
       ];
+      // phone is encrypted at rest → substring search is impossible. If the query
+      // looks like a phone number, match its blind index (exact, normalized) instead.
+      const digits = query.search.replace(/\D/g, '');
+      if (digits.length >= 10) {
+        where.OR.push({ phoneHash: this.encryption.blindIndex(query.search) });
+      }
     }
 
     const [data, total] = await Promise.all([

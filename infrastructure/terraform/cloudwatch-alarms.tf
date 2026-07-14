@@ -9,6 +9,8 @@ resource "aws_cloudwatch_metric_alarm" "api_5xx" {
   statistic           = "Sum"
   threshold           = 5
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     LoadBalancer = aws_lb.api.arn_suffix
@@ -26,6 +28,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   statistic           = "Average"
   threshold           = 80
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  ok_actions          = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     ClusterName = aws_ecs_cluster.main.name
@@ -43,6 +47,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage_low" {
   period              = 300
   statistic           = "Average"
   threshold           = 5000000000
+  alarm_actions       = [aws_sns_topic.alerts.arn]
 
   dimensions = {
     DBInstanceIdentifier = aws_db_instance.main.id

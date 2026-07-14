@@ -38,7 +38,7 @@ const MANAGE_ROWS: ManageRow[] = [
     roles: ['OWNER', 'DEALER', 'SUPER_ADMIN', 'RWA_ADMIN'],
   },
   {
-    label: 'Saved',
+    label: 'Shortlist',
     subtitle: 'Your saved properties',
     route: '/saved',
     roles: ALL_ROLES,
@@ -83,7 +83,7 @@ const MANAGE_ROWS: ManageRow[] = [
     label: 'Reports',
     subtitle: 'Analytics & reports',
     route: '/reports',
-    roles: ALL_ROLES,
+    roles: ['SUPER_ADMIN', 'RWA_ADMIN'],
   },
 ];
 

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { SUPPORT } from '@/lib/support';
+import { PhoneIcon, WhatsAppIcon } from '@/components/ui/icons';
 
 const footerLinks = {
   'About RDN': [
@@ -8,7 +10,7 @@ const footerLinks = {
     { label: 'Careers', href: '/careers' },
   ],
   'For Owners': [
-    { label: 'List Your Property', href: '/dashboard/properties' },
+    { label: 'List Your Property', href: '/dashboard/properties/new' },
     { label: 'Owner Guide', href: '/guides/owners' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'FAQs', href: '/faq' },
@@ -51,9 +53,28 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-chrome-border pt-8 md:flex-row">
+        {/* Customer care */}
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 border-t border-chrome-border pt-8 sm:flex-row sm:gap-6">
+          <span className="text-sm text-chrome-muted">Customer Care</span>
+          <a
+            href={SUPPORT.tel}
+            className="flex items-center gap-2 text-sm text-chrome-foreground transition-colors duration-fast hover:text-brand"
+          >
+            <PhoneIcon size={16} /> {SUPPORT.display}
+          </a>
+          <a
+            href={SUPPORT.whatsapp()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-chrome-foreground transition-colors duration-fast hover:text-[#25D366]"
+          >
+            <WhatsAppIcon size={16} /> WhatsApp
+          </a>
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-chrome-border pt-8 md:flex-row">
           <p className="text-sm text-chrome-muted">
-            &copy; {new Date().getFullYear()} RDN — Residential Dealer Network. All rights reserved.
+            &copy; {new Date().getFullYear()} RDN — Resident Dealer Network. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
             <Link

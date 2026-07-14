@@ -38,8 +38,8 @@ describe('SpecsStep', () => {
     );
     expect(screen.getByLabelText(/carpet area/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/super area/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^floor$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^facing$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/floor no/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^facing/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/furnishing/i)).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryPropertiesDto } from './dto/query-properties.dto';
 import type { CreatePropertyDto } from './dto/create-property.dto';
 import type { UpdatePropertyDto } from './dto/update-property.dto';
@@ -7,7 +8,10 @@ import type { Prisma } from '@rdn/db';
 
 @Injectable()
 export class PropertiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async findAll(query: QueryPropertiesDto) {
     const page = Number(query.page) || 1;
@@ -25,7 +29,10 @@ export class PropertiesService {
         where: { userId: query.assignedDealerUserId },
         select: { id: true },
       });
-      where.assignedDealerId = dealer?.id ?? '__no_dealer__';
+      // assignedDealerId is a UUID column — a non-UUID sentinel ('__no_dealer__')
+      // crashes the query with "invalid input syntax for type uuid" (500). Use a
+      // valid all-zero UUID that matches no real dealer so the result is empty.
+      where.assignedDealerId = dealer?.id ?? '00000000-0000-0000-0000-000000000000';
     }
     // RWA "Properties" view: scope to the societies this admin manages.
     if (query.rwaAdminUserId) {
@@ -118,7 +125,7 @@ export class PropertiesService {
     });
     if (!society) throw new NotFoundException('Society not found');
 
-    return this.prisma.property.create({
+    const property = await this.prisma.property.create({
       data: {
         societyId: data.societyId,
         ownerId,
@@ -130,9 +137,14 @@ export class PropertiesService {
         carpetArea: data.carpetArea,
         superArea: data.superArea,
         floor: data.floor,
+        floorLabel: data.floorLabel,
         totalFloors: data.totalFloors,
         facing: data.facing,
         furnishing: data.furnishing as any,
+        furnishingDetails: (data.furnishingDetails || {}) as any,
+        additionalRooms: (data.additionalRooms || []) as any,
+        propertyView: (data.propertyView || []) as any,
+        description: data.description,
         priceRent: data.priceRent,
         priceSale: data.priceSale,
         securityDeposit: data.securityDeposit,
@@ -144,6 +156,20 @@ export class PropertiesService {
         society: { select: { id: true, name: true, slug: true } },
       },
     });
+
+    // Alert the society's approver(s) that a listing awaits verification.
+    // Falls back to all SUPER_ADMINs when the society has no RWA admin.
+    this.notificationsService
+      .notifySocietyApprovers(data.societyId, {
+        type: 'SYSTEM',
+        title: 'New Listing Awaiting Verification',
+        body: `A new property in ${property.society.name} was submitted and needs verification.`,
+        channel: 'IN_APP',
+        data: { propertyId: property.id, societyId: data.societyId },
+      })
+      .catch(() => {});
+
+    return property;
   }
 
   async update(id: string, data: UpdatePropertyDto, userId: string, userRole: string) {
@@ -156,6 +182,8 @@ export class PropertiesService {
     }
 
     const updateData: any = {};
+    // Listing-content fields. Editing any of these on an already-reviewed
+    // property sends it back to the verification queue.
     if (data.flatNumber !== undefined) updateData.flatNumber = data.flatNumber;
     if (data.towerBlock !== undefined) updateData.towerBlock = data.towerBlock;
     if (data.type !== undefined) updateData.type = data.type;
@@ -164,23 +192,51 @@ export class PropertiesService {
     if (data.carpetArea !== undefined) updateData.carpetArea = data.carpetArea;
     if (data.superArea !== undefined) updateData.superArea = data.superArea;
     if (data.floor !== undefined) updateData.floor = data.floor;
+    if (data.floorLabel !== undefined) updateData.floorLabel = data.floorLabel;
     if (data.totalFloors !== undefined) updateData.totalFloors = data.totalFloors;
     if (data.facing !== undefined) updateData.facing = data.facing;
     if (data.furnishing !== undefined) updateData.furnishing = data.furnishing;
+    if (data.furnishingDetails !== undefined) updateData.furnishingDetails = data.furnishingDetails;
+    if (data.additionalRooms !== undefined) updateData.additionalRooms = data.additionalRooms;
+    if (data.propertyView !== undefined) updateData.propertyView = data.propertyView;
+    if (data.description !== undefined) updateData.description = data.description;
     if (data.priceRent !== undefined) updateData.priceRent = data.priceRent;
     if (data.priceSale !== undefined) updateData.priceSale = data.priceSale;
     if (data.securityDeposit !== undefined) updateData.securityDeposit = data.securityDeposit;
     if (data.availableFrom !== undefined) updateData.availableFrom = new Date(data.availableFrom);
-    if (data.availabilityStatus !== undefined)
-      updateData.availabilityStatus = data.availabilityStatus;
     if (data.restrictions !== undefined) updateData.restrictions = data.restrictions;
     if (data.amenities !== undefined) updateData.amenities = data.amenities;
+
+    const touchedListing = Object.keys(updateData).length > 0;
+
+    // Non-content operational fields — do NOT trigger re-verification.
+    if (data.availabilityStatus !== undefined)
+      updateData.availabilityStatus = data.availabilityStatus;
     if (data.status !== undefined) updateData.status = data.status;
 
-    return this.prisma.property.update({
+    // Any content edit on a reviewed listing re-enters the verification queue.
+    const reVerify = touchedListing && property.verificationStatus !== 'PENDING';
+    if (reVerify) updateData.verificationStatus = 'PENDING';
+
+    const updated = await this.prisma.property.update({
       where: { id },
       data: updateData,
+      include: { society: { select: { id: true, name: true } } },
     });
+
+    if (reVerify) {
+      this.notificationsService
+        .notifySocietyApprovers(updated.societyId, {
+          type: 'SYSTEM',
+          title: 'Listing Edited — Re-verification Needed',
+          body: `A property in ${updated.society?.name ?? 'your society'} was edited and needs re-verification.`,
+          channel: 'IN_APP',
+          data: { propertyId: updated.id, societyId: updated.societyId },
+        })
+        .catch(() => {});
+    }
+
+    return updated;
   }
 
   async getVerificationQueue(userId: string, role: string) {

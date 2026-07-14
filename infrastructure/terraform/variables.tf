@@ -43,6 +43,12 @@ variable "domain_name" {
   default = ""
 }
 
+variable "cors_allowed_origins" {
+  type        = list(string)
+  description = "Allowed origins for S3 media bucket CORS (set to prod web URL in prod)."
+  default     = ["*"]
+}
+
 variable "db_username" {
   type      = string
   default   = "rdn_admin"

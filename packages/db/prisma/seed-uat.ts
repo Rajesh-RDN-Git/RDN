@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import { getFieldKeys } from '../src/field-crypto';
+import { applyFieldEncryption, makeCipher } from '../src/field-encryption';
 
 const prisma = new PrismaClient();
+// Encrypt PII on write + remap phone lookups to the blind index, same as the API.
+const cipher = makeCipher(getFieldKeys());
+applyFieldEncryption(prisma, cipher);
+// Look up existing users by the phone blind index (phone itself is encrypted, not unique).
+const byPhone = (phone: string) => ({ phoneHash: cipher.blindIndex(phone) });
 
 async function main() {
   console.log('Seeding UAT data...');
@@ -42,7 +49,7 @@ async function main() {
 
   // SUPER_ADMIN
   await prisma.user.upsert({
-    where: { phone: '+919999900001' },
+    where: byPhone('+919999900001'),
     update: {},
     create: {
       phone: '+919999900001',
@@ -54,7 +61,7 @@ async function main() {
 
   // RWA_ADMINs (one per society)
   const rwaGv = await prisma.user.upsert({
-    where: { phone: '+919999900002' },
+    where: byPhone('+919999900002'),
     update: { primarySocietyId: society1.id },
     create: {
       phone: '+919999900002',
@@ -66,7 +73,7 @@ async function main() {
   });
 
   const rwaSh = await prisma.user.upsert({
-    where: { phone: '+919999900003' },
+    where: byPhone('+919999900003'),
     update: { primarySocietyId: society2.id },
     create: {
       phone: '+919999900003',
@@ -84,7 +91,7 @@ async function main() {
   // OWNERs
   const owners = await Promise.all([
     prisma.user.upsert({
-      where: { phone: '+919999900010' },
+      where: byPhone('+919999900010'),
       update: { primarySocietyId: society1.id },
       create: {
         phone: '+919999900010',
@@ -95,7 +102,7 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { phone: '+919999900011' },
+      where: byPhone('+919999900011'),
       update: { primarySocietyId: society1.id },
       create: {
         phone: '+919999900011',
@@ -106,7 +113,7 @@ async function main() {
       },
     }),
     prisma.user.upsert({
-      where: { phone: '+919999900012' },
+      where: byPhone('+919999900012'),
       update: { primarySocietyId: society2.id },
       create: {
         phone: '+919999900012',
@@ -120,7 +127,7 @@ async function main() {
 
   // DEALERs (User rows only; Dealer table records out of scope for seed)
   await prisma.user.upsert({
-    where: { phone: '+919999900020' },
+    where: byPhone('+919999900020'),
     update: { primarySocietyId: society1.id },
     create: {
       phone: '+919999900020',
@@ -131,7 +138,7 @@ async function main() {
     },
   });
   await prisma.user.upsert({
-    where: { phone: '+919999900021' },
+    where: byPhone('+919999900021'),
     update: { primarySocietyId: society2.id },
     create: {
       phone: '+919999900021',
