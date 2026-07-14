@@ -47,6 +47,25 @@ resource "aws_route53_record" "api" {
   }
 }
 
+# Preserve the domain's existing GoDaddy email (MX + SPF) across the NS switch.
+resource "aws_route53_record" "mx" {
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = aws_route53_zone.main[0].zone_id
+  name    = var.domain_name
+  type    = "MX"
+  ttl     = 3600
+  records = ["0 smtp.secureserver.net.", "10 mailstore1.secureserver.net."]
+}
+
+resource "aws_route53_record" "spf" {
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = aws_route53_zone.main[0].zone_id
+  name    = var.domain_name
+  type    = "TXT"
+  ttl     = 3600
+  records = ["v=spf1 include:secureserver.net -all"]
+}
+
 output "route53_nameservers" {
   description = "Point your registrar's nameservers to these to activate the domain + TLS."
   value       = var.domain_name != "" ? aws_route53_zone.main[0].name_servers : []
