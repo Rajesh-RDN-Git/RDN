@@ -44,7 +44,7 @@ resource "aws_amplify_app" "web" {
           phases:
             preBuild:
               commands:
-                - corepack enable && corepack prepare pnpm@latest --activate
+                - corepack enable && corepack prepare pnpm@9.15.4 --activate
                 - cd ../.. && pnpm install --frozen-lockfile
             build:
               commands:
