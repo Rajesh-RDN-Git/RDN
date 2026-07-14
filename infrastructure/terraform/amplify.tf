@@ -41,23 +41,24 @@ resource "aws_amplify_app" "web" {
     applications:
       - appRoot: apps/web
         frontend:
+          buildPath: '/'
           phases:
             preBuild:
               commands:
                 - corepack enable && corepack prepare pnpm@9.15.4 --activate
-                - cd ../.. && pnpm install --frozen-lockfile
+                - pnpm install --frozen-lockfile
             build:
               commands:
-                - cd ../.. && pnpm --filter @rdn/shared build
+                - pnpm --filter @rdn/shared build
                 - pnpm --filter web build
           artifacts:
-            baseDirectory: .next
+            baseDirectory: apps/web/.next
             files:
               - '**/*'
           cache:
             paths:
-              - ../../node_modules/**/*
-              - .next/cache/**/*
+              - node_modules/**/*
+              - apps/web/.next/cache/**/*
   YAML
 
   lifecycle {
