@@ -77,7 +77,9 @@ resource "aws_ecs_task_definition" "api" {
       options   = { "awslogs-group" = aws_cloudwatch_log_group.api.name, "awslogs-region" = var.aws_region, "awslogs-stream-prefix" = "api" }
     }
     environment = [
-      { name = "NODE_ENV", value = var.environment },
+      # Node convention expects exactly "production" — the app's prod guards
+      # (swagger-off, MSG91/JWT fail-fast) all check that literal.
+      { name = "NODE_ENV", value = var.environment == "prod" ? "production" : var.environment },
       { name = "PORT", value = "4000" },
       { name = "AWS_REGION", value = var.aws_region },
       { name = "AWS_S3_BUCKET", value = aws_s3_bucket.media.id },
