@@ -46,13 +46,19 @@ resource "aws_amplify_app" "web" {
             preBuild:
               commands:
                 - corepack enable && corepack prepare pnpm@9.15.4 --activate
-                # Hoisted linker only in this container (Amplify can't bundle pnpm
-                # symlinks); web subtree only so mobile's React 19 stays out.
+                # Container-only workarounds for Amplify's hoisted-layout requirement
+                # colliding with the web(React 18)/mobile(React 19) split:
+                # hoisted linker so the bundle has real files; drop mobile + the
+                # lockfile so React 19 can't win the root hoist slot.
                 - echo "node-linker=hoisted" > .npmrc
-                - pnpm install --frozen-lockfile --filter web...
+                - rm -rf apps/mobile pnpm-lock.yaml
+                - pnpm install --filter web...
             build:
               commands:
                 - pnpm --filter @rdn/shared build
+                # pnpm-hoisted nests each workspace's direct deps locally; the nested
+                # react next to root react-dom = two React instances = prerender crash.
+                - rm -rf apps/web/node_modules/react apps/web/node_modules/react-dom
                 - pnpm --filter web build
           artifacts:
             baseDirectory: apps/web/.next
