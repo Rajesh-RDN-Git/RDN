@@ -60,7 +60,6 @@ resource "aws_amplify_app" "web" {
               - '**/*'
           cache:
             paths:
-              - node_modules/**/*
               - apps/web/.next/cache/**/*
   YAML
 
