@@ -46,7 +46,10 @@ resource "aws_amplify_app" "web" {
             preBuild:
               commands:
                 - corepack enable && corepack prepare pnpm@9.15.4 --activate
-                - pnpm install --frozen-lockfile
+                # Hoisted linker only in this container (Amplify can't bundle pnpm
+                # symlinks); web subtree only so mobile's React 19 stays out.
+                - echo "node-linker=hoisted" > .npmrc
+                - pnpm install --frozen-lockfile --filter web...
             build:
               commands:
                 - pnpm --filter @rdn/shared build
