@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Communication constraints
+
+- NEVER send email (or configure anything that sends email — SNS subscriptions,
+  alerts, SES, notifications) to any address at `workctrl.tech` or `sworks.co.in`
+  regarding the RDN project. Alerts/notifications go to `rajesh@rdngroups.com`.
+
 ## Project Overview
 
 RDN (Residential Dealer Network) — a real estate transaction platform for residential societies in India. Connects RWAs (Resident Welfare Associations), resident dealers, property owners, and buyers/tenants. Replaces external brokers with a community-driven, society-controlled ecosystem.
@@ -115,15 +121,15 @@ Shared cross-cutting code lives in `apps/api/src/common/` (guards, decorators, i
 
 ## Third-Party Integrations
 
-| Service | Purpose | Config Location |
-|---------|---------|----------------|
-| MSG91 | Phone OTP | `apps/api/src/modules/auth/` |
-| Firebase (FCM) | Push notifications | `apps/api/src/modules/notifications/` |
-| Exotel | Masked calling | `apps/api/src/modules/communication/` |
-| Interakt/Wati | WhatsApp notifications | `apps/api/src/modules/notifications/` |
-| Razorpay | Payments | `apps/api/src/modules/commission/` |
-| AWS S3 | File storage | `apps/api/src/modules/media/` |
-| AWS SES | Transactional email | `apps/api/src/modules/notifications/` |
+| Service        | Purpose                | Config Location                       |
+| -------------- | ---------------------- | ------------------------------------- |
+| MSG91          | Phone OTP              | `apps/api/src/modules/auth/`          |
+| Firebase (FCM) | Push notifications     | `apps/api/src/modules/notifications/` |
+| Exotel         | Masked calling         | `apps/api/src/modules/communication/` |
+| Interakt/Wati  | WhatsApp notifications | `apps/api/src/modules/notifications/` |
+| Razorpay       | Payments               | `apps/api/src/modules/commission/`    |
+| AWS S3         | File storage           | `apps/api/src/modules/media/`         |
+| AWS SES        | Transactional email    | `apps/api/src/modules/notifications/` |
 
 ## Environment Variables
 
@@ -132,3 +138,28 @@ Secrets managed via AWS Secrets Manager in deployed environments. Locally, use `
 ## SEO Requirements
 
 Society profile pages and property listing pages must be server-side rendered (Next.js SSR) with Schema.org structured data for organic search discovery. Every society page targets "[Society Name] [City] rent/sale" keywords.
+
+## Operating doctrine (any model, incl. cloud agents)
+
+<!-- Condensed from fable-overlay.md in the Fskills repo — edit that file first, then refresh this block. -->
+
+- End a turn only when the task is complete and verified, or blocked on input only
+  the user can provide. A plan, a question you could answer yourself, or "next I
+  would…" is not an ending — do that work now, including retrying after errors and
+  gathering missing information yourself.
+- Plan-first: plan, discuss, and get approval before building. Once a plan is
+  agreed, execute it end to end without asking "Shall I…?" — stop only for
+  destructive actions or genuine scope changes. If the user is asking a question
+  or describing a problem, deliver the assessment and stop; don't fix unasked.
+- The final message of a turn carries everything the user needs. Lead with the
+  outcome (the TLDR), supporting detail after. Write for a teammate catching up:
+  complete sentences, terms spelled out, no invented shorthand or arrow chains.
+- Readable beats terse: shorten by dropping what doesn't change the reader's next
+  move, never by compressing into fragments or jargon.
+- Act on evidence: before state-changing commands, confirm the evidence supports
+  that specific action; before deleting or overwriting, inspect the target. Only
+  claim work a tool result proves; if unverified, say so. Report failures plainly.
+- Code: match the surrounding style; comment only constraints the code can't show;
+  no features, abstractions, or error handling beyond the task; no half-finished
+  implementations.
+- Batch independent tool calls; sequence only when one output feeds another input.
