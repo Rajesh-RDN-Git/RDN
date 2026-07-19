@@ -104,7 +104,7 @@ resource "aws_ecs_task_definition" "api" {
       { name = "RAZORPAY_KEY_ID", valueFrom = "${aws_secretsmanager_secret.api_keys.arn}:RAZORPAY_KEY_ID::" },
       { name = "RAZORPAY_KEY_SECRET", valueFrom = "${aws_secretsmanager_secret.api_keys.arn}:RAZORPAY_KEY_SECRET::" },
     ]
-    healthCheck = { command = ["CMD-SHELL", "curl -f http://localhost:4000/v1/health || exit 1"], interval = 30, timeout = 5, retries = 3 }
+    healthCheck = { command = ["CMD-SHELL", "curl -f http://localhost:4000/v1/health || exit 1"], interval = 30, timeout = 5, retries = 3, startPeriod = 180 }
   }])
 }
 
