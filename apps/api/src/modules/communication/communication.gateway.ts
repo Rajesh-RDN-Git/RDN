@@ -14,7 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   namespace: '/chat',
-  cors: { origin: '*' },
+  cors: { origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'] },
 })
 export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server!: Server;
@@ -70,7 +70,7 @@ export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string; content: string; receiverId: string },
+    @MessageBody() data: { conversationId: string; content: string },
   ) {
     const userId = client.data.userId;
     if (!userId) return;
@@ -84,9 +84,12 @@ export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisco
         userId,
       );
 
-      // Emit to both sender and receiver
+      // Emit to sender and to the server-derived recipient (never a client-supplied
+      // id) so a participant cannot inject messages into another user's socket.
       this.server.to(`user:${userId}`).emit('new_message', message);
-      this.server.to(`user:${data.receiverId}`).emit('new_message', message);
+      if (message.receiverId) {
+        this.server.to(`user:${message.receiverId}`).emit('new_message', message);
+      }
 
       return message;
     } catch (err) {
@@ -110,14 +113,22 @@ export class CommunicationGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   @SubscribeMessage('typing')
-  handleTyping(
+  async handleTyping(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string; receiverId: string },
+    @MessageBody() data: { conversationId: string },
   ) {
     const userId = client.data.userId;
     if (!userId) return;
 
-    this.server.to(`user:${data.receiverId}`).emit('user_typing', {
+    // Resolve the recipient server-side (verifies membership) rather than trusting
+    // a client-supplied receiverId.
+    const receiverId = await this.communicationService.getOtherParticipant(
+      data.conversationId,
+      userId,
+    );
+    if (!receiverId) return;
+
+    this.server.to(`user:${receiverId}`).emit('user_typing', {
       conversationId: data.conversationId,
       userId,
     });

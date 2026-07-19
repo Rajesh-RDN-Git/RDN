@@ -133,4 +133,27 @@ describe('CommunicationService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
   });
+
+  describe('getOtherParticipant', () => {
+    it('returns the other participant for a member', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        participants: ['user-1', 'user-2'],
+      });
+      expect(await service.getOtherParticipant('conv-1', 'user-1')).toBe('user-2');
+    });
+
+    it('returns null when the caller is not a participant (no spoofing)', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        participants: ['user-2', 'user-3'],
+      });
+      expect(await service.getOtherParticipant('conv-1', 'intruder')).toBeNull();
+    });
+
+    it('returns null for a missing conversation', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue(null);
+      expect(await service.getOtherParticipant('nope', 'user-1')).toBeNull();
+    });
+  });
 });

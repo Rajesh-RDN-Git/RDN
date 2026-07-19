@@ -136,6 +136,18 @@ export class CommunicationService {
     return conversation;
   }
 
+  // Resolve the other conversation participant, but only if `userId` is actually
+  // a member — used by the WS gateway so a client cannot target arbitrary rooms.
+  async getOtherParticipant(conversationId: string, userId: string): Promise<string | null> {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+    if (!conversation) return null;
+    const participants = conversation.participants as string[];
+    if (!participants.includes(userId)) return null;
+    return participants.find((p) => p !== userId) || null;
+  }
+
   async sendMessage(conversationId: string, data: SendMessageDto, userId: string): Promise<any> {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
