@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../../../common/redis/redis.service';
 import * as bcrypt from 'bcrypt';
@@ -121,12 +121,23 @@ export class OtpService {
         }),
       });
 
-      if (!response.ok) {
-        const body = await response.text();
-        this.logger.error(`MSG91 OTP send failed: ${body}`);
+      // MSG91 v5 reports failures both as non-2xx and as HTTP 200 with
+      // {"type":"error"} in the body — status alone is not a success signal.
+      const body = await response.text();
+      let type: string | undefined;
+      try {
+        type = (JSON.parse(body) as { type?: string }).type;
+      } catch {
+        /* non-JSON body — treat as failure below */
+      }
+      if (!response.ok || type !== 'success') {
+        this.logger.error(`MSG91 OTP send failed (HTTP ${response.status}): ${body}`);
+        throw new ServiceUnavailableException('Failed to send OTP, please retry');
       }
     } catch (error) {
-      this.logger.error(`MSG91 OTP send error: ${error}`);
+      if (!(error instanceof ServiceUnavailableException)) {
+        this.logger.error(`MSG91 OTP send error: ${error}`);
+      }
       throw error;
     }
   }

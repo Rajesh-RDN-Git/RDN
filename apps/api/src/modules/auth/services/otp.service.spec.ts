@@ -56,3 +56,51 @@ describe('OtpService — production safety', () => {
     await expect(service.verifyOtp('123456', 'irrelevant', future)).resolves.toBe(true);
   });
 });
+
+describe('OtpService — MSG91 delivery failure surfacing', () => {
+  const prodConfig = makeConfig({
+    'app.environment': 'production',
+    'auth.otpDevBypass': 'false',
+    'msg91.authKey': 'test-key',
+    'msg91.templateId': 'test-template',
+  });
+  const redisWithSet = { set: jest.fn() } as unknown as RedisService;
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  it('throws when MSG91 responds HTTP 200 with a type:error body', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () =>
+        Promise.resolve('{"type":"error","message":"Template ID Missing or Invalid Template"}'),
+    }) as unknown as typeof fetch;
+    const service = new OtpService(prodConfig, redisWithSet);
+    await expect(service.sendOtp('+919999900001')).rejects.toThrow(/OTP/);
+  });
+
+  it('throws when MSG91 responds with a non-2xx status', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 418,
+      text: () => Promise.resolve('{"type":"error","message":"IP not whitelisted"}'),
+    }) as unknown as typeof fetch;
+    const service = new OtpService(prodConfig, redisWithSet);
+    await expect(service.sendOtp('+919999900001')).rejects.toThrow(/OTP/);
+  });
+
+  it('resolves when MSG91 responds with type:success', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('{"type":"success","request_id":"abc"}'),
+    }) as unknown as typeof fetch;
+    const service = new OtpService(prodConfig, redisWithSet);
+    await expect(service.sendOtp('+919999900001')).resolves.toMatchObject({
+      hash: expect.any(String),
+    });
+  });
+});
