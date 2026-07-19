@@ -41,8 +41,11 @@ export class DealersController {
   @Get(':id')
   @Roles('SUPER_ADMIN', 'RWA_ADMIN', 'DEALER')
   @ApiOperation({ summary: 'Get dealer by ID' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
-    return this.dealersService.findOne(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ): Promise<any> {
+    return this.dealersService.findOne(id, user);
   }
 
   @Post()

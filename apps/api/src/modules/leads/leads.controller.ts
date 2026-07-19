@@ -50,9 +50,9 @@ export class LeadsController {
   @ApiOperation({ summary: 'Get lead by ID' })
   async findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser('role') role: string,
+    @CurrentUser() user: { id: string; role: string },
   ): Promise<any> {
-    return this.leadsService.findOne(id, role);
+    return this.leadsService.findOne(id, user);
   }
 
   @Post()
@@ -90,8 +90,9 @@ export class LeadsController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateLeadSchema)) body: UpdateLeadDto,
+    @CurrentUser() user: { id: string; role: string },
   ): Promise<any> {
-    return this.leadsService.update(id, body);
+    return this.leadsService.update(id, body, user);
   }
 
   @Patch(':id/approve-visit')
@@ -110,7 +111,8 @@ export class LeadsController {
   async closeDeal(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: CloseDealDto,
+    @CurrentUser() user: { id: string; role: string },
   ): Promise<any> {
-    return this.leadsService.closeDeal(id, body);
+    return this.leadsService.closeDeal(id, body, user);
   }
 }

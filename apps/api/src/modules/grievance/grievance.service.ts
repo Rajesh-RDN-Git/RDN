@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { CreateGrievanceDto } from './dto/create-grievance.dto';
@@ -48,19 +53,28 @@ export class GrievanceService {
     return { data, total, page, limit };
   }
 
-  async findOne(id: string): Promise<any> {
+  async findOne(id: string, caller?: { id: string; role: string }): Promise<any> {
     const grievance = await this.prisma.grievance.findUnique({
       where: { id },
       include: {
         filer: { select: { id: true, name: true } },
         againstUser: { select: { id: true, name: true } },
         assignee: { select: { id: true, name: true } },
-        society: { select: { id: true, name: true } },
+        society: { select: { id: true, name: true, rwaAdminId: true } },
         transaction: { select: { id: true, type: true, dealValue: true } },
       },
     });
 
     if (!grievance) throw new NotFoundException('Grievance not found');
+
+    // Only SUPER_ADMIN, the filer, or the society's RWA admin may read a grievance.
+    if (caller && caller.role !== 'SUPER_ADMIN') {
+      const allowed =
+        grievance.filedBy === caller.id || grievance.society?.rwaAdminId === caller.id;
+      if (!allowed) {
+        throw new ForbiddenException('You do not have access to this grievance');
+      }
+    }
     return grievance;
   }
 

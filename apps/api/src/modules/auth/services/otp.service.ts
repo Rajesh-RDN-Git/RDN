@@ -2,6 +2,7 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../../../common/redis/redis.service';
 import * as bcrypt from 'bcrypt';
+import { randomInt } from 'crypto';
 
 const OTP_PREFIX = 'otp:';
 const OTP_TTL_SECONDS = 300; // 5 minutes
@@ -95,7 +96,8 @@ export class OtpService {
     const length = this.configService.get<number>('msg91.otpLength') || 6;
     const min = Math.pow(10, length - 1);
     const max = Math.pow(10, length) - 1;
-    return String(Math.floor(min + Math.random() * (max - min + 1)));
+    // crypto.randomInt is a CSPRNG; upper bound is exclusive.
+    return String(randomInt(min, max + 1));
   }
 
   private async sendViaMSG91(phone: string, otp: string): Promise<void> {

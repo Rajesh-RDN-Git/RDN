@@ -53,7 +53,7 @@ export class DealersService {
     return { data, total, page, limit };
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, caller?: { id: string; role: string }) {
     const dealer = await this.prisma.dealer.findUnique({
       where: { id },
       include: {
@@ -64,6 +64,16 @@ export class DealersService {
     });
 
     if (!dealer) throw new NotFoundException('Dealer not found');
+
+    // bankAccountDetails is auto-decrypted by the DB middleware; only the owning
+    // dealer or a SUPER_ADMIN may see it. Everyone else gets it stripped.
+    const isOwner = caller?.id === dealer.user?.id;
+    if (caller?.role !== 'SUPER_ADMIN' && !isOwner) {
+      const { bankAccountDetails: _omit, ...rest } = dealer as typeof dealer & {
+        bankAccountDetails?: unknown;
+      };
+      return rest;
+    }
     return dealer;
   }
 

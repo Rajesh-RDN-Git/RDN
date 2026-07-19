@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { PrismaService } from '../../database/prisma.service';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -101,6 +101,31 @@ describe('LeadsService', () => {
       mockPrisma.lead.findUnique.mockResolvedValue(null);
 
       await expect(service.findOne('nonexistent')).rejects.toThrow(NotFoundException);
+    });
+
+    it('forbids a DEALER from reading a lead assigned to another dealer (IDOR)', async () => {
+      mockPrisma.lead.findUnique.mockResolvedValue({
+        id: 'lead-1',
+        buyerId: 'buyer-x',
+        dealer: { userId: 'other-dealer-user' },
+        property: { ownerId: 'owner-x' },
+        society: { rwaAdminId: 'rwa-x' },
+      });
+      await expect(
+        service.findOne('lead-1', { id: 'intruder-dealer', role: 'DEALER' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows the owning DEALER to read their lead', async () => {
+      mockPrisma.lead.findUnique.mockResolvedValue({
+        id: 'lead-1',
+        buyerId: 'buyer-x',
+        dealer: { userId: 'my-user' },
+        property: { ownerId: 'owner-x' },
+        society: { rwaAdminId: 'rwa-x' },
+      });
+      const result = await service.findOne('lead-1', { id: 'my-user', role: 'DEALER' });
+      expect(result.id).toBe('lead-1');
     });
   });
 
@@ -226,6 +251,44 @@ describe('LeadsService', () => {
       await expect(
         service.closeDeal('lead-1', { type: 'SALE', dealValue: 5000000 }),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('forbids a DEALER from closing a lead assigned to another dealer (IDOR)', async () => {
+      mockPrisma.lead.findUnique.mockResolvedValue({
+        id: 'lead-1',
+        status: 'NEGOTIATING',
+        dealer: { userId: 'other-dealer-user' },
+        society: { rwaAdminId: 'rwa-x' },
+      });
+      await expect(
+        service.closeDeal(
+          'lead-1',
+          { type: 'SALE', dealValue: 5000000 },
+          {
+            id: 'intruder',
+            role: 'DEALER',
+          },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockTransactionsService.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update (ownership)', () => {
+    it('forbids a DEALER from updating a lead assigned to another dealer (IDOR)', async () => {
+      mockPrisma.lead.findUnique.mockResolvedValue({
+        id: 'lead-1',
+        status: 'CONTACTED',
+        dealer: { userId: 'other-dealer-user' },
+        society: { rwaAdminId: 'rwa-x' },
+      });
+      await expect(
+        service.update('lead-1', { status: 'NEGOTIATING' } as any, {
+          id: 'intruder',
+          role: 'DEALER',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.lead.update).not.toHaveBeenCalled();
     });
   });
 

@@ -44,6 +44,7 @@ export class TransactionsController {
   }
 
   @Get(':id')
+  @Roles('SUPER_ADMIN', 'RWA_ADMIN')
   @ApiOperation({ summary: 'Get transaction by ID' })
   async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
     return this.transactionsService.findOne(id);

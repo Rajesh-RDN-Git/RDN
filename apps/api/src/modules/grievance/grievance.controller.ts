@@ -39,8 +39,11 @@ export class GrievanceController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get grievance by ID' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
-    return this.grievanceService.findOne(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: { id: string; role: string },
+  ): Promise<any> {
+    return this.grievanceService.findOne(id, user);
   }
 
   @Post()
@@ -63,6 +66,7 @@ export class GrievanceController {
   }
 
   @Post(':id/escalate')
+  @Roles('SUPER_ADMIN', 'RWA_ADMIN')
   @ApiOperation({ summary: 'Escalate a grievance' })
   async escalate(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
     return this.grievanceService.escalate(id);

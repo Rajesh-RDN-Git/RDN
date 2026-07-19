@@ -13,6 +13,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const isProd = process.env.NODE_ENV === 'production';
 
+  // Behind the ALB the socket IP is the load balancer; trust the first proxy hop
+  // so per-IP rate limiting keys on the real client via X-Forwarded-For.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   app.use(helmet());
 
   app.enableCors({

@@ -57,6 +57,37 @@ describe('DealersService', () => {
       mockPrisma.dealer.findUnique.mockResolvedValue(null);
       await expect(service.findOne('x')).rejects.toThrow(NotFoundException);
     });
+
+    it('strips bankAccountDetails for a different dealer (IDOR)', async () => {
+      mockPrisma.dealer.findUnique.mockResolvedValue({
+        id: 'd-1',
+        user: { id: 'owner-user' },
+        bankAccountDetails: { account: '1234567890', ifsc: 'HDFC0001' },
+      });
+      const result: any = await service.findOne('d-1', { id: 'other-user', role: 'DEALER' });
+      expect(result.bankAccountDetails).toBeUndefined();
+      expect(result.id).toBe('d-1');
+    });
+
+    it('returns bankAccountDetails to the owning dealer', async () => {
+      mockPrisma.dealer.findUnique.mockResolvedValue({
+        id: 'd-1',
+        user: { id: 'owner-user' },
+        bankAccountDetails: { account: '1234567890', ifsc: 'HDFC0001' },
+      });
+      const result: any = await service.findOne('d-1', { id: 'owner-user', role: 'DEALER' });
+      expect(result.bankAccountDetails).toEqual({ account: '1234567890', ifsc: 'HDFC0001' });
+    });
+
+    it('returns bankAccountDetails to SUPER_ADMIN', async () => {
+      mockPrisma.dealer.findUnique.mockResolvedValue({
+        id: 'd-1',
+        user: { id: 'owner-user' },
+        bankAccountDetails: { account: '1234567890', ifsc: 'HDFC0001' },
+      });
+      const result: any = await service.findOne('d-1', { id: 'admin', role: 'SUPER_ADMIN' });
+      expect(result.bankAccountDetails).toEqual({ account: '1234567890', ifsc: 'HDFC0001' });
+    });
   });
 
   describe('apply', () => {

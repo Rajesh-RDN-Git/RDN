@@ -104,3 +104,14 @@ describe('OtpService — MSG91 delivery failure surfacing', () => {
     });
   });
 });
+
+describe('OtpService — OTP generation', () => {
+  it('always produces a full-length numeric code (no leading-zero truncation)', () => {
+    const config = makeConfig({ 'app.environment': 'development', 'msg91.otpLength': 6 });
+    const service = new OtpService(config, {} as RedisService);
+    for (let i = 0; i < 500; i++) {
+      const otp = (service as unknown as { generateOtp(): string }).generateOtp();
+      expect(otp).toMatch(/^\d{6}$/);
+    }
+  });
+});

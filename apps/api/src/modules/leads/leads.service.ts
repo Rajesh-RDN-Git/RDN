@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TransactionsService } from '../transactions/transactions.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -89,8 +94,31 @@ export class LeadsService {
     return { data: rows, total, page, limit };
   }
 
-  async findOne(id: string, userRole?: string) {
-    const isSuperAdmin = userRole === 'SUPER_ADMIN';
+  // A lead may only be seen/acted on by SUPER_ADMIN, its buyer, the assigned
+  // dealer, the property owner, or the RWA admin of its society. `caller`
+  // undefined = internal call (no scoping). Throws if the caller is none of these.
+  private assertLeadAccess(
+    lead: {
+      buyerId?: string | null;
+      dealer?: { userId?: string | null } | null;
+      property?: { ownerId?: string | null } | null;
+      society?: { rwaAdminId?: string | null } | null;
+    },
+    caller?: { id: string; role: string },
+  ): void {
+    if (!caller || caller.role === 'SUPER_ADMIN') return;
+    const allowed =
+      lead.buyerId === caller.id ||
+      lead.dealer?.userId === caller.id ||
+      lead.property?.ownerId === caller.id ||
+      lead.society?.rwaAdminId === caller.id;
+    if (!allowed) {
+      throw new ForbiddenException('You do not have access to this lead');
+    }
+  }
+
+  async findOne(id: string, caller?: { id: string; role: string }) {
+    const isSuperAdmin = caller?.role === 'SUPER_ADMIN';
     const lead = await this.prisma.lead.findUnique({
       where: { id },
       include: {
@@ -104,13 +132,14 @@ export class LeadsService {
           select: isSuperAdmin ? { id: true, name: true, phone: true } : { id: true, name: true },
         },
         dealer: {
-          select: { id: true, user: { select: { id: true, name: true } } },
+          select: { id: true, userId: true, user: { select: { id: true, name: true } } },
         },
-        society: { select: { id: true, name: true } },
+        society: { select: { id: true, name: true, rwaAdminId: true } },
       },
     });
 
     if (!lead) throw new NotFoundException('Lead not found');
+    this.assertLeadAccess(lead, caller);
     if (!isSuperAdmin && lead.contactPhone) {
       return { ...lead, contactPhone: '••••••' };
     }
@@ -306,9 +335,16 @@ export class LeadsService {
     return updated;
   }
 
-  async update(id: string, data: UpdateLeadDto) {
-    const lead = await this.prisma.lead.findUnique({ where: { id } });
+  async update(id: string, data: UpdateLeadDto, caller?: { id: string; role: string }) {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id },
+      include: {
+        dealer: { select: { userId: true } },
+        society: { select: { rwaAdminId: true } },
+      },
+    });
     if (!lead) throw new NotFoundException('Lead not found');
+    this.assertLeadAccess(lead, caller);
 
     if (data.status === 'CLOSED') {
       throw new BadRequestException(
@@ -356,9 +392,16 @@ export class LeadsService {
     });
   }
 
-  async closeDeal(id: string, data: CloseDealDto) {
-    const lead = await this.prisma.lead.findUnique({ where: { id } });
+  async closeDeal(id: string, data: CloseDealDto, caller?: { id: string; role: string }) {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id },
+      include: {
+        dealer: { select: { userId: true } },
+        society: { select: { rwaAdminId: true } },
+      },
+    });
     if (!lead) throw new NotFoundException('Lead not found');
+    this.assertLeadAccess(lead, caller);
 
     if (
       lead.status !== 'NEGOTIATING' &&

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { GrievanceService } from './grievance.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -68,6 +68,27 @@ describe('GrievanceService', () => {
     it('should throw NotFoundException', async () => {
       mockPrisma.grievance.findUnique.mockResolvedValue(null);
       await expect(service.findOne('x')).rejects.toThrow(NotFoundException);
+    });
+
+    it('forbids a non-filer non-admin from reading a grievance (IDOR)', async () => {
+      mockPrisma.grievance.findUnique.mockResolvedValue({
+        id: 'g-1',
+        filedBy: 'filer-user',
+        society: { rwaAdminId: 'rwa-user' },
+      });
+      await expect(
+        service.findOne('g-1', { id: 'stranger', role: 'BUYER_TENANT' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows the filer to read their own grievance', async () => {
+      mockPrisma.grievance.findUnique.mockResolvedValue({
+        id: 'g-1',
+        filedBy: 'filer-user',
+        society: { rwaAdminId: 'rwa-user' },
+      });
+      const result = await service.findOne('g-1', { id: 'filer-user', role: 'BUYER_TENANT' });
+      expect(result.id).toBe('g-1');
     });
   });
 
