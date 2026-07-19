@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Observable } from 'rxjs';
 import { tap } from 'rxjs';
 import { PrismaService } from '../../database/prisma.service';
+import { scrubPii } from '../utils/pii-scrub';
 
 const AUDITED_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
@@ -40,7 +41,7 @@ export class AuditLogInterceptor implements NestInterceptor {
               action: `${method} ${url}`,
               entityType,
               entityId,
-              changes: body || {},
+              changes: scrubPii(body) || {},
               ipAddress: request.ip || request.headers['x-forwarded-for'] || null,
             },
           })

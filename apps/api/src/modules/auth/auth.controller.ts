@@ -35,6 +35,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Refresh access token' })
   refreshToken(@Body() body: RefreshTokenDto) {
     return this.authService.refreshToken(body.refreshToken);
