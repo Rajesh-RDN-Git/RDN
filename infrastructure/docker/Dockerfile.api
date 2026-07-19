@@ -34,7 +34,10 @@ RUN pnpm --filter "api..." build
 # ── Stage 3: Production image ─────────────────────────────────────
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache openssl
+# curl is required by the ECS container health check (curl -f /v1/health);
+# node:alpine ships without it, so an uninstalled curl made every health check
+# fail and ECS churned tasks on each deploy.
+RUN apk add --no-cache openssl curl
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
