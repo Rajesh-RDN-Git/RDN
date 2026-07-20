@@ -35,7 +35,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
 
   return createPortal(
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center p-4"
+      className="fixed inset-0 z-modal flex items-end justify-center p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
     >
@@ -45,7 +45,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
         aria-hidden="true"
       />
       <div
-        className={`animate-in relative z-10 w-full max-w-lg rounded-xl border border-border bg-popover p-6 text-popover-foreground shadow-elevation-4 ${className}`}
+        className={`animate-in relative z-10 flex max-h-[90dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-2xl border border-border bg-popover p-6 text-popover-foreground shadow-elevation-4 sm:rounded-xl ${className}`}
       >
         {title && (
           <div className="mb-4 flex items-center justify-between gap-4">
@@ -53,7 +53,7 @@ export function Modal({ isOpen, onClose, title, children, className = '' }: Moda
             <button
               onClick={onClose}
               aria-label="Close"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-fast hover:bg-muted hover:text-foreground"
             >
               <CloseIcon size={18} />
             </button>

@@ -82,7 +82,7 @@ export function Dropdown({ trigger, children, align = 'left', className = '' }: 
                 minWidth: position.width,
               }}
             >
-              <div className="rounded-md border border-border bg-popover py-1 text-popover-foreground shadow-elevation-2">
+              <div className="max-h-[60vh] overflow-y-auto rounded-md border border-border bg-popover py-1 text-popover-foreground shadow-elevation-2">
                 {children}
               </div>
             </div>,

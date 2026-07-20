@@ -222,7 +222,11 @@ export function Header() {
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 right-0 top-header z-sidebar w-72 overflow-y-auto bg-chrome shadow-elevation-4 md:hidden">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-y-0 right-0 top-header z-modal w-72 overflow-y-auto bg-chrome shadow-elevation-4 md:hidden"
+          >
             <div className="flex flex-col p-4">
               <div className="mb-4 rounded-md border border-chrome-border bg-chrome-hover p-3">
                 <p className="mb-2 text-overline text-chrome-muted">City</p>
