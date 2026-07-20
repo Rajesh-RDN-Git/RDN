@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { notificationsApi } from '@/lib/api/notifications';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 type Notif = {
   id: string;
@@ -33,8 +34,11 @@ export default function NotificationsScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async (targetPage: number, append: boolean) => {
+    if (!append) setError(false);
     try {
       const { data } = await notificationsApi.list({
         page: String(targetPage),
@@ -46,8 +50,9 @@ export default function NotificationsScreen() {
       setHasMore(rows.length >= PAGE_SIZE);
       setNotifications((prev) => (append ? [...prev, ...rows] : rows));
     } catch {
-      /* network error — keep current list */
+      if (!append) setError(true);
     }
+    if (!append) setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -146,9 +151,12 @@ export default function NotificationsScreen() {
           loadingMore ? <ActivityIndicator color="#2563eb" style={{ marginVertical: 16 }} /> : null
         }
         ListEmptyComponent={
-          <View style={styles.center}>
-            <Text style={styles.emptyText}>No notifications</Text>
-          </View>
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={() => load(1, false)}
+            emptyText="No notifications"
+          />
         }
       />
     </View>

@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { leadsApi } from '@/lib/api/leads';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 const STATUSES = [
   'ALL',
@@ -76,12 +77,14 @@ export default function LeadsScreen() {
   const [leads, setLeads] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadLeads = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
+    setError(false);
     try {
       const params: Record<string, string> = { limit: '20' };
       if (statusFilter !== 'ALL') params.status = statusFilter;
@@ -91,7 +94,7 @@ export default function LeadsScreen() {
       setLeads(result.data || []);
       setTotal(result.total || 0);
     } catch {
-      /\* ignore \*/;
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, statusFilter]);
@@ -196,11 +199,12 @@ export default function LeadsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={{ padding: 16 }} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No leads found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadLeads}
+            emptyText="No leads found"
+          />
         }
       />
     </View>

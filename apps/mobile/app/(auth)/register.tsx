@@ -96,8 +96,9 @@ export default function RegisterScreen() {
               error={error}
             />
             <Button
-              title={loading ? 'Sending...' : 'Send OTP'}
+              title="Send OTP"
               onPress={handleSendOtp}
+              isLoading={loading}
               style={styles.button}
             />
           </>
@@ -116,8 +117,9 @@ export default function RegisterScreen() {
               error={error}
             />
             <Button
-              title={loading ? 'Verifying...' : 'Create Account'}
+              title="Create Account"
               onPress={handleVerifyOtp}
+              isLoading={loading}
               style={styles.button}
             />
             <Button
