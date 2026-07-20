@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { propertiesApi } from '@/lib/api/properties';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 // Real PropertyStatus values from packages/shared/src/types/property.ts
 const STATUSES = ['ALL', 'ACTIVE', 'DELISTED', 'CLOSED'] as const;
@@ -54,12 +55,14 @@ export default function ManagePropertiesScreen() {
   // free-text `search`/`q` param — we filter the loaded page locally.
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [delistingId, setDelistingId] = useState<string | null>(null);
 
   const loadProperties = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
+    setError(false);
     try {
       const params: Record<string, string> = { limit: '50' };
       if (statusFilter !== 'ALL') params.status = statusFilter;
@@ -70,7 +73,7 @@ export default function ManagePropertiesScreen() {
       setProperties(result.data || []);
       setTotal(result.total ?? result.pagination?.total ?? (result.data?.length || 0));
     } catch {
-      /* network error — list stays empty */
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, statusFilter]);
@@ -279,11 +282,12 @@ export default function ManagePropertiesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.footerSpinner} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No properties found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadProperties}
+            emptyText="No properties found"
+          />
         }
       />
     </View>

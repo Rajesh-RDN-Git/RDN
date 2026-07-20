@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { dealersApi } from '@/lib/api/dealers';
+import { ScreenState } from '@/components/ui/ScreenState';
 import { KYCStatus, ApprovalStatus, TrainingStatus } from '@rdn/shared';
 
 // CertificationStatus not yet in shared dist — mirror types/dealer.ts exactly
@@ -63,6 +64,7 @@ export default function ManageDealersScreen() {
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<DealerFilter>('ALL');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'RWA_ADMIN';
@@ -70,6 +72,7 @@ export default function ManageDealersScreen() {
   const loadDealers = useCallback(async () => {
     if (!isAuthenticated || !isAdmin) return;
     setLoading(true);
+    setError(false);
     try {
       const params: Record<string, string> = { limit: '50' };
       if (filter === 'ACTIVE') params.isActive = 'true';
@@ -81,7 +84,7 @@ export default function ManageDealersScreen() {
       setDealers(result.data || []);
       setTotal(result.total ?? result.pagination?.total ?? (result.data?.length || 0));
     } catch {
-      /* network error — list stays empty */
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, isAdmin, filter]);
@@ -186,11 +189,12 @@ export default function ManageDealersScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.footerSpinner} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No dealers found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadDealers}
+            emptyText="No dealers found"
+          />
         }
       />
     </View>

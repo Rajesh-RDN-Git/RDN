@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { grievanceApi } from '@/lib/api/grievance';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 const STATUSES = ['ALL', 'OPEN', 'IN_PROGRESS', 'ESCALATED', 'RESOLVED', 'CLOSED'];
 
@@ -50,11 +51,13 @@ export default function GrievancesScreen() {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadGrievances = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
+    setError(false);
     try {
       const params: Record<string, string> = { limit: '20' };
       if (statusFilter !== 'ALL') params.status = statusFilter;
@@ -63,7 +66,7 @@ export default function GrievancesScreen() {
       setGrievances(result.data || []);
       setTotal(result.total || 0);
     } catch {
-      /* network error — ignore, user can pull-to-refresh */
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, statusFilter]);
@@ -172,11 +175,12 @@ export default function GrievancesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.loader} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No grievances found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadGrievances}
+            emptyText="No grievances found"
+          />
         }
       />
     </View>
