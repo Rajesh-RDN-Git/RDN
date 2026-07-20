@@ -97,3 +97,5 @@ jobs:
           name: coverage-report
           path: '**/coverage/'
           retention-days: 14
+
+# CI canary: verifying Actions triggers on push to main (2026-07-20)
