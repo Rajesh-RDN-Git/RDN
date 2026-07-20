@@ -82,7 +82,7 @@ export function HeroSection() {
           </div>
 
           {/* Free-text search: locality / sector / society / builder */}
-          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2.5 focus-within:border-brand focus-within:ring-1 focus-within:ring-ring">
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2.5 transition-colors focus-within:border-brand">
             <SearchIcon size={20} className="shrink-0 text-muted-foreground" />
             <input
               type="text"

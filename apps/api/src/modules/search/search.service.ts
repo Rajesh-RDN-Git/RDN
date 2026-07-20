@@ -26,16 +26,21 @@ export class SearchService {
 
     // Free-text search across society name/city/address (address holds locality,
     // sector and road — e.g. "Golf Course Road, Sector 42"), flat and tower/block.
+    // Tokenize: every word must appear in some field, so a multi-word query like
+    // "Sector 42 DLF" matches even when the words aren't a contiguous substring.
     if (query.q) {
-      const q = String(query.q).trim();
-      if (q) {
-        where.OR = [
-          { society: { name: { contains: q, mode: 'insensitive' } } },
-          { society: { city: { contains: q, mode: 'insensitive' } } },
-          { society: { address: { contains: q, mode: 'insensitive' } } },
-          { flatNumber: { contains: q, mode: 'insensitive' } },
-          { towerBlock: { contains: q, mode: 'insensitive' } },
-        ];
+      const words = String(query.q).trim().split(/\s+/).filter(Boolean);
+      if (words.length) {
+        const wordClauses = words.map((w) => ({
+          OR: [
+            { society: { name: { contains: w, mode: 'insensitive' as const } } },
+            { society: { city: { contains: w, mode: 'insensitive' as const } } },
+            { society: { address: { contains: w, mode: 'insensitive' as const } } },
+            { flatNumber: { contains: w, mode: 'insensitive' as const } },
+            { towerBlock: { contains: w, mode: 'insensitive' as const } },
+          ],
+        }));
+        where.AND = [...((where.AND as any[]) ?? []), ...wordClauses];
       }
     }
 
@@ -76,9 +81,10 @@ export class SearchService {
         .map((s) => s.trim())
         .filter(Boolean);
       if (labels.length) {
-        where.AND = labels.map((label) => ({
+        const amenityClauses = labels.map((label) => ({
           amenities: { string_contains: label },
         }));
+        where.AND = [...((where.AND as any[]) ?? []), ...amenityClauses];
       }
     }
 

@@ -10,6 +10,7 @@ function makeConfig(values: Record<string, unknown>): ConfigService {
 // A valid, callable lead assigned to dealer user 'd-user'.
 const lead = {
   id: 'lead-1',
+  buyerId: 'b-user',
   dealer: { userId: 'd-user', user: { id: 'd-user', phone: '+919999900020' } },
   buyer: { phone: '+919999900005' },
   contactPhone: null,
@@ -30,5 +31,18 @@ describe('CallService — Exotel configuration safety', () => {
     const service = new CallService(makeConfig({ 'app.environment': 'development' }), prismaStub);
     const result = await service.initiateCall('d-user', 'lead-1');
     expect(result.status).toBe('mock');
+  });
+
+  it('lets the buyer initiate the call too (not just the dealer)', async () => {
+    const service = new CallService(makeConfig({ 'app.environment': 'development' }), prismaStub);
+    const result = await service.initiateCall('b-user', 'lead-1');
+    expect(result.status).toBe('mock');
+  });
+
+  it('rejects a caller who is neither the buyer nor the dealer', async () => {
+    const service = new CallService(makeConfig({ 'app.environment': 'development' }), prismaStub);
+    await expect(service.initiateCall('stranger', 'lead-1')).rejects.toThrow(
+      /buyer or the assigned dealer/,
+    );
   });
 });

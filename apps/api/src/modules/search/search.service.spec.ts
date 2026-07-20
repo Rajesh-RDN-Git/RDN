@@ -87,17 +87,19 @@ describe('SearchService', () => {
       );
     });
 
-    it('q matches society address so locality/sector text is searchable', async () => {
+    it('tokenizes q so each word must match some field (incl. society address)', async () => {
       mockPrisma.property.findMany.mockResolvedValue([]);
       mockPrisma.property.count.mockResolvedValue(0);
 
-      await service.searchProperties({ q: 'Golf Course Road' } as any);
+      await service.searchProperties({ q: 'Sector 42 DLF' } as any);
 
       const where = mockPrisma.property.findMany.mock.calls[0][0].where;
-      const orMatchesAddress = where.OR.some(
-        (c: any) => c.society?.address?.contains === 'Golf Course Road',
+      // One AND clause per word; each is an OR across the searchable fields.
+      expect(where.AND).toHaveLength(3);
+      const firstWordMatchesAddress = where.AND[0].OR.some(
+        (c: any) => c.society?.address?.contains === 'Sector',
       );
-      expect(orMatchesAddress).toBe(true);
+      expect(firstWordMatchesAddress).toBe(true);
     });
 
     it('should return paginated results', async () => {
