@@ -1,4 +1,9 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { EncryptionService } from '../../common/crypto/encryption.service';
 import type { QueryAdminUsersDto } from './dto/query-admin-users.dto';
@@ -100,6 +105,59 @@ export class AdminService {
     ]);
 
     return { data, total, page, limit };
+  }
+
+  // SUPER_ADMIN sets a user's role. Only the "standalone" roles (SUPER_ADMIN, OWNER,
+  // BUYER_TENANT) are settable here — DEALER and RWA_ADMIN require linked society records
+  // and go through the Add-Dealer / society-assignment flows instead.
+  async setUserRole(id: string, role: string, actor: { id: string; role: string }): Promise<any> {
+    const target = await this.prisma.user.findUnique({ where: { id } });
+    if (!target) throw new NotFoundException('User not found');
+
+    if (role === 'DEALER' || role === 'RWA_ADMIN') {
+      throw new BadRequestException('Assign this role via the Add Dealer / RWA assignment flow');
+    }
+
+    if (actor.id === id && role !== 'SUPER_ADMIN') {
+      throw new BadRequestException('You cannot remove your own Super Admin role');
+    }
+
+    const demotingFromAdmin = target.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN';
+    if (demotingFromAdmin) {
+      const admins = await this.prisma.user.count({
+        where: { role: 'SUPER_ADMIN', status: 'ACTIVE' },
+      });
+      if (admins <= 1) {
+        throw new BadRequestException('Cannot demote the last active Super Admin');
+      }
+    }
+
+    // Clean up linked records so a demotion never leaves dangling references.
+    const data: Prisma.UserUncheckedUpdateInput = { role: role as any };
+    if (target.role === 'RWA_ADMIN' && role !== 'RWA_ADMIN') {
+      await this.prisma.society.updateMany({
+        where: { rwaAdminId: id },
+        data: { rwaAdminId: null },
+      });
+      data.primarySocietyId = null;
+    }
+    if (target.role === 'DEALER' && role !== 'DEALER') {
+      await this.prisma.dealer.updateMany({ where: { userId: id }, data: { isActive: false } });
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async onboardSociety(data: OnboardSocietyDto): Promise<any> {

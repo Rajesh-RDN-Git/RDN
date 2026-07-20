@@ -151,6 +151,14 @@ export default function RootLayout() {
               options={{ title: 'Verification Queue', headerBackTitle: 'Back' }}
             />
             <Stack.Screen
+              name="manage/users/index"
+              options={{ title: 'Manage Users', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
+              name="manage/users/[id]"
+              options={{ title: 'User Details', headerBackTitle: 'Back' }}
+            />
+            <Stack.Screen
               name="grievances/new"
               options={{ title: 'Raise a grievance', headerBackTitle: 'Back' }}
             />

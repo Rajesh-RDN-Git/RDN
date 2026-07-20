@@ -69,6 +69,7 @@ const navByRole: Record<string, NavItem[]> = {
     { href: '/dashboard/properties', label: 'Properties', icon: HomeIcon },
     { href: '/dashboard/verification-queue', label: 'Verification Queue', icon: CheckIcon },
     { href: '/dashboard/dealers', label: 'Dealers', icon: UsersIcon },
+    { href: '/dashboard/users', label: 'Users', icon: ShieldIcon },
     { href: '/dashboard/leads', label: 'Leads', icon: BriefcaseIcon },
     { href: '/dashboard/commissions', label: 'Commissions', icon: FileTextIcon },
     { href: '/dashboard/reports', label: 'Reports', icon: BarChartIcon },

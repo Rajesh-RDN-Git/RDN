@@ -62,6 +62,12 @@ const MANAGE_ROWS: ManageRow[] = [
     roles: ['SUPER_ADMIN'],
   },
   {
+    label: 'Users',
+    subtitle: 'View users and change roles',
+    route: '/manage/users',
+    roles: ['SUPER_ADMIN'],
+  },
+  {
     label: 'Commissions',
     subtitle: 'View commission records',
     route: '/commissions',

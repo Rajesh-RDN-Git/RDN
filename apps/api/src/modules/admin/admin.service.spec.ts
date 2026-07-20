@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../../database/prisma.service';
 import { EncryptionService } from '../../common/crypto/encryption.service';
@@ -9,9 +9,9 @@ describe('AdminService', () => {
 
   const mockPrisma = {
     user: { count: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
-    society: { count: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
+    society: { count: jest.fn(), findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
     property: { count: jest.fn() },
-    dealer: { count: jest.fn() },
+    dealer: { count: jest.fn(), updateMany: jest.fn() },
     lead: { count: jest.fn() },
     grievance: { count: jest.fn() },
   };
@@ -144,6 +144,96 @@ describe('AdminService', () => {
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'u-1' },
         data: { role: 'RWA_ADMIN' },
+      });
+    });
+  });
+
+  describe('setUserRole', () => {
+    const actor = { id: 'admin-1', role: 'SUPER_ADMIN' };
+
+    it('promotes a buyer to a standalone role', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-2', role: 'BUYER_TENANT' });
+      mockPrisma.user.update.mockResolvedValue({ id: 'u-2', role: 'OWNER' });
+
+      const result = await service.setUserRole('u-2', 'OWNER', actor);
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'u-2' }, data: { role: 'OWNER' } }),
+      );
+      expect(result).toEqual({ id: 'u-2', role: 'OWNER' });
+    });
+
+    it('throws NotFound when the user does not exist', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.setUserRole('missing', 'OWNER', actor)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('rejects assigning DEALER (needs the Add-Dealer flow)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-2', role: 'BUYER_TENANT' });
+      await expect(service.setUserRole('u-2', 'DEALER', actor)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects assigning RWA_ADMIN (needs the society assignment flow)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-2', role: 'BUYER_TENANT' });
+      await expect(service.setUserRole('u-2', 'RWA_ADMIN', actor)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('blocks an admin from removing their own super-admin role', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: 'SUPER_ADMIN' });
+      await expect(service.setUserRole('admin-1', 'OWNER', actor)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('blocks demoting the last active super admin', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-9', role: 'SUPER_ADMIN' });
+      mockPrisma.user.count.mockResolvedValue(1);
+      await expect(service.setUserRole('u-9', 'OWNER', actor)).rejects.toThrow(BadRequestException);
+    });
+
+    it('allows demoting a super admin when others remain', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-9', role: 'SUPER_ADMIN' });
+      mockPrisma.user.count.mockResolvedValue(3);
+      mockPrisma.user.update.mockResolvedValue({ id: 'u-9', role: 'OWNER' });
+
+      await service.setUserRole('u-9', 'OWNER', actor);
+      expect(mockPrisma.user.update).toHaveBeenCalled();
+    });
+
+    it('clears RWA links when demoting an RWA admin', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-3', role: 'RWA_ADMIN' });
+      mockPrisma.society.updateMany.mockResolvedValue({ count: 1 });
+      mockPrisma.user.update.mockResolvedValue({ id: 'u-3', role: 'OWNER' });
+
+      await service.setUserRole('u-3', 'OWNER', actor);
+
+      expect(mockPrisma.society.updateMany).toHaveBeenCalledWith({
+        where: { rwaAdminId: 'u-3' },
+        data: { rwaAdminId: null },
+      });
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { role: 'OWNER', primarySocietyId: null } }),
+      );
+    });
+
+    it('deactivates dealer rows when demoting a dealer', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u-4', role: 'DEALER' });
+      mockPrisma.dealer.updateMany.mockResolvedValue({ count: 2 });
+      mockPrisma.user.update.mockResolvedValue({ id: 'u-4', role: 'OWNER' });
+
+      await service.setUserRole('u-4', 'OWNER', actor);
+
+      expect(mockPrisma.dealer.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u-4' },
+        data: { isActive: false },
       });
     });
   });

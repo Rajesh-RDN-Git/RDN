@@ -40,7 +40,12 @@ export const updateUserSchema = z.object({
   avatarUrl: optionalUrl,
 });
 
+export const updateUserRoleSchema = z.object({
+  role: z.enum(['SUPER_ADMIN', 'RWA_ADMIN', 'DEALER', 'OWNER', 'BUYER_TENANT']),
+});
+
 export type SendOtpInput = z.infer<typeof sendOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>;
