@@ -10,7 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
+import { Modal } from '@/components/ui/modal';
 import { EyeIcon, SearchIcon } from '@/components/ui/icons';
+import { dealersApi } from '@/lib/api/dealers.api';
+import { showToast } from '@/stores/toast-store';
 import Link from 'next/link';
 
 const statusVariant = (s: string) => {
@@ -59,6 +62,44 @@ export default function PropertiesPage() {
   const isOwner = user?.role === 'OWNER';
   const isDealer = user?.role === 'DEALER';
   const isRwa = user?.role === 'RWA_ADMIN';
+  const canAssign = user?.role === 'SUPER_ADMIN' || user?.role === 'RWA_ADMIN';
+
+  const [assignFor, setAssignFor] = useState<any | null>(null);
+  const [assignDealers, setAssignDealers] = useState<any[]>([]);
+  const [assignDealerId, setAssignDealerId] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  const openAssign = async (property: any) => {
+    setAssignFor(property);
+    setAssignDealerId(property.assignedDealerId || '');
+    setAssignDealers([]);
+    try {
+      const societyId = property.society?.id || property.societyId;
+      const { data } = await dealersApi.list({ societyId, isActive: 'true', limit: 100 });
+      const result = (data as any).data || data;
+      setAssignDealers(result.data || []);
+    } catch {
+      showToast.error('Could not load dealers for this society');
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!assignFor || !assignDealerId) return;
+    setAssigning(true);
+    try {
+      await propertiesApi.assignDealer(assignFor.id, assignDealerId);
+      showToast.success('Dealer assigned');
+      setAssignFor(null);
+      fetchProperties();
+    } catch (e) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Could not assign the dealer';
+      showToast.error(msg);
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   const fetchProperties = async () => {
     if (isBuyer) return;
@@ -185,6 +226,14 @@ export default function PropertiesPage() {
               Edit
             </Link>
           )}
+          {canAssign && (
+            <button
+              onClick={() => openAssign(item)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-sm text-foreground transition-colors hover:bg-muted"
+            >
+              {item.assignedDealerId ? 'Reassign' : 'Assign'}
+            </button>
+          )}
         </div>
       ),
     },
@@ -297,6 +346,46 @@ export default function PropertiesPage() {
         onPageChange={setPage}
         className="mt-4"
       />
+
+      <Modal isOpen={!!assignFor} onClose={() => setAssignFor(null)} title="Assign dealer">
+        {assignFor && (
+          <div className="space-y-4">
+            <p className="text-body-sm text-muted-foreground">
+              Assign a dealer from {assignFor.society?.name || 'this society'} to{' '}
+              <span className="font-medium text-foreground">
+                {assignFor.flatNumber}
+                {assignFor.towerBlock ? `, ${assignFor.towerBlock}` : ''}
+              </span>
+              .
+            </p>
+            <Select
+              label="Active dealer"
+              value={assignDealerId}
+              onChange={(e) => setAssignDealerId(e.target.value)}
+            >
+              <option value="">Select a dealer…</option>
+              {assignDealers.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.user?.name || d.name || 'Dealer'}
+                </option>
+              ))}
+            </Select>
+            {assignDealers.length === 0 && (
+              <p className="text-body-sm text-muted-foreground">
+                No active dealers in this society yet.
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setAssignFor(null)} disabled={assigning}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssign} isLoading={assigning} disabled={!assignDealerId}>
+                Assign
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -35,22 +35,28 @@ const statusColors: Record<string, string> = {
   LOST: '#6b7280',
 };
 
-// Full CRM status flow — mirrors NEXT_ACTIONS map from the web CRM board.
-const NEXT_ACTIONS: Record<string, Array<{ next: string; label: string }>> = {
-  NEW: [{ next: 'CONTACTED', label: 'Mark Called' }],
-  CONTACTED: [
-    { next: 'QUALIFIED', label: 'Qualified' },
-    { next: 'INTERESTED', label: 'Interested' },
-    { next: 'NOT_PICKED', label: 'Not Picked' },
-  ],
-  NOT_PICKED: [{ next: 'CONTACTED', label: 'Call Again' }],
-  INTERESTED: [{ next: 'QUALIFIED', label: 'Qualified' }],
-  QUALIFIED: [{ next: 'VISIT_SCHEDULED', label: 'Plan Visit' }],
-  VISIT_SCHEDULED: [{ next: 'VISITED', label: 'Mark Visit Done' }],
-  VISITED: [{ next: 'NEGOTIATING', label: 'Start Negotiation' }],
-  NEGOTIATING: [{ next: 'MEETING_ARRANGED', label: 'Arrange Meeting' }],
-  MEETING_ARRANGED: [{ next: 'DEAL_OPEN', label: 'Open Deal' }],
-};
+// Full status list — the detail screen lets a dealer/admin pick any status directly
+// (parity with the web lead-status dropdown).
+const ALL_STATUSES = [
+  'NEW',
+  'CONTACTED',
+  'NOT_PICKED',
+  'INTERESTED',
+  'QUALIFIED',
+  'VISIT_SCHEDULED',
+  'VISITED',
+  'NEGOTIATING',
+  'MEETING_ARRANGED',
+  'DEAL_OPEN',
+  'CLOSING',
+  'CLOSED',
+  'LOST',
+];
+const statusLabel = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase());
 
 // Statuses from which a deal can be closed.
 const CLOSEABLE = new Set(['NEGOTIATING', 'MEETING_ARRANGED', 'DEAL_OPEN', 'CLOSING']);
@@ -104,6 +110,11 @@ export default function LeadDetailScreen() {
       // Route through the Plan Visit sheet so a date can be attached.
       setVisitDate(null);
       setSheet('visit');
+      return;
+    }
+    if (status === 'CLOSED') {
+      // Route through the close-deal sheet so a transaction + commission are created.
+      setSheet('deal');
       return;
     }
     setUpdating(true);
@@ -197,19 +208,15 @@ export default function LeadDetailScreen() {
   const needsOwnerApproval =
     isOwner && lead?.status === 'VISIT_SCHEDULED' && !lead?.visitApprovedByOwner;
 
-  // Build ActionSheet actions from NEXT_ACTIONS for the current status.
-  const statusSheetActions: SheetAction[] = (NEXT_ACTIONS[lead?.status] || []).map((a) => ({
-    label: a.label,
-    onPress: () => handleStatusAction(a.next),
-  }));
-  // Always offer "Lost" on non-terminal statuses for DEALER / SUPER_ADMIN.
-  if ((role === 'DEALER' || role === 'SUPER_ADMIN') && !isTerminal && lead?.status !== 'LOST') {
-    statusSheetActions.push({
-      label: 'Mark as Lost',
-      onPress: () => handleStatusAction('LOST'),
-      destructive: true,
-    });
-  }
+  // Full status list — pick any status directly (parity with the web dropdown). CLOSED and
+  // VISIT_SCHEDULED are routed to their sheets inside handleStatusAction.
+  const statusSheetActions: SheetAction[] = ALL_STATUSES.filter((s) => s !== lead?.status).map(
+    (s) => ({
+      label: statusLabel(s),
+      onPress: () => handleStatusAction(s),
+      destructive: s === 'LOST',
+    }),
+  );
 
   // ─── render ────────────────────────────────────────────────────────────────
 
