@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { usersApi } from '@/lib/api/users.api';
+import { clearTokens } from '@/lib/auth';
 import { useAuthStore } from '@/stores/auth-store';
+import { showToast } from '@/stores/toast-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,12 +15,30 @@ import { FileGrievanceModal } from '@/components/grievance/file-grievance-modal'
 type TabKey = 'profile' | 'notifications' | 'security';
 
 export default function SettingsPage() {
-  const { user, setUser } = useAuthStore();
+  const router = useRouter();
+  const { user, setUser, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabKey>('profile');
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirm.trim() !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      await usersApi.deleteAccount();
+      clearTokens();
+      logout();
+      showToast.success('Your account has been deleted');
+      router.push('/');
+    } catch {
+      showToast.error('Could not delete your account. Please try again.');
+      setDeleting(false);
+    }
+  };
   const [saveError, setSaveError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -277,6 +298,30 @@ export default function SettingsPage() {
                     Current Session
                   </Badge>
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-error-border bg-error-bg/30 p-5">
+              <p className="text-label-md text-error-text">Delete account</p>
+              <p className="mt-0.5 text-body-sm text-muted-foreground">
+                Permanently deletes your account and removes your personal data. This cannot be
+                undone. To confirm, type <span className="font-semibold">DELETE</span> below.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Input
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder="DELETE"
+                  className="max-w-[160px]"
+                />
+                <Button
+                  variant="danger"
+                  isLoading={deleting}
+                  disabled={deleteConfirm.trim() !== 'DELETE'}
+                  onClick={handleDeleteAccount}
+                >
+                  Delete my account
+                </Button>
               </div>
             </div>
           </div>

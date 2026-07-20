@@ -36,4 +36,7 @@ export const usersApi = {
   // SUPER_ADMIN: set a standalone role (SUPER_ADMIN / OWNER / BUYER_TENANT).
   updateRole: (id: string, role: string) =>
     apiClient.patch<IUser>(`/admin/users/${id}/role`, { role }),
+
+  // Self-service account deletion (DPDP erasure — soft-delete + PII scrub, throttled 3/hr).
+  deleteAccount: () => apiClient.delete('/users/me'),
 };

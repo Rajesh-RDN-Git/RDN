@@ -15,4 +15,7 @@ export const propertiesApi = {
 
   updateVerification: (id: string, decision: 'RWA_APPROVED' | 'REJECTED', reason?: string) =>
     apiClient.patch(`/properties/${id}/verification`, { decision, reason }),
+
+  assignDealer: (id: string, dealerId: string) =>
+    apiClient.patch(`/properties/${id}/assign-dealer`, { dealerId }),
 };

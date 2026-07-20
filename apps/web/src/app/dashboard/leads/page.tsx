@@ -16,28 +16,28 @@ import { Input } from '@/components/ui/input';
 import { CheckIcon, PhoneIcon, ChatIcon, SearchIcon } from '@/components/ui/icons';
 import { showToast } from '@/stores/toast-store';
 
-// The dealer CRM pipeline. Each status maps to the actions available from it.
-// CLOSED/LOST are terminal; closing the deal uses the close-deal endpoint.
-// "Plan Visit" (-> VISIT_SCHEDULED) opens an inline date picker.
-type LeadAction = { next: string; label: string };
-const NEXT_ACTIONS: Record<string, LeadAction[]> = {
-  NEW: [{ next: 'CONTACTED', label: 'Mark Called' }],
-  CONTACTED: [
-    { next: 'QUALIFIED', label: 'Qualified' },
-    { next: 'INTERESTED', label: 'Interested' },
-    { next: 'NOT_PICKED', label: 'Not Picked' },
-  ],
-  NOT_PICKED: [{ next: 'CONTACTED', label: 'Call Again' }],
-  INTERESTED: [{ next: 'QUALIFIED', label: 'Qualified' }],
-  QUALIFIED: [{ next: 'VISIT_SCHEDULED', label: 'Plan Visit' }],
-  VISIT_SCHEDULED: [{ next: 'VISITED', label: 'Mark Visit Done' }],
-  VISITED: [{ next: 'NEGOTIATING', label: 'Start Negotiation' }],
-  NEGOTIATING: [{ next: 'MEETING_ARRANGED', label: 'Arrange Meeting' }],
-  MEETING_ARRANGED: [{ next: 'DEAL_OPEN', label: 'Open Deal' }],
-};
-
-// Statuses from which a deal can be closed (creates txn + commission).
-const CLOSEABLE = ['NEGOTIATING', 'MEETING_ARRANGED', 'DEAL_OPEN', 'CLOSING'];
+// Full pipeline for the status dropdown. CLOSED routes through the close-deal flow (so a
+// transaction + commission are created); VISIT_SCHEDULED opens the date picker first.
+const ALL_STATUSES = [
+  'NEW',
+  'CONTACTED',
+  'NOT_PICKED',
+  'INTERESTED',
+  'QUALIFIED',
+  'VISIT_SCHEDULED',
+  'VISITED',
+  'NEGOTIATING',
+  'MEETING_ARRANGED',
+  'DEAL_OPEN',
+  'CLOSING',
+  'CLOSED',
+  'LOST',
+];
+const statusLabel = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/^\w/, (c) => c.toUpperCase());
 
 // Human-friendly labels for the lead's origin so admins can tell an in-app
 // enquiry from a call-back / manual entry at a glance.
@@ -400,10 +400,8 @@ export default function LeadsPage() {
       header: '',
       render: (item: any) => {
         const canAdvance = user?.role === 'DEALER' || user?.role === 'SUPER_ADMIN';
-        const actions = NEXT_ACTIONS[item.status] || [];
         const isScheduling = scheduleFor === item.id;
         const isAdvancing = advancingId === item.id;
-        const isTerminal = item.status === 'CLOSED' || item.status === 'LOST';
         // Dealers can place a masked call to the buyer on any open lead.
         const canCall =
           user?.role === 'DEALER' &&
@@ -472,39 +470,34 @@ export default function LeadsPage() {
                 </Button>
               </div>
             ) : (
-              canAdvance &&
-              actions.map((a) => (
-                <Button
-                  key={a.next}
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (a.next === 'VISIT_SCHEDULED') {
+              canAdvance && (
+                <Select
+                  aria-label="Change lead status"
+                  value={item.status}
+                  disabled={isAdvancing}
+                  className="min-w-[160px]"
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next === item.status) return;
+                    // CLOSED goes through the close-deal flow (creates txn + commission);
+                    // VISIT_SCHEDULED opens the date picker first.
+                    if (next === 'VISIT_SCHEDULED') {
                       setScheduleFor(item.id);
                       setScheduleDate(tomorrowISO());
+                    } else if (next === 'CLOSED') {
+                      setCloseDealModal(item);
                     } else {
-                      handleAdvanceStatus(item.id, a.next);
+                      handleAdvanceStatus(item.id, next);
                     }
                   }}
-                  isLoading={isAdvancing}
                 >
-                  {a.label}
-                </Button>
-              ))
-            )}
-            {canAdvance && CLOSEABLE.includes(item.status) && (
-              <Button size="sm" onClick={() => setCloseDealModal(item)}>
-                Close Deal
-              </Button>
-            )}
-            {canAdvance && !isTerminal && !isScheduling && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleAdvanceStatus(item.id, 'LOST')}
-              >
-                Lost
-              </Button>
+                  {ALL_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {statusLabel(s)}
+                    </option>
+                  ))}
+                </Select>
+              )
             )}
             {(user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') &&
               item.status === 'VISIT_SCHEDULED' &&
