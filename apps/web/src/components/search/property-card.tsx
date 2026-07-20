@@ -114,7 +114,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
           {/* Heart icon */}
           <button
             onClick={toggleShortlist}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-card shadow-elevation-1 transition-all hover:bg-muted hover:scale-110"
+            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-elevation-1 transition-all hover:bg-muted hover:scale-110"
             aria-label={shortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
           >
             <HeartIcon

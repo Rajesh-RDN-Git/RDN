@@ -170,7 +170,7 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
               href={item.href}
               onClick={onClose}
               aria-current={active ? 'page' : undefined}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-fast ${
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-fast ${
                 active ? 'bg-brand-subtle text-brand-text' : 'text-foreground hover:bg-subtle'
               }`}
             >
@@ -191,7 +191,7 @@ export function Sidebar({ mobile, onClose }: SidebarProps) {
             onClose?.();
             logout();
           }}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors duration-fast hover:bg-subtle"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground transition-colors duration-fast hover:bg-subtle"
         >
           <LogoutIcon size={18} className="text-muted-foreground" />
           <span>Logout</span>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Avatar } from '@/components/ui/avatar';
@@ -54,10 +55,22 @@ export function Header() {
     };
   }, [mobileOpen]);
 
+  // Close the drawer on route change and on Escape.
+  const pathname = usePathname();
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMobileOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
+
   const navLink =
     'rounded-md px-3 py-2 text-sm font-medium text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground';
   const iconBtn =
-    'inline-flex h-9 w-9 items-center justify-center rounded-md text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground';
+    'inline-flex h-11 w-11 items-center justify-center rounded-md text-chrome-muted transition-colors duration-fast hover:bg-chrome-hover hover:text-chrome-foreground';
 
   return (
     <header className="sticky top-0 z-header border-b border-chrome-border bg-chrome">
@@ -233,7 +246,7 @@ export function Header() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCity('')}
-                    className={`rounded-full px-3 py-1 text-xs ${!selectedCity ? 'bg-brand text-brand-foreground' : 'bg-chrome-border text-chrome-muted'}`}
+                    className={`rounded-full px-3 py-2 text-xs ${!selectedCity ? 'bg-brand text-brand-foreground' : 'bg-chrome-border text-chrome-muted'}`}
                   >
                     All
                   </button>
@@ -241,7 +254,7 @@ export function Header() {
                     <button
                       key={city}
                       onClick={() => setSelectedCity(city)}
-                      className={`rounded-full px-3 py-1 text-xs ${selectedCity === city ? 'bg-brand text-brand-foreground' : 'bg-chrome-border text-chrome-muted'}`}
+                      className={`rounded-full px-3 py-2 text-xs ${selectedCity === city ? 'bg-brand text-brand-foreground' : 'bg-chrome-border text-chrome-muted'}`}
                     >
                       {city}
                     </button>

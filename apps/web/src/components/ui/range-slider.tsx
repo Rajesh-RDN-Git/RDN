@@ -70,7 +70,7 @@ export function RangeSlider({
   const maxPercent = getPercent(value[1]);
 
   const handleClasses =
-    'absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border-2 border-brand bg-card shadow-elevation-1 transition-shadow duration-fast hover:shadow-elevation-2 active:cursor-grabbing';
+    'absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none rounded-full border-2 border-brand bg-card shadow-elevation-1 transition-shadow duration-fast hover:shadow-elevation-2 active:cursor-grabbing';
 
   return (
     <div className={`space-y-3 ${className}`}>

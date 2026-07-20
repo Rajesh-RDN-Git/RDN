@@ -1,13 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { NotificationBell } from '@/components/layout/notification-bell';
 import { MenuIcon, HomeIcon } from '@/components/ui/icons';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Lock body scroll while the drawer is open; close on route change / Escape.
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
+  useEffect(() => setSidebarOpen(false), [pathname]);
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSidebarOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [sidebarOpen]);
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -20,7 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-y-0 left-0 z-modal w-72 bg-muted shadow-elevation-4">
+          <div className="fixed inset-y-0 left-0 z-modal w-72 overflow-y-auto bg-muted shadow-elevation-4">
             <Sidebar mobile onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
@@ -31,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="Open menu"
-            className="grid h-9 w-9 place-items-center rounded-md text-foreground transition-colors duration-fast hover:bg-muted lg:hidden"
+            className="grid h-11 w-11 place-items-center rounded-md text-foreground transition-colors duration-fast hover:bg-muted lg:hidden"
           >
             <MenuIcon size={20} />
           </button>
