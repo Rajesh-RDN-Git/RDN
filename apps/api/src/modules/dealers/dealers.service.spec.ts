@@ -11,6 +11,7 @@ describe('DealersService', () => {
     dealer: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
@@ -120,6 +121,32 @@ describe('DealersService', () => {
       mockPrisma.dealer.findUnique.mockResolvedValue({ id: 'd-existing' });
       await expect(service.apply({ societyId: 'soc-1' } as any, 'user-1')).rejects.toThrow(
         ConflictException,
+      );
+    });
+  });
+
+  describe('setOwnAvailability', () => {
+    it('lets a cleared dealer pause themselves (isActive=false)', async () => {
+      mockPrisma.dealer.findFirst.mockResolvedValue({ id: 'd-1', userId: 'u-1', societyId: 's-1' });
+      mockPrisma.dealer.findUnique.mockResolvedValue({
+        id: 'd-1',
+        userId: 'u-1',
+        societyId: 's-1',
+        isActive: true,
+      });
+      mockPrisma.dealer.update.mockResolvedValue({ id: 'd-1', isActive: false });
+
+      await service.setOwnAvailability('u-1', false);
+      expect(mockPrisma.dealer.update).toHaveBeenCalledWith({
+        where: { id: 'd-1' },
+        data: { isActive: false },
+      });
+    });
+
+    it('throws if the caller is not a dealer', async () => {
+      mockPrisma.dealer.findFirst.mockResolvedValue(null);
+      await expect(service.setOwnAvailability('not-a-dealer', false)).rejects.toThrow(
+        NotFoundException,
       );
     });
   });
