@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -16,6 +16,7 @@ describe('PropertiesService', () => {
       count: jest.fn(),
     },
     society: { findUnique: jest.fn() },
+    dealer: { findFirst: jest.fn(), findUnique: jest.fn() },
   };
 
   const mockNotificationsService = {
@@ -33,6 +34,7 @@ describe('PropertiesService', () => {
 
     service = module.get<PropertiesService>(PropertiesService);
     jest.clearAllMocks();
+    mockPrisma.dealer.findFirst.mockResolvedValue(null);
   });
 
   describe('findAll', () => {
@@ -120,6 +122,66 @@ describe('PropertiesService', () => {
       await expect(service.create({ societyId: 'x' } as any, 'owner-1')).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('auto-assigns an active society dealer on create', async () => {
+      mockPrisma.society.findUnique.mockResolvedValue({ id: 'soc-1' });
+      mockPrisma.dealer.findFirst.mockResolvedValue({ id: 'dealer-9' });
+      mockPrisma.property.create.mockResolvedValue({ id: 'prop-1', society: { name: 'S' } });
+
+      await service.create(
+        {
+          societyId: 'soc-1',
+          flatNumber: 'A-101',
+          towerBlock: 'Tower A',
+          type: 'APARTMENT',
+          transactionType: 'SALE',
+          bhk: 3,
+          carpetArea: 1200,
+        } as any,
+        'owner-1',
+      );
+
+      expect(mockPrisma.dealer.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { societyId: 'soc-1', isActive: true } }),
+      );
+      expect(mockPrisma.property.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ assignedDealerId: 'dealer-9' }),
+        }),
+      );
+    });
+  });
+
+  describe('assignDealer', () => {
+    it('assigns a dealer that belongs to the property society', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({ id: 'prop-1', societyId: 'soc-1' });
+      mockPrisma.dealer.findUnique.mockResolvedValue({
+        id: 'dealer-9',
+        societyId: 'soc-1',
+        isActive: true,
+      });
+      mockPrisma.property.update.mockResolvedValue({ id: 'prop-1', assignedDealerId: 'dealer-9' });
+
+      await service.assignDealer('prop-1', 'dealer-9');
+
+      expect(mockPrisma.property.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'prop-1' },
+          data: { assignedDealerId: 'dealer-9' },
+        }),
+      );
+    });
+
+    it('rejects a dealer from a different society', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({ id: 'prop-1', societyId: 'soc-1' });
+      mockPrisma.dealer.findUnique.mockResolvedValue({ id: 'dealer-9', societyId: 'soc-2' });
+      await expect(service.assignDealer('prop-1', 'dealer-9')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFound when the property is missing', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue(null);
+      await expect(service.assignDealer('x', 'dealer-9')).rejects.toThrow(NotFoundException);
     });
   });
 

@@ -11,7 +11,12 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { createPropertySchema, updatePropertySchema } from '@rdn/shared';
+import {
+  createPropertySchema,
+  updatePropertySchema,
+  assignPropertyDealerSchema,
+  type AssignPropertyDealerInput,
+} from '@rdn/shared';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
@@ -88,6 +93,18 @@ export class PropertiesController {
     @CurrentUser() user: { id: string; role: string },
   ): Promise<any> {
     return this.propertiesService.update(id, body, user.id, user.role);
+  }
+
+  @Patch(':id/assign-dealer')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN', 'RWA_ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Assign a dealer to a property' })
+  async assignDealer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(assignPropertyDealerSchema)) body: AssignPropertyDealerInput,
+  ): Promise<any> {
+    return this.propertiesService.assignDealer(id, body.dealerId);
   }
 
   @Delete(':id')

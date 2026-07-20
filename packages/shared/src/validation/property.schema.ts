@@ -30,5 +30,10 @@ export const updatePropertySchema = createPropertySchema.partial().omit({
   societyId: true,
 });
 
+export const assignPropertyDealerSchema = z.object({
+  dealerId: z.string().uuid(),
+});
+
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
 export type UpdatePropertyInput = z.infer<typeof updatePropertySchema>;
+export type AssignPropertyDealerInput = z.infer<typeof assignPropertyDealerSchema>;

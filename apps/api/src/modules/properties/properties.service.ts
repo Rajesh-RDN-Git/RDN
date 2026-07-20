@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { QueryPropertiesDto } from './dto/query-properties.dto';
@@ -125,10 +130,17 @@ export class PropertiesService {
     });
     if (!society) throw new NotFoundException('Society not found');
 
+    // Auto-assign the listing to an active dealer in the society (mirrors lead routing).
+    // Falls back to null when the society has no active dealer yet.
+    const autoDealer = await this.prisma.dealer.findFirst({
+      where: { societyId: data.societyId, isActive: true },
+    });
+
     const property = await this.prisma.property.create({
       data: {
         societyId: data.societyId,
         ownerId,
+        assignedDealerId: autoDealer?.id ?? null,
         flatNumber: data.flatNumber,
         towerBlock: data.towerBlock,
         type: data.type as any,
@@ -170,6 +182,25 @@ export class PropertiesService {
       .catch(() => {});
 
     return property;
+  }
+
+  // SUPER_ADMIN / RWA_ADMIN manually (re)assigns a listing to a dealer. The dealer must
+  // belong to the same society as the property.
+  async assignDealer(propertyId: string, dealerId: string) {
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property) throw new NotFoundException('Property not found');
+
+    const dealer = await this.prisma.dealer.findUnique({ where: { id: dealerId } });
+    if (!dealer) throw new NotFoundException('Dealer not found');
+    if (dealer.societyId !== property.societyId) {
+      throw new BadRequestException('Dealer belongs to a different society');
+    }
+
+    return this.prisma.property.update({
+      where: { id: propertyId },
+      data: { assignedDealerId: dealerId },
+      include: { society: { select: { id: true, name: true, slug: true } } },
+    });
   }
 
   async update(id: string, data: UpdatePropertyDto, userId: string, userRole: string) {
