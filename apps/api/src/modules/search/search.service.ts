@@ -24,13 +24,15 @@ export class SearchService {
       where.society = { city: { equals: query.city, mode: 'insensitive' } };
     }
 
-    // Free-text search across society name/city, flat number and tower/block.
+    // Free-text search across society name/city/address (address holds locality,
+    // sector and road — e.g. "Golf Course Road, Sector 42"), flat and tower/block.
     if (query.q) {
       const q = String(query.q).trim();
       if (q) {
         where.OR = [
           { society: { name: { contains: q, mode: 'insensitive' } } },
           { society: { city: { contains: q, mode: 'insensitive' } } },
+          { society: { address: { contains: q, mode: 'insensitive' } } },
           { flatNumber: { contains: q, mode: 'insensitive' } },
           { towerBlock: { contains: q, mode: 'insensitive' } },
         ];

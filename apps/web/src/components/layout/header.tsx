@@ -126,6 +126,9 @@ export function Header() {
           <Link href="/societies" className={navLink}>
             Societies
           </Link>
+          <Link href="/dashboard/properties/new" className={navLink}>
+            List Your Property
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -255,6 +258,11 @@ export function Header() {
                     icon: HomeIcon,
                   },
                   { label: 'Societies', href: '/societies', icon: BuildingIcon },
+                  {
+                    label: 'List Your Property',
+                    href: '/dashboard/properties/new',
+                    icon: HomeIcon,
+                  },
                   { label: 'Search', href: '/search', icon: SearchIcon },
                 ].map(({ label, href, icon: Icon }) => (
                   <Link

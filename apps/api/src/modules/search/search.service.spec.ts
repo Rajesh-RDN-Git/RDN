@@ -87,6 +87,19 @@ describe('SearchService', () => {
       );
     });
 
+    it('q matches society address so locality/sector text is searchable', async () => {
+      mockPrisma.property.findMany.mockResolvedValue([]);
+      mockPrisma.property.count.mockResolvedValue(0);
+
+      await service.searchProperties({ q: 'Golf Course Road' } as any);
+
+      const where = mockPrisma.property.findMany.mock.calls[0][0].where;
+      const orMatchesAddress = where.OR.some(
+        (c: any) => c.society?.address?.contains === 'Golf Course Road',
+      );
+      expect(orMatchesAddress).toBe(true);
+    });
+
     it('should return paginated results', async () => {
       mockPrisma.property.findMany.mockResolvedValue([{ id: 'p-1' }]);
       mockPrisma.property.count.mockResolvedValue(1);
