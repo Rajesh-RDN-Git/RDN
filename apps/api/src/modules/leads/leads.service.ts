@@ -158,6 +158,23 @@ export class LeadsService {
       throw new BadRequestException('Property is not available');
     }
 
+    // Idempotency: if this buyer already has an open lead on this property, return it
+    // instead of inserting a duplicate. Guards double-submits (multiple CTAs) and the
+    // client's 401-refresh retry re-sending the POST. Terminal leads (CLOSED/LOST) don't
+    // block a fresh enquiry later.
+    const existing = await this.prisma.lead.findFirst({
+      where: {
+        buyerId,
+        propertyId: data.propertyId,
+        status: { notIn: ['CLOSED', 'LOST'] },
+      },
+      include: {
+        property: { select: { id: true, flatNumber: true, towerBlock: true } },
+        dealer: { select: { id: true, user: { select: { id: true, name: true } } } },
+      },
+    });
+    if (existing) return existing;
+
     // Find an active dealer for this society. If none exists yet, the lead is
     // queued unassigned (dealerId = null) and gets claimed when a dealer becomes
     // active in the society (see DealersService.claimUnassignedLeads).

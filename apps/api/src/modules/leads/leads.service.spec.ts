@@ -12,6 +12,7 @@ describe('LeadsService', () => {
     lead: {
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       count: jest.fn(),
@@ -45,6 +46,8 @@ describe('LeadsService', () => {
 
     service = module.get<LeadsService>(LeadsService);
     jest.clearAllMocks();
+    // Default: no pre-existing lead, so create() proceeds to insert unless a test opts in.
+    mockPrisma.lead.findFirst.mockResolvedValue(null);
   });
 
   describe('findAll', () => {
@@ -138,6 +141,25 @@ describe('LeadsService', () => {
       assignedDealerId: 'dealer-1',
       assignedDealer: { id: 'dealer-1', isActive: true },
     };
+
+    it('returns the existing open lead instead of creating a duplicate', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue(mockProperty);
+      mockPrisma.lead.findFirst.mockResolvedValue({ id: 'existing-lead', status: 'NEW' });
+
+      const result = await service.create({ propertyId: 'prop-1', source: 'WEBSITE' }, 'buyer-1');
+
+      expect(result).toEqual({ id: 'existing-lead', status: 'NEW' });
+      expect(mockPrisma.lead.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            buyerId: 'buyer-1',
+            propertyId: 'prop-1',
+            status: { notIn: ['CLOSED', 'LOST'] },
+          }),
+        }),
+      );
+      expect(mockPrisma.lead.create).not.toHaveBeenCalled();
+    });
 
     it('should create lead with assigned dealer', async () => {
       mockPrisma.property.findUnique.mockResolvedValue(mockProperty);
