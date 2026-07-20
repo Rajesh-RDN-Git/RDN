@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { getAccessToken, getRefreshToken, setTokens, clearTokens } from './auth';
+import { loginRedirectFor } from './routes';
 
 export const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1',
@@ -90,8 +91,13 @@ apiClient.interceptors.response.use(
       const status = (refreshError as AxiosError).response?.status;
       if (status === 401 || status === 403) {
         clearTokens();
-        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login';
+        // The session is genuinely dead — but only bounce to /login from a protected
+        // route. On public pages (a property, search, a society) let the page render as
+        // a guest instead of ejecting a browsing user. This was the recurring
+        // "clicked a property → login" bug after a redeploy invalidated the cookie.
+        if (typeof window !== 'undefined') {
+          const target = loginRedirectFor(window.location.pathname);
+          if (target) window.location.href = target;
         }
       }
       return Promise.reject(refreshError);
