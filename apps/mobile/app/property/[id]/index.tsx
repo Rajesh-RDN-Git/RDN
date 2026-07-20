@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PropertyGallery } from '@/components/PropertyGallery';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SaveButton } from '@/components/ui/SaveButton';
@@ -17,6 +19,7 @@ import { propertiesApi } from '@/lib/api/properties';
 import { leadsApi } from '@/lib/api/leads';
 
 export default function PropertyDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
@@ -77,13 +80,9 @@ export default function PropertyDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
-        {/* Image Placeholder */}
-        <View style={styles.imagePlaceholder}>
-          <Text style={styles.imagePlaceholderText}>
-            {property.media?.length ? `${property.media.length} Photos` : 'No Photos'}
-          </Text>
-        </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}>
+        {/* Image gallery */}
+        <PropertyGallery media={property.media} />
 
         {/* Header */}
         <View style={styles.header}>
@@ -166,7 +165,7 @@ export default function PropertyDetailScreen() {
       </ScrollView>
 
       {/* Fixed CTA */}
-      <View style={styles.ctaBar}>
+      <View style={[styles.ctaBar, { paddingBottom: 16 + insets.bottom }]}>
         <Button
           title={enquiring ? 'Submitting...' : 'Enquire Now'}
           onPress={handleEnquire}

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/auth-store';
 import { communicationApi } from '@/lib/api/communication';
 
@@ -23,6 +24,7 @@ interface Message {
 }
 
 export default function ConversationScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -112,7 +114,7 @@ export default function ConversationScreen() {
         }
       />
 
-      <View style={styles.inputBar}>
+      <View style={[styles.inputBar, { paddingBottom: 12 + insets.bottom }]}>
         <TextInput
           style={styles.textInput}
           placeholder="Type a message..."

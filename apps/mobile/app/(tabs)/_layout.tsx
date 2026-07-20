@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/auth-store';
 
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
@@ -26,6 +27,7 @@ function leadsLabels(role?: string): { tab: string; header: string } {
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const role = useAuthStore((s) => s.user?.role);
   const leads = leadsLabels(role);
   // Chat is only available to roles that have masked communication on web.
@@ -39,8 +41,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopColor: '#e5e7eb',
-          paddingBottom: 4,
-          height: 56,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 6,
+          paddingTop: 6,
+          height: 56 + insets.bottom,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
       }}
