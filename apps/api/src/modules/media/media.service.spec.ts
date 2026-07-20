@@ -1,8 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MediaService } from './media.service';
+import { MediaService, shouldUseMockS3 } from './media.service';
 import { PrismaService } from '../../database/prisma.service';
+
+describe('shouldUseMockS3', () => {
+  it('mocks only in local/dev with no endpoint and no static keys', () => {
+    expect(shouldUseMockS3({ hasEndpoint: false, hasStaticKeys: false, isProd: false })).toBe(true);
+  });
+  it('uses a real client in prod even without static keys (resolves the ECS task role)', () => {
+    expect(shouldUseMockS3({ hasEndpoint: false, hasStaticKeys: false, isProd: true })).toBe(false);
+  });
+  it('uses a real client whenever static keys are present', () => {
+    expect(shouldUseMockS3({ hasEndpoint: false, hasStaticKeys: true, isProd: false })).toBe(false);
+  });
+  it('uses a real client with a custom S3 endpoint (R2/dev)', () => {
+    expect(shouldUseMockS3({ hasEndpoint: true, hasStaticKeys: false, isProd: false })).toBe(false);
+  });
+});
 
 describe('MediaService', () => {
   let service: MediaService;

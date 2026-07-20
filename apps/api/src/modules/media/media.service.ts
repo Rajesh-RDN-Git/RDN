@@ -4,6 +4,21 @@ import { PrismaService } from '../../database/prisma.service';
 import type { PresignedUrlDto } from './dto/presigned-url.dto';
 import type { AddMediaDto } from './dto/add-media.dto';
 
+/**
+ * Decide whether media uploads run in mock mode (no real S3). Mock ONLY in local/dev with
+ * no custom endpoint and no static keys. In production the ECS task provides no static
+ * AWS keys by design — the SDK's default provider chain resolves the task role — so prod
+ * must use a real client, not mock (the old bug: prod silently ran in mock mode and every
+ * upload was skipped, leaving the bucket empty and images broken).
+ */
+export function shouldUseMockS3(opts: {
+  hasEndpoint: boolean;
+  hasStaticKeys: boolean;
+  isProd: boolean;
+}): boolean {
+  return !opts.hasEndpoint && !opts.hasStaticKeys && !opts.isProd;
+}
+
 @Injectable()
 export class MediaService {
   private readonly logger = new Logger(MediaService.name);
@@ -26,10 +41,12 @@ export class MediaService {
     const accessKeyId = this.configService.get<string>('aws.accessKeyId');
     const secretAccessKey = this.configService.get<string>('aws.secretAccessKey');
     const endpoint = this.configService.get<string>('aws.s3Endpoint');
-    // Without real credentials (or a custom S3-compatible endpoint) any signed
-    // URL would point at a non-existent bucket and 404 on upload. Stay in mock
-    // mode so the client skips the PUT and the property flow still completes.
-    if (!endpoint && (!accessKeyId || !secretAccessKey)) {
+    const isProd = this.configService.get<string>('app.environment') === 'production';
+    const hasStaticKeys = !!(accessKeyId && secretAccessKey);
+
+    // Mock only in local/dev with nothing configured. In prod (or with a custom endpoint /
+    // static keys) use a real client — prod resolves credentials from the ECS task role.
+    if (shouldUseMockS3({ hasEndpoint: !!endpoint, hasStaticKeys, isProd })) {
       this.logger.warn('No S3 credentials configured. Media uploads will use mock URLs.');
       return;
     }
@@ -39,10 +56,11 @@ export class MediaService {
       this.s3Client = new S3Client({
         region: this.region,
         ...(endpoint ? { endpoint, forcePathStyle: forcePathStyle ?? true } : {}),
-        credentials: {
-          accessKeyId: accessKeyId || '',
-          secretAccessKey: secretAccessKey || '',
-        },
+        // With static keys, use them. Without (prod ECS), omit `credentials` so the SDK's
+        // default provider chain resolves the task role.
+        ...(hasStaticKeys
+          ? { credentials: { accessKeyId: accessKeyId!, secretAccessKey: secretAccessKey! } }
+          : {}),
         // AWS SDK v3 (>=3.729) defaults to WHEN_SUPPORTED, which bakes an
         // x-amz-sdk-checksum-algorithm=CRC32 param into presigned PUT URLs.
         // Cloudflare R2 (and other S3-compatible stores) reject/abort those

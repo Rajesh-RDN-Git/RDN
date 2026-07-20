@@ -61,9 +61,10 @@ export function MediaUploader({ maxItems = 10, onChange }: Props) {
         const { data: presignResponse } = await mediaApi.getPresignedUrl({ fileName, contentType });
         const inner = presignResponse?.data || presignResponse;
         const uploadUrl: string | undefined = inner?.uploadUrl || inner?.url;
-        const publicUrl: string | undefined = inner?.publicUrl || inner?.fileUrl;
+        // The API returns the display URL as `cdnUrl` (CloudFront) — match that.
+        const publicUrl: string | undefined = inner?.cdnUrl || inner?.publicUrl || inner?.fileUrl;
         if (!uploadUrl || !publicUrl) {
-          throw new Error('Presigned URL response missing uploadUrl/publicUrl');
+          throw new Error('Presigned URL response missing uploadUrl/cdnUrl');
         }
 
         const blob = await (await fetch(asset.uri)).blob();
