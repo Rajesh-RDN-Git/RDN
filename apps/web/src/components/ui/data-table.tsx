@@ -39,7 +39,9 @@ export function DataTable<T>({
 
   return (
     <div className={`overflow-x-auto rounded-lg border border-border bg-card ${className}`}>
-      <table className="w-full text-left text-sm">
+      {/* min-width so the wrapper's overflow-x-auto actually scrolls on phones
+          instead of the table shrinking columns into an unreadable cram. */}
+      <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="border-b border-border bg-muted text-overline text-muted-foreground">
           <tr>
             {columns.map((col) => (
