@@ -132,7 +132,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
           {rentSubtitle && <p className="text-body-sm text-muted-foreground">{rentSubtitle}</p>}
 
           {/* Property specs line */}
-          <div className="mt-1.5 flex items-center gap-3 overflow-hidden text-body-md text-muted-foreground">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-md text-muted-foreground">
             <span className="flex shrink-0 items-center gap-1">
               <BedIcon size={15} className="text-muted-foreground" />
               {formatBhk(property.bhk) || `${property.bhk} BHK`}

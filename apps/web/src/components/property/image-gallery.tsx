@@ -41,13 +41,20 @@ export function ImageGallery({ images }: ImageGalleryProps) {
         {/* Main image - 2/3 width */}
         <button
           onClick={() => setSelectedIndex(0)}
-          className="col-span-3 block overflow-hidden md:col-span-2"
+          className="relative col-span-3 block overflow-hidden md:col-span-2"
         >
           <img
             src={sorted[0].url}
             alt="Property main"
             className="h-full w-full object-cover transition-transform duration-slow hover:scale-105"
           />
+          {/* Photo-count badge — on mobile the thumbnail grid is hidden, so this is
+              the only hint that more photos exist. */}
+          {sorted.length > 1 && (
+            <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1.5 text-caption-md font-medium text-white backdrop-blur-sm md:hidden">
+              📷 {sorted.length} photos
+            </span>
+          )}
         </button>
 
         {/* Thumbnail grid - 1/3 width */}
