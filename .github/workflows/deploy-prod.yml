@@ -1,8 +1,10 @@
 name: Deploy Production
 
+# Manual-only for now. Prod API deploys via CodeBuild (rdn-prod-api-build) +
+# manual ECS update; web via Amplify auto-build on main. Flip back to
+# `push: branches: [main]` to let Actions own prod deploys instead.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: deploy-prod

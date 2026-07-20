@@ -1,8 +1,9 @@
 name: Deploy Dev
 
+# Manual-only. UAT/dev deploys go through Railway (API) + Vercel (web) git
+# integration on the `develop` branch, not this workflow.
 on:
-  push:
-    branches: [develop]
+  workflow_dispatch:
 
 concurrency:
   group: deploy-dev
