@@ -86,14 +86,25 @@ export class CallService {
       });
 
       const data = await response.json();
-      this.logger.log(`Exotel call initiated: ${JSON.stringify(data)}`);
 
+      // Exotel returns 2xx with a Call object on success, or a non-2xx body carrying a
+      // RestException (e.g. 403 "account not yet KYC compliant"). fetch does NOT throw on
+      // those, so check explicitly — otherwise we'd report a phantom "initiated" and the
+      // client would show "connecting…" for a call that never dialled.
+      if (!response.ok || data?.RestException || !data?.Call?.Sid) {
+        const reason = data?.RestException?.Message || `Exotel HTTP ${response.status}`;
+        this.logger.error(`Exotel call failed: ${JSON.stringify(data)}`);
+        throw new ServiceUnavailableException(`Could not connect the call: ${reason}`);
+      }
+
+      this.logger.log(`Exotel call initiated: ${data.Call.Sid}`);
       return {
         status: 'initiated',
-        callSid: data?.Call?.Sid,
+        callSid: data.Call.Sid,
         leadId,
       };
     } catch (err) {
+      if (err instanceof ServiceUnavailableException) throw err;
       this.logger.error(`Exotel call error: ${err}`);
       throw new BadRequestException('Failed to initiate call');
     }

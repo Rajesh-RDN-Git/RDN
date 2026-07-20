@@ -46,3 +46,44 @@ describe('CallService — Exotel configuration safety', () => {
     );
   });
 });
+
+describe('CallService — Exotel response handling', () => {
+  const configured = {
+    'app.environment': 'production',
+    'exotel.apiKey': 'k',
+    'exotel.apiToken': 't',
+    'exotel.sid': 's',
+    'exotel.callerId': '+918000000000',
+    'exotel.subdomain': 'api.exotel.com',
+  };
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  it('throws when Exotel rejects the call (e.g. 403 not-KYC) instead of faking success', async () => {
+    const service = new CallService(makeConfig(configured), prismaStub);
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        RestException: { Status: 403, Message: 'Your account is not yet KYC compliant.' },
+      }),
+    }) as unknown as typeof fetch;
+
+    await expect(service.initiateCall('d-user', 'lead-1')).rejects.toThrow();
+  });
+
+  it('returns initiated with the call sid on a successful Exotel response', async () => {
+    const service = new CallService(makeConfig(configured), prismaStub);
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ Call: { Sid: 'CA123' } }),
+    }) as unknown as typeof fetch;
+
+    const result = await service.initiateCall('d-user', 'lead-1');
+    expect(result.status).toBe('initiated');
+    expect(result.callSid).toBe('CA123');
+  });
+});
