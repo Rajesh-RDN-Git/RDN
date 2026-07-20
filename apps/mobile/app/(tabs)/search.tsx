@@ -109,7 +109,7 @@ export default function SearchScreen() {
         sortBy: sortOpt.sortBy,
         sortDir: sortOpt.sortDir,
       };
-      if (query) params.city = query;
+      if (query) params.q = query;
       if (transactionType !== 'ALL') params.transactionType = transactionType;
       if (propertyType !== 'ALL') params.type = propertyType;
       if (bhk !== 'ALL') params.bhk = bhk.replace('+', '');
@@ -271,7 +271,7 @@ export default function SearchScreen() {
       <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by city..."
+          placeholder="Search locality, sector, society, builder…"
           value={query}
           onChangeText={setQuery}
           placeholderTextColor="#9ca3af"

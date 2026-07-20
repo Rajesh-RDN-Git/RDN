@@ -17,6 +17,7 @@ import { SaveButton } from '@/components/ui/SaveButton';
 import { useAuthStore } from '@/stores/auth-store';
 import { propertiesApi } from '@/lib/api/properties';
 import { leadsApi } from '@/lib/api/leads';
+import { communicationApi } from '@/lib/api/communication';
 
 export default function PropertyDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +27,7 @@ export default function PropertyDetailScreen() {
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [enquiring, setEnquiring] = useState(false);
+  const [callingBack, setCallingBack] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -49,6 +51,28 @@ export default function PropertyDetailScreen() {
       Alert.alert('Error', err.response?.data?.message || 'Failed to submit enquiry');
     }
     setEnquiring(false);
+  };
+
+  const handleRequestCallback = async () => {
+    if (!isAuthenticated) {
+      router.push('/(auth)/login');
+      return;
+    }
+    setCallingBack(true);
+    try {
+      const res: any = await leadsApi.create({ propertyId: id!, source: 'MOBILE_APP' });
+      const lead = res.data?.data ?? res.data;
+      const dealerUserId = property?.dealer?.user?.id;
+      if (lead?.id && dealerUserId) {
+        await communicationApi.call({ leadId: lead.id, toUserId: dealerUserId });
+        Alert.alert('Connecting…', 'We are placing a masked call — your phone will ring shortly.');
+      } else {
+        Alert.alert('Requested', 'No dealer is assigned yet. One will reach out to you soon.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Could not place the call right now.');
+    }
+    setCallingBack(false);
   };
 
   if (loading) {
@@ -166,11 +190,21 @@ export default function PropertyDetailScreen() {
 
       {/* Fixed CTA */}
       <View style={[styles.ctaBar, { paddingBottom: 16 + insets.bottom }]}>
-        <Button
-          title={enquiring ? 'Submitting...' : 'Enquire Now'}
-          onPress={handleEnquire}
-          style={styles.ctaButton}
-        />
+        <View style={styles.ctaRow}>
+          <Button
+            title="Call back"
+            variant="outline"
+            onPress={handleRequestCallback}
+            isLoading={callingBack}
+            style={styles.ctaHalf}
+          />
+          <Button
+            title="Enquire Now"
+            onPress={handleEnquire}
+            isLoading={enquiring}
+            style={styles.ctaHalf}
+          />
+        </View>
       </View>
     </View>
   );
@@ -240,5 +274,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
   },
-  ctaButton: { width: '100%' },
+  ctaRow: { flexDirection: 'row', gap: 12 },
+  ctaHalf: { flex: 1 },
 });
