@@ -1,20 +1,18 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/auth-store';
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Home: '\u{1F3E0}',
-    Search: '\u{1F50D}',
-    Leads: '\u{1F4CB}',
-    Chat: '\u{1F4AC}',
-    Profile: '\u{1F464}',
-  };
-  return (
-    <Text style={{ fontSize: focused ? 22 : 20, opacity: focused ? 1 : 0.6 }}>
-      {icons[name] || '\u2022'}
-    </Text>
-  );
+const TAB_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  Home: 'home',
+  Search: 'search',
+  Leads: 'clipboard',
+  Chat: 'chatbubble',
+  Profile: 'person',
+};
+
+function TabIcon({ name, color, size }: { name: string; color: string; size: number }) {
+  return <Ionicons name={TAB_ICONS[name] ?? 'ellipse'} size={size} color={color} />;
 }
 
 // The leads route is shared by all roles but means different things \u2014 mirror the
@@ -26,6 +24,7 @@ function leadsLabels(role?: string): { tab: string; header: string } {
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   const role = useAuthStore((s) => s.user?.role);
   const leads = leadsLabels(role);
   // Chat is only available to roles that have masked communication on web.
@@ -39,8 +38,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: '#fff',
           borderTopColor: '#e5e7eb',
-          paddingBottom: 4,
-          height: 56,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 6,
+          paddingTop: 6,
+          height: 56 + insets.bottom,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
       }}
@@ -52,7 +52,7 @@ export default function TabLayout() {
           headerTitle: 'RDN',
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
-          tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <TabIcon name="Home" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -61,7 +61,7 @@ export default function TabLayout() {
           title: 'Search',
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
-          tabBarIcon: ({ focused }) => <TabIcon name="Search" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <TabIcon name="Search" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -71,7 +71,7 @@ export default function TabLayout() {
           tabBarLabel: leads.tab,
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
-          tabBarIcon: ({ focused }) => <TabIcon name="Leads" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <TabIcon name="Leads" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -81,7 +81,7 @@ export default function TabLayout() {
           href: showChat ? undefined : null,
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
-          tabBarIcon: ({ focused }) => <TabIcon name="Chat" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <TabIcon name="Chat" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -90,7 +90,7 @@ export default function TabLayout() {
           title: 'Profile',
           headerStyle: { backgroundColor: '#2563eb' },
           headerTintColor: '#fff',
-          tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} />,
+          tabBarIcon: ({ color, size }) => <TabIcon name="Profile" color={color} size={size} />,
         }}
       />
     </Tabs>

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { useWizard, WizardProvider } from './wizard-context';
@@ -162,7 +170,10 @@ function WizardInner({ onSubmit: onSubmitProp }: WizardInnerProps) {
   const isLast = idx === STEP_ORDER.length - 1;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.header}>
         <ProgressBar current={state.currentStep} />
         <Text style={styles.stepTitle}>
@@ -191,7 +202,7 @@ function WizardInner({ onSubmit: onSubmitProp }: WizardInnerProps) {
           <Button title="Continue" onPress={goNext} style={styles.primary} />
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

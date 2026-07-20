@@ -62,6 +62,12 @@ const MANAGE_ROWS: ManageRow[] = [
     roles: ['SUPER_ADMIN'],
   },
   {
+    label: 'Users',
+    subtitle: 'View users and change roles',
+    route: '/manage/users',
+    roles: ['SUPER_ADMIN'],
+  },
+  {
     label: 'Commissions',
     subtitle: 'View commission records',
     route: '/commissions',
@@ -265,7 +271,16 @@ export default function ProfileScreen() {
           subtitle="Contact our Grievance Officer"
           onPress={() => router.push('/settings/grievance' as never)}
         />
-        <MenuItem title="About RDN" subtitle="Version 1.0.0" onPress={() => {}} />
+        <MenuItem
+          title="Privacy Policy"
+          subtitle="How we handle your data"
+          onPress={() => router.push('/legal/privacy' as never)}
+        />
+        <MenuItem
+          title="Terms of Service"
+          subtitle="Terms & conditions"
+          onPress={() => router.push('/legal/terms' as never)}
+        />
         <MenuItem
           title="Delete account"
           subtitle="Permanent — DPDP-compliant erasure"

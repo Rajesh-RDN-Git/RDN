@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -83,6 +84,7 @@ export default function SearchScreen() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Load societies once for the picker
@@ -107,7 +109,7 @@ export default function SearchScreen() {
         sortBy: sortOpt.sortBy,
         sortDir: sortOpt.sortDir,
       };
-      if (query) params.city = query;
+      if (query) params.q = query;
       if (transactionType !== 'ALL') params.transactionType = transactionType;
       if (propertyType !== 'ALL') params.type = propertyType;
       if (bhk !== 'ALL') params.bhk = bhk.replace('+', '');
@@ -129,8 +131,9 @@ export default function SearchScreen() {
   const searchProperties = useCallback(
     async (resetPage: boolean) => {
       setLoading(true);
+      setError(false);
       try {
-        const targetPage = resetPage ? 1 : page;
+        const targetPage = resetPage ? 1 : page + 1;
         const { data } = await searchApi.search(buildParams(targetPage));
         const result = data.data || data;
         if (resetPage) {
@@ -138,10 +141,11 @@ export default function SearchScreen() {
           setPage(1);
         } else {
           setProperties((prev) => [...prev, ...(result.data || [])]);
+          setPage(targetPage);
         }
         setTotal(result.total || 0);
       } catch {
-        /* network error */
+        setError(true);
       }
       setLoading(false);
     },
@@ -161,7 +165,7 @@ export default function SearchScreen() {
 
   const loadMore = () => {
     if (properties.length < total && !loading) {
-      setPage((p) => p + 1);
+      // searchProperties(false) computes + commits the next page itself.
       searchProperties(false);
     }
   };
@@ -204,6 +208,19 @@ export default function SearchScreen() {
   const renderProperty = ({ item }: { item: any }) => (
     <TouchableOpacity onPress={() => router.push(`/property/${item.id}`)}>
       <Card style={styles.propertyCard}>
+        {item.media?.[0]?.url ? (
+          <Image
+            source={{ uri: item.media[0].url }}
+            style={styles.cardImage}
+            contentFit="cover"
+            transition={150}
+            placeholder="L6PZfSi_.AyE_3t7t7R**0o#DgR4"
+          />
+        ) : (
+          <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
+            <Text style={styles.cardImagePlaceholderText}>No photo</Text>
+          </View>
+        )}
         <View style={styles.cardHeader}>
           <View
             style={[
@@ -254,7 +271,7 @@ export default function SearchScreen() {
       <View style={styles.searchBar}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by city..."
+          placeholder="Search locality, sector, society, builder…"
           value={query}
           onChangeText={setQuery}
           placeholderTextColor="#9ca3af"
@@ -348,11 +365,22 @@ export default function SearchScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={loading ? <ActivityIndicator style={{ padding: 16 }} /> : null}
         ListEmptyComponent={
-          !loading ? (
+          loading ? (
+            <View style={styles.empty}>
+              <ActivityIndicator size="large" color="#2563eb" />
+            </View>
+          ) : error ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>Couldn&apos;t load properties.</Text>
+              <TouchableOpacity onPress={() => searchProperties(true)} style={styles.retryBtn}>
+                <Text style={styles.retryText}>Try again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>No properties found</Text>
             </View>
-          ) : null
+          )
         }
       />
 
@@ -651,6 +679,15 @@ const styles = StyleSheet.create({
   sortBtnText: { fontSize: 13, color: '#2563eb', fontWeight: '600' },
   list: { paddingHorizontal: 16 },
   propertyCard: { marginBottom: 12 },
+  cardImage: {
+    width: '100%',
+    height: 170,
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: '#f3f4f6',
+  },
+  cardImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  cardImagePlaceholderText: { color: '#9ca3af', fontSize: 13 },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -667,6 +704,15 @@ const styles = StyleSheet.create({
   price: { fontSize: 18, fontWeight: 'bold', color: '#059669', marginTop: 4 },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyText: { fontSize: 16, color: '#9ca3af' },
+  retryBtn: {
+    marginTop: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2563eb',
+  },
+  retryText: { color: '#2563eb', fontSize: 14, fontWeight: '600' },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',

@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { societiesApi } from '@/lib/api/societies';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 type SocietyVerification = 'PENDING' | 'VERIFIED' | 'FLAGGED' | 'REJECTED';
 type SocietyStatus = 'IN_PROGRESS' | 'ONBOARDED' | 'INACTIVE';
@@ -56,6 +57,7 @@ export default function ManageSocietiesScreen() {
   const [societies, setSocieties] = useState<Society[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -63,13 +65,14 @@ export default function ManageSocietiesScreen() {
   const loadSocieties = useCallback(async () => {
     if (!isAuthenticated || !isSuperAdmin) return;
     setLoading(true);
+    setError(false);
     try {
       const { data } = await societiesApi.list({ limit: '50' });
       const result = data.data || data;
       setSocieties(result.data || []);
       setTotal(result.total ?? result.pagination?.total ?? (result.data?.length || 0));
     } catch {
-      /* network error — list stays empty */
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, isSuperAdmin]);
@@ -153,11 +156,12 @@ export default function ManageSocietiesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.footerSpinner} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No societies found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadSocieties}
+            emptyText="No societies found"
+          />
         }
       />
     </View>

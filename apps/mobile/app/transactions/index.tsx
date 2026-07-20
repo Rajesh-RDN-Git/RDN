@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { transactionsApi } from '@/lib/api/transactions';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 // PaymentStatus enum values from Prisma / UpdatePaymentStatusDto
 const PAYMENT_STATUSES = ['ALL', 'PENDING', 'PARTIAL', 'PAID', 'OVERDUE'] as const;
@@ -60,6 +61,7 @@ export default function TransactionsScreen() {
   const [total, setTotal] = useState(0);
   const [paymentFilter, setPaymentFilter] = useState<PaymentStatusFilter>('ALL');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const isAuthorized = role === 'SUPER_ADMIN' || role === 'RWA_ADMIN';
@@ -67,6 +69,7 @@ export default function TransactionsScreen() {
   const loadTransactions = useCallback(async () => {
     if (!isAuthenticated || !isAuthorized) return;
     setLoading(true);
+    setError(false);
     try {
       const params: Record<string, string> = { limit: '30' };
       if (paymentFilter !== 'ALL') params.paymentStatus = paymentFilter;
@@ -76,7 +79,7 @@ export default function TransactionsScreen() {
       setTransactions(result.data || []);
       setTotal(result.total || 0);
     } catch {
-      /* network error — list stays empty */
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, isAuthorized, paymentFilter]);
@@ -177,11 +180,12 @@ export default function TransactionsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.loader} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No transactions found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadTransactions}
+            emptyText="No transactions found"
+          />
         }
       />
     </View>

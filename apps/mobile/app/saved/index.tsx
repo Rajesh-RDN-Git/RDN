@@ -14,15 +14,18 @@ import { Card } from '@/components/ui/Card';
 import { SaveButton } from '@/components/ui/SaveButton';
 import { getShortlist } from '@/lib/shortlist';
 import { propertiesApi } from '@/lib/api/properties';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 export default function SavedPropertiesScreen() {
   const router = useRouter();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadSaved = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
       const ids = await getShortlist();
       if (ids.length === 0) {
@@ -37,7 +40,7 @@ export default function SavedPropertiesScreen() {
         .filter(Boolean);
       setProperties(resolved);
     } catch {
-      /* network error */
+      setError(true);
     }
     setLoading(false);
   }, []);
@@ -98,13 +101,12 @@ export default function SavedPropertiesScreen() {
       contentContainerStyle={[styles.list, properties.length === 0 && styles.emptyContainer]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListEmptyComponent={
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>♡</Text>
-          <Text style={styles.emptyTitle}>No saved properties yet</Text>
-          <Text style={styles.emptyHint}>
-            Tap the heart icon on any listing to save it here for later.
-          </Text>
-        </View>
+        <ScreenState
+          loading={loading}
+          error={error}
+          onRetry={loadSaved}
+          emptyText="No saved properties yet. Tap the heart on any listing to save it here."
+        />
       }
     />
   );

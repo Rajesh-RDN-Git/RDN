@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { commissionApi } from '@/lib/api/commission';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 const STATUSES = ['ALL', 'PENDING', 'SETTLED', 'DISTRIBUTED', 'CANCELLED'] as const;
 type StatusFilter = (typeof STATUSES)[number];
@@ -52,11 +53,13 @@ export default function CommissionsScreen() {
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadCommissions = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
+    setError(false);
     try {
       const params: Record<string, string> = { limit: '30' };
       if (statusFilter !== 'ALL') params.status = statusFilter;
@@ -66,7 +69,7 @@ export default function CommissionsScreen() {
       setCommissions(result.data || []);
       setTotal(result.total || 0);
     } catch {
-      /* network error — list stays empty */
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated, statusFilter]);
@@ -155,11 +158,12 @@ export default function CommissionsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.loader} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyText}>No commissions found</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadCommissions}
+            emptyText="No commissions found"
+          />
         }
       />
     </View>

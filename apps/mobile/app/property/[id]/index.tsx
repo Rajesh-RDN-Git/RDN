@@ -9,20 +9,25 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PropertyGallery } from '@/components/PropertyGallery';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SaveButton } from '@/components/ui/SaveButton';
 import { useAuthStore } from '@/stores/auth-store';
 import { propertiesApi } from '@/lib/api/properties';
 import { leadsApi } from '@/lib/api/leads';
+import { communicationApi } from '@/lib/api/communication';
 
 export default function PropertyDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
   const [property, setProperty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [enquiring, setEnquiring] = useState(false);
+  const [callingBack, setCallingBack] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -46,6 +51,28 @@ export default function PropertyDetailScreen() {
       Alert.alert('Error', err.response?.data?.message || 'Failed to submit enquiry');
     }
     setEnquiring(false);
+  };
+
+  const handleRequestCallback = async () => {
+    if (!isAuthenticated) {
+      router.push('/(auth)/login');
+      return;
+    }
+    setCallingBack(true);
+    try {
+      const res: any = await leadsApi.create({ propertyId: id!, source: 'MOBILE_APP' });
+      const lead = res.data?.data ?? res.data;
+      const dealerUserId = property?.dealer?.user?.id;
+      if (lead?.id && dealerUserId) {
+        await communicationApi.call({ leadId: lead.id, toUserId: dealerUserId });
+        Alert.alert('Connecting…', 'We are placing a masked call — your phone will ring shortly.');
+      } else {
+        Alert.alert('Requested', 'No dealer is assigned yet. One will reach out to you soon.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Could not place the call right now.');
+    }
+    setCallingBack(false);
   };
 
   if (loading) {
@@ -77,13 +104,9 @@ export default function PropertyDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
-        {/* Image Placeholder */}
-        <View style={styles.imagePlaceholder}>
-          <Text style={styles.imagePlaceholderText}>
-            {property.media?.length ? `${property.media.length} Photos` : 'No Photos'}
-          </Text>
-        </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}>
+        {/* Image gallery */}
+        <PropertyGallery media={property.media} />
 
         {/* Header */}
         <View style={styles.header}>
@@ -166,12 +189,22 @@ export default function PropertyDetailScreen() {
       </ScrollView>
 
       {/* Fixed CTA */}
-      <View style={styles.ctaBar}>
-        <Button
-          title={enquiring ? 'Submitting...' : 'Enquire Now'}
-          onPress={handleEnquire}
-          style={styles.ctaButton}
-        />
+      <View style={[styles.ctaBar, { paddingBottom: 16 + insets.bottom }]}>
+        <View style={styles.ctaRow}>
+          <Button
+            title="Call back"
+            variant="outline"
+            onPress={handleRequestCallback}
+            isLoading={callingBack}
+            style={styles.ctaHalf}
+          />
+          <Button
+            title="Enquire Now"
+            onPress={handleEnquire}
+            isLoading={enquiring}
+            style={styles.ctaHalf}
+          />
+        </View>
       </View>
     </View>
   );
@@ -241,5 +274,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
   },
-  ctaButton: { width: '100%' },
+  ctaRow: { flexDirection: 'row', gap: 12 },
+  ctaHalf: { flex: 1 },
 });

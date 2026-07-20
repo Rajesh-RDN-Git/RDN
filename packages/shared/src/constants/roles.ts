@@ -1,5 +1,13 @@
 import { Role } from '../types/user';
 
+export const ROLE_LABELS: Record<Role, string> = {
+  [Role.SUPER_ADMIN]: 'Super Admin',
+  [Role.RWA_ADMIN]: 'RWA Admin',
+  [Role.DEALER]: 'Dealer',
+  [Role.OWNER]: 'Owner',
+  [Role.BUYER_TENANT]: 'Buyer / Tenant',
+};
+
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   [Role.SUPER_ADMIN]: [
     'users:read',

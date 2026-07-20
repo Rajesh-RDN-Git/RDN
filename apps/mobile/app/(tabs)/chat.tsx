@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/stores/auth-store';
 import { communicationApi } from '@/lib/api/communication';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -12,15 +13,17 @@ export default function ChatScreen() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const loadConversations = useCallback(async () => {
     if (!isAuthenticated) return;
+    setError(false);
     try {
       const { data } = await communicationApi.getConversations();
       const result = data.data || data;
       setConversations(result.data || []);
     } catch {
-      /\* ignore \*/;
+      setError(true);
     }
     setLoading(false);
   }, [isAuthenticated]);
@@ -87,12 +90,12 @@ export default function ChatScreen() {
       contentContainerStyle={styles.list}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListEmptyComponent={
-        !loading ? (
-          <View style={styles.center}>
-            <Text style={styles.emptyText}>No conversations yet</Text>
-            <Text style={styles.emptySubtext}>Enquire about a property to start chatting</Text>
-          </View>
-        ) : null
+        <ScreenState
+          loading={loading}
+          error={error}
+          onRetry={loadConversations}
+          emptyText="No conversations yet. Enquire about a property to start chatting."
+        />
       }
     />
   );

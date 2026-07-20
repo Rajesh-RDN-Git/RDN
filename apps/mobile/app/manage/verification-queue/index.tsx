@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { useAuthStore } from '@/stores/auth-store';
 import { verificationApi } from '@/lib/api/verification';
+import { ScreenState } from '@/components/ui/ScreenState';
 
 type PendingProperty = {
   id: string;
@@ -35,6 +36,7 @@ export default function VerificationQueueScreen() {
   const { user, isAuthenticated } = useAuthStore();
   const [items, setItems] = useState<PendingProperty[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Reject sheet state
@@ -49,6 +51,7 @@ export default function VerificationQueueScreen() {
   const loadQueue = useCallback(async () => {
     if (!canAccess) return;
     setLoading(true);
+    setError(false);
     try {
       const { data } = await verificationApi.propertyQueue();
       // Unwrap possible envelope shapes: {data: {data: [...]}} or {data: [...]} or bare array
@@ -60,8 +63,7 @@ export default function VerificationQueueScreen() {
           : [];
       setItems(list);
     } catch {
-      /* network error — list stays empty; user can pull-to-refresh */
-      Alert.alert('Error', 'Failed to load verification queue. Please try again.');
+      setError(true);
     }
     setLoading(false);
   }, [canAccess]);
@@ -226,12 +228,12 @@ export default function VerificationQueueScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListFooterComponent={loading ? <ActivityIndicator style={styles.footerSpinner} /> : null}
         ListEmptyComponent={
-          !loading ? (
-            <View style={styles.emptyWrap}>
-              <Text style={styles.emptyText}>No pending listings</Text>
-              <Text style={styles.emptySubtext}>All properties have been reviewed.</Text>
-            </View>
-          ) : null
+          <ScreenState
+            loading={loading}
+            error={error}
+            onRetry={loadQueue}
+            emptyText="No pending listings. All properties have been reviewed."
+          />
         }
       />
 

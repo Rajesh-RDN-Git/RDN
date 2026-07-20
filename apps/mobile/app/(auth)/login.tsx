@@ -81,8 +81,9 @@ export default function LoginScreen() {
               error={error}
             />
             <Button
-              title={loading ? 'Sending...' : 'Send OTP'}
+              title="Send OTP"
               onPress={handleSendOtp}
+              isLoading={loading}
               style={styles.button}
             />
           </>
@@ -101,8 +102,9 @@ export default function LoginScreen() {
               error={error}
             />
             <Button
-              title={loading ? 'Verifying...' : 'Verify OTP'}
+              title="Verify OTP"
               onPress={handleVerifyOtp}
+              isLoading={loading}
               style={styles.button}
             />
             <Button
