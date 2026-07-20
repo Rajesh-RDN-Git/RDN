@@ -75,7 +75,11 @@ export function Carousel({
     'absolute top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full border border-border bg-popover text-foreground shadow-elevation-2 opacity-0 transition-opacity duration-fast group-hover:opacity-100 hover:bg-muted disabled:opacity-0';
 
   return (
-    <div className={`group relative ${className}`} onMouseEnter={pauseAutoplay}>
+    <div
+      className={`group relative ${className}`}
+      onMouseEnter={pauseAutoplay}
+      onTouchStart={pauseAutoplay}
+    >
       <div
         ref={scrollRef}
         onScroll={handleScroll}

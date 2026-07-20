@@ -108,6 +108,16 @@ export class DealersController {
     return this.dealersService.setActive(id, body.isActive);
   }
 
+  @Patch('me/availability')
+  @Roles('DEALER')
+  @ApiOperation({ summary: 'Dealer toggles their own availability (accept or pause leads)' })
+  async setOwnAvailability(
+    @Body() body: { isActive: boolean },
+    @CurrentUser('id') userId: string,
+  ): Promise<any> {
+    return this.dealersService.setOwnAvailability(userId, body.isActive);
+  }
+
   @Patch(':id/certify')
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Certify a resident dealer (verified societies only)' })

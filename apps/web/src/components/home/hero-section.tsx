@@ -13,6 +13,7 @@ export function HeroSection() {
   const [wordIndex, setWordIndex] = useState(0);
   const [fade, setFade] = useState(true);
   const [activeTab, setActiveTab] = useState<'SALE' | 'RENT'>('SALE');
+  const [q, setQ] = useState('');
   const [bhk, setBhk] = useState('');
   const [propertyType, setPropertyType] = useState('');
   const [budget, setBudget] = useState<[number, number]>([0, 50000000]);
@@ -31,6 +32,7 @@ export function HeroSection() {
   const handleSearch = () => {
     const params = new URLSearchParams();
     params.set('transactionType', activeTab);
+    if (q.trim()) params.set('q', q.trim());
     if (bhk) params.set('bhk', bhk);
     if (propertyType) params.set('propertyType', propertyType);
     if (budget[0] > 0) params.set('priceMin', String(budget[0]));
@@ -77,6 +79,19 @@ export function HeroSection() {
                 {tab === 'SALE' ? 'Buy' : 'Rent'}
               </button>
             ))}
+          </div>
+
+          {/* Free-text search: locality / sector / society / builder */}
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2.5 transition-colors focus-within:border-brand">
+            <SearchIcon size={20} className="shrink-0 text-muted-foreground" />
+            <input
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Search by locality, sector, society or builder (e.g. Golf Course Road, Sector 42, DLF)"
+              className="w-full bg-transparent text-body-md text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
           </div>
 
           {/* Filter row */}

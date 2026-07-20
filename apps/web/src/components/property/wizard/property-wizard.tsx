@@ -149,17 +149,21 @@ function WizardInner({
         </div>
       </div>
       {renderStep()}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 flex justify-between max-w-3xl mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 mx-auto flex max-w-3xl justify-between gap-3 border-t border-border bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={goBack}
           disabled={currentIndex === 0}
-          className="px-4 py-2 border border-border rounded disabled:opacity-50"
+          className="h-12 rounded-md border border-border px-6 text-base font-medium disabled:opacity-50"
         >
           Back
         </button>
         {state.currentStep !== 'review' && (
-          <button type="button" onClick={goNext} className="px-4 py-2 bg-brand text-white rounded">
+          <button
+            type="button"
+            onClick={goNext}
+            className="h-12 rounded-md bg-brand px-8 text-base font-medium text-white"
+          >
             Next
           </button>
         )}

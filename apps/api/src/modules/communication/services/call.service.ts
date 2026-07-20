@@ -19,7 +19,7 @@ export class CallService {
     this.isProd = configService.get<string>('app.environment') === 'production';
   }
 
-  async initiateCall(dealerUserId: string, leadId: string): Promise<any> {
+  async initiateCall(callerUserId: string, leadId: string): Promise<any> {
     // Fetch lead with buyer and dealer phones (from DB, never exposed to client)
     const lead = await this.prisma.lead.findUnique({
       where: { id: leadId },
@@ -31,14 +31,24 @@ export class CallService {
 
     if (!lead) throw new BadRequestException('Lead not found');
     if (!lead.dealer) throw new BadRequestException('This lead has no assigned dealer yet');
-    if (lead.dealer.userId !== dealerUserId) {
-      throw new BadRequestException('Only the assigned dealer can initiate calls');
+
+    // Either party on the lead may start the masked call: the assigned dealer or the
+    // buyer. The caller's number is the "From", the counterparty is the "To" — Exotel
+    // bridges them behind the ExoPhone so neither sees the other's number.
+    const isDealer = lead.dealer.userId === callerUserId;
+    const isBuyer = lead.buyerId === callerUserId;
+    if (!isDealer && !isBuyer) {
+      throw new BadRequestException('Only the buyer or the assigned dealer can initiate calls');
     }
 
     const dealerPhone = lead.dealer.user.phone;
     // Registered buyer's phone, or the free-form contact phone on a manual lead.
     const buyerPhone = lead.buyer?.phone ?? lead.contactPhone;
     if (!buyerPhone) throw new BadRequestException('This lead has no contact phone to call');
+    if (!dealerPhone) throw new BadRequestException('The assigned dealer has no phone on file');
+
+    const fromPhone = isDealer ? dealerPhone : buyerPhone;
+    const toPhone = isDealer ? buyerPhone : dealerPhone;
 
     const apiKey = this.configService.get<string>('exotel.apiKey');
     const apiToken = this.configService.get<string>('exotel.apiToken');
@@ -69,8 +79,8 @@ export class CallService {
           Authorization: `Basic ${Buffer.from(`${apiKey}:${apiToken}`).toString('base64')}`,
         },
         body: new URLSearchParams({
-          From: dealerPhone,
-          To: buyerPhone,
+          From: fromPhone,
+          To: toPhone,
           CallerId: callerId || '',
         }),
       });

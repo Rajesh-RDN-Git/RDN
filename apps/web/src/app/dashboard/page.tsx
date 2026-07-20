@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import { reportsApi } from '@/lib/api';
+import { reportsApi, dealersApi } from '@/lib/api';
 import { StatCard } from '@/components/ui/stat-card';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,75 @@ const quickActions: Record<string, Array<{ label: string; href: string; icon: an
     { label: 'Chat', href: '/dashboard/chat', icon: ChatIcon },
   ],
 };
+
+function DealerAvailabilityCard() {
+  const [dealerId, setDealerId] = useState<string | null>(null);
+  const [isActive, setIsActive] = useState<boolean | null>(null);
+  const [cleared, setCleared] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res: any = await dealersApi.list();
+        const me = res?.data?.data?.[0] ?? res?.data?.[0];
+        if (me) {
+          setDealerId(me.id);
+          setIsActive(me.isActive);
+          setCleared(
+            me.kycStatus === 'APPROVED' &&
+              me.rwaApprovalStatus === 'APPROVED' &&
+              me.trainingStatus === 'COMPLETED',
+          );
+        }
+      } catch {
+        /* dealer record not reachable — hide card */
+      }
+    })();
+  }, []);
+
+  if (isActive === null || !dealerId) return null;
+
+  const toggle = async () => {
+    const next = !isActive;
+    setSaving(true);
+    try {
+      await dealersApi.setOwnAvailability(next);
+      setIsActive(next);
+    } catch {
+      /* keep previous state on failure */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const canTurnOn = isActive || cleared;
+
+  return (
+    <div className="mb-8 flex flex-col gap-3 rounded-lg border border-border bg-card p-5 shadow-elevation-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <span
+          className={`h-3 w-3 rounded-full ${isActive ? 'bg-success-icon' : 'bg-muted-foreground'}`}
+        />
+        <div>
+          <p className="text-label-md text-foreground">
+            {isActive ? 'Accepting leads' : 'Away — not receiving leads'}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {isActive
+              ? 'New enquiries and calls in your society route to you.'
+              : canTurnOn
+                ? 'You are paused. Turn on to start receiving enquiries again.'
+                : 'Clear KYC, RWA approval and training before going active.'}
+          </p>
+        </div>
+      </div>
+      <Button onClick={toggle} disabled={saving || (!isActive && !canTurnOn)} variant="outline">
+        {saving ? 'Saving…' : isActive ? 'Go Away' : 'Start Accepting'}
+      </Button>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -138,6 +207,9 @@ export default function DashboardPage() {
           {role === Role.BUYER_TENANT && 'Find your perfect home'}
         </p>
       </div>
+
+      {/* Dealer availability self-toggle */}
+      {role === Role.DEALER && <DealerAvailabilityCard />}
 
       {/* Quick actions */}
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">

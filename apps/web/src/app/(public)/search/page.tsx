@@ -10,7 +10,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner';
 import { DropdownSelect } from '@/components/ui/dropdown';
 import { Button } from '@/components/ui/button';
-import { SearchIcon, FrownIcon, SlidersIcon } from '@/components/ui/icons';
+import { SearchIcon, FrownIcon, SlidersIcon, CloseIcon } from '@/components/ui/icons';
 
 function PageHeader({
   title,
@@ -94,7 +94,7 @@ function SearchBar({
         }}
         placeholder="Search by society, locality, flat, or tower…"
         aria-label="Search properties"
-        className="w-full rounded-xl border border-border bg-card py-3 pl-12 pr-4 text-body-md text-foreground shadow-elevation-1 outline-none transition-colors placeholder:text-muted-foreground focus:border-brand focus:ring-1 focus:ring-ring"
+        className="w-full rounded-xl border border-border bg-card py-3 pl-12 pr-4 text-body-md text-foreground shadow-elevation-1 outline-none transition-colors placeholder:text-muted-foreground focus:border-brand"
       />
     </form>
   );
@@ -156,6 +156,7 @@ function ResultsErrorState({ message, onRetry }: { message: string; onRetry: () 
 function SearchContent() {
   const { filters, results, total, loading, error, search, debouncedSearch, page, totalPages } =
     useSearch();
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const title =
     filters.transactionType === 'SALE'
@@ -215,10 +216,7 @@ function SearchContent() {
               variant="outline"
               size="sm"
               leftIcon={<SlidersIcon size={16} />}
-              onClick={() => {
-                const el = document.getElementById('mobile-filters');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onClick={() => setMobileFiltersOpen(true)}
             >
               Filters
             </Button>
@@ -256,18 +254,45 @@ function SearchContent() {
               </>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Mobile filters at the bottom */}
-          <div id="mobile-filters" className="lg:hidden">
-            <div className="rounded-lg border border-border bg-card p-5 shadow-elevation-1">
+      {/* Mobile filters bottom-sheet */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-modal lg:hidden" role="dialog" aria-modal="true">
+          <div
+            className="fixed inset-0 bg-[var(--color-overlay-backdrop)]"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-2xl bg-card shadow-elevation-4">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h2 className="text-heading-md text-foreground">Filters</h2>
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                aria-label="Close filters"
+                className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
+              >
+                <CloseIcon size={20} />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
               <SearchFilters
                 filters={filters as Record<string, string | undefined>}
                 onChange={(newFilters) => search(newFilters as Record<string, string | undefined>)}
               />
             </div>
+            <div className="flex gap-3 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <Button variant="outline" className="flex-1" onClick={() => search({})}>
+                Reset
+              </Button>
+              <Button className="flex-1" onClick={() => setMobileFiltersOpen(false)}>
+                Show {total.toLocaleString('en-IN')} results
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -178,6 +178,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    /* Guardrail: a stray wide element never forces whole-page horizontal scroll on phones. */
+    overflow-x: hidden;
   }
 
   /* Focus-visible for keyboard navigation */

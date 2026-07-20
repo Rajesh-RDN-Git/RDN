@@ -87,6 +87,21 @@ describe('SearchService', () => {
       );
     });
 
+    it('tokenizes q so each word must match some field (incl. society address)', async () => {
+      mockPrisma.property.findMany.mockResolvedValue([]);
+      mockPrisma.property.count.mockResolvedValue(0);
+
+      await service.searchProperties({ q: 'Sector 42 DLF' } as any);
+
+      const where = mockPrisma.property.findMany.mock.calls[0][0].where;
+      // One AND clause per word; each is an OR across the searchable fields.
+      expect(where.AND).toHaveLength(3);
+      const firstWordMatchesAddress = where.AND[0].OR.some(
+        (c: any) => c.society?.address?.contains === 'Sector',
+      );
+      expect(firstWordMatchesAddress).toBe(true);
+    });
+
     it('should return paginated results', async () => {
       mockPrisma.property.findMany.mockResolvedValue([{ id: 'p-1' }]);
       mockPrisma.property.count.mockResolvedValue(1);

@@ -72,8 +72,8 @@ export class CommunicationController {
 
   @Post('call')
   @UseGuards(RolesGuard)
-  @Roles('DEALER')
-  @ApiOperation({ summary: 'Initiate masked call (dealer only)' })
+  @Roles('DEALER', 'BUYER_TENANT')
+  @ApiOperation({ summary: 'Initiate masked call (buyer or assigned dealer)' })
   async initiateCall(
     @Body(new ZodValidationPipe(initiateCallSchema)) body: { leadId: string },
     @CurrentUser('id') userId: string,

@@ -270,6 +270,15 @@ export class DealersService {
 
   // SUPER_ADMIN explicit activate/deactivate. Reactivating requires the dealer
   // to have cleared KYC + RWA approval + training.
+  // A dealer toggles their OWN availability. Turning off pauses new lead/call
+  // routing to them (assignment filters isActive:true). Turning back on reuses the
+  // same clearance gate as admin activation (KYC + RWA + training must be cleared).
+  async setOwnAvailability(userId: string, isActive: boolean) {
+    const dealer = await this.prisma.dealer.findFirst({ where: { userId } });
+    if (!dealer) throw new NotFoundException('You are not registered as a dealer');
+    return this.setActive(dealer.id, isActive);
+  }
+
   async setActive(id: string, isActive: boolean) {
     const dealer = await this.prisma.dealer.findUnique({ where: { id } });
     if (!dealer) throw new NotFoundException('Dealer not found');

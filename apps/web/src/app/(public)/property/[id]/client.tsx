@@ -217,9 +217,9 @@ export function PropertyDetailClient({ property }: { property: Property }) {
   };
 
   return (
-    <div className="mx-auto max-w-content px-4 py-6">
+    <div className="mx-auto max-w-content px-4 py-6 pb-24 lg:pb-6">
       {/* Breadcrumb */}
-      <nav className="mb-4 flex items-center gap-1.5 text-body-sm text-muted-foreground">
+      <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-body-sm text-muted-foreground">
         <Link href="/" className="hover:text-brand">
           Home
         </Link>
@@ -514,6 +514,30 @@ export function PropertyDetailClient({ property }: { property: Property }) {
         propertyId={property.id}
         propertyName={`${property.bhk} BHK, ${property.towerBlock}, ${property.society.name}`}
       />
+
+      {/* Sticky mobile action bar — the CTA is otherwise buried below all details */}
+      {!canManage && isBuyerFlow && (
+        <div className="fixed inset-x-0 bottom-0 z-sticky flex items-center gap-3 border-t border-border bg-card px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-elevation-3 lg:hidden">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-heading-md text-foreground">
+              {formatPrice(property.priceSale || property.priceRent) || 'Contact for price'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="lg"
+            leftIcon={<PhoneIcon size={18} />}
+            onClick={handleRequestCallback}
+            isLoading={requestingCallback}
+            disabled={requestingCallback}
+          >
+            Callback
+          </Button>
+          <Button size="lg" leftIcon={<ChatIcon size={18} />} onClick={() => setShowEnquiry(true)}>
+            Enquire
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
