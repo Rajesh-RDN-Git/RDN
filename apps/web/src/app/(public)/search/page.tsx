@@ -94,7 +94,7 @@ function SearchBar({
         }}
         placeholder="Search by society, locality, flat, or tower…"
         aria-label="Search properties"
-        className="w-full rounded-xl border border-border bg-card py-3 pl-12 pr-4 text-body-md text-foreground shadow-elevation-1 outline-none transition-colors placeholder:text-muted-foreground focus:border-brand focus:ring-1 focus:ring-ring"
+        className="w-full rounded-xl border border-border bg-card py-3 pl-12 pr-4 text-body-md text-foreground shadow-elevation-1 outline-none transition-colors placeholder:text-muted-foreground focus:border-brand"
       />
     </form>
   );
