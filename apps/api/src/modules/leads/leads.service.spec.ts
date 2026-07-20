@@ -136,7 +136,7 @@ describe('LeadsService', () => {
       ownerId: 'owner-1',
       status: 'ACTIVE',
       assignedDealerId: 'dealer-1',
-      assignedDealer: { id: 'dealer-1' },
+      assignedDealer: { id: 'dealer-1', isActive: true },
     };
 
     it('should create lead with assigned dealer', async () => {
@@ -156,6 +156,30 @@ describe('LeadsService', () => {
             buyerId: 'buyer-1',
             dealerId: 'dealer-1',
           }),
+        }),
+      );
+    });
+
+    it('falls back to a society dealer when the assigned dealer is inactive', async () => {
+      mockPrisma.property.findUnique.mockResolvedValue({
+        ...mockProperty,
+        assignedDealer: { id: 'dealer-1', isActive: false },
+      });
+      mockPrisma.dealer.findFirst.mockResolvedValue({ id: 'active-dealer-2' });
+      mockPrisma.lead.create.mockResolvedValue({
+        id: 'lead-1',
+        dealer: { user: { id: 'user-d2' } },
+        property: { flatNumber: 'A-101', towerBlock: 'Tower A' },
+      });
+
+      await service.create({ propertyId: 'prop-1', source: 'WEBSITE' }, 'buyer-1');
+
+      expect(mockPrisma.dealer.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { societyId: 'soc-1', isActive: true } }),
+      );
+      expect(mockPrisma.lead.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ dealerId: 'active-dealer-2' }),
         }),
       );
     });

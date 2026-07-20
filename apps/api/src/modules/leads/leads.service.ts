@@ -162,10 +162,11 @@ export class LeadsService {
     // queued unassigned (dealerId = null) and gets claimed when a dealer becomes
     // active in the society (see DealersService.claimUnassignedLeads).
     let dealerId: string | null = null;
-    if (property.assignedDealerId) {
+    if (property.assignedDealerId && property.assignedDealer?.isActive) {
       dealerId = property.assignedDealerId;
     } else {
-      // Auto-assign to first active dealer in the society
+      // No explicitly-assigned dealer, or the assigned one is inactive — route to the
+      // first active dealer in the society (else leave unassigned for later claim).
       const dealer = await this.prisma.dealer.findFirst({
         where: { societyId: property.societyId, isActive: true },
       });
