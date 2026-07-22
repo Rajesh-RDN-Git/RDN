@@ -79,11 +79,12 @@ pnpm build                      # all apps
 pnpm --filter api build
 pnpm --filter web build
 
-# Database
-pnpm --filter db prisma generate          # regenerate Prisma client after schema changes
-pnpm --filter db prisma migrate dev       # create + apply migration (dev)
-pnpm --filter db prisma migrate deploy    # apply migrations (prod)
-pnpm --filter db prisma db seed           # seed database
+# Database — use the package's own scripts. `pnpm --filter db prisma <cmd>` does NOT work
+# (fails with: None of the selected packages has a "prisma" script). Verified 2026-07-22.
+pnpm --filter db db:generate              # regenerate Prisma client after schema changes
+pnpm --filter db db:migrate:dev           # create + apply migration (dev)
+pnpm --filter db db:migrate:deploy        # apply migrations (prod)
+pnpm --filter db db:seed                  # seed database
 
 # Linting & formatting
 pnpm lint                       # all packages

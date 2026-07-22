@@ -23,18 +23,47 @@ Existing branches: `main`, `develop`, plus two stale ones (`chore/uat-prep-stabi
 
 ## Local development
 
-Prerequisites: Node 20 (see `.nvmrc`), pnpm 9.15.4, Docker.
+Prerequisites: Node 20 (see `.nvmrc`) and pnpm 9.15.4, plus PostgreSQL 16 and Redis 7.
+
+**There are two ways to get Postgres and Redis, and the repository documents the one that
+was not actually used.** `infrastructure/docker/docker-compose.yml` declares both services
+and works, but the outgoing developer's machine has **no Docker installed at all** —
+Postgres 16 and Redis ran as Homebrew services throughout. Either path is fine; pick one and
+know which you are on.
 
 ```bash
 pnpm install
-docker compose -f infrastructure/docker/docker-compose.yml up -d   # Postgres + Redis
-pnpm --filter db prisma migrate dev
-pnpm --filter db prisma db seed
+
+# Option A — Homebrew (what was actually used day to day)
+brew install postgresql@16 redis
+brew services start postgresql@16 && brew services start redis
+createuser -s rdn 2>/dev/null; createdb -O rdn rdn_dev     # once
+
+# Option B — Docker
+docker compose -f infrastructure/docker/docker-compose.yml up -d
+
+# then, either way
+pnpm --filter db db:migrate:dev
+pnpm --filter db db:seed
 pnpm dev                    # everything, or filter to one app:
 pnpm --filter api dev       # API on :4000
 pnpm --filter web dev       # web on :3100 (see note)
 pnpm --filter mobile dev    # Expo
 ```
+
+Two command gotchas, both verified on 2026-07-22:
+
+- **`pnpm --filter db prisma <cmd>` does not work**, despite appearing in `CLAUDE.md` and
+  older docs. It fails with `None of the selected packages has a "prisma" script`. Use the
+  package's own scripts instead: `db:generate`, `db:migrate:dev`, `db:migrate:deploy`,
+  `db:push`, `db:seed`, `db:seed:uat`, `db:seed:gurgaon`.
+- The filters `db` and `@rdn/db` both resolve to `packages/db` (its package name is
+  `@rdn/db`). You will see both spellings; both work.
+
+If `pnpm typecheck` fails with `Cannot find module 'next/server'` or errors inside
+`.next/types/`, your workspace install is incomplete rather than the code being broken. Run
+`pnpm install` and try again. Note also that `.nvmrc` pins Node 20 while the outgoing
+developer's shell was running Node 22 — use a version manager if you hit anything odd.
 
 Local specifics that are easy to get wrong:
 

@@ -121,7 +121,8 @@ write a second copy of a rule, they will drift.
 
 **Prisma is the type source of truth.** The schema is
 `packages/db/prisma/schema.prisma`. Never hand-write database types. After changing the
-schema, regenerate: `pnpm --filter db prisma generate`.
+schema, regenerate with `pnpm --filter db db:generate` — note that the
+`pnpm --filter db prisma generate` form printed in `CLAUDE.md` does **not** work.
 
 **Field-level encryption is transparent but fragile.** Sensitive fields (user phone,
 nominee name and phone, dealer bank details, lead contact name and phone, DPDP grievance
