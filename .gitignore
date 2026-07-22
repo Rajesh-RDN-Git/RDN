@@ -47,6 +47,11 @@ prisma/*.db-journal
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+# Non-secret environment config is tracked so a new engineer can run `terraform plan`.
+# Anything holding credentials (secrets.*.tfvars) stays ignored above.
+!infrastructure/terraform/environments/dev.tfvars
+!infrastructure/terraform/environments/uat.tfvars
+!infrastructure/terraform/environments/prod.tfvars
 .terraform.lock.hcl
 
 # ──────────────────────────────────────────────

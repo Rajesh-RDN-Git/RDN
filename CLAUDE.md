@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **New here? Start with [`docs/handover/00-START-HERE.md`](./docs/handover/00-START-HERE.md).**
+> That folder is the current source of truth for what is live, what is deployed but
+> unverified, what is built but unconfigured, and what to work on next. Where any other
+> document in `docs/` disagrees with it, the handover folder wins.
+
 ## Communication constraints
 
 - NEVER send email (or configure anything that sends email — SNS subscriptions,
@@ -24,7 +29,10 @@ RDN (Residential Dealer Network) — a real estate transaction platform for resi
 - **Real-time:** Socket.io (chat, notifications)
 - **Auth:** Phone OTP (MSG91) + JWT (access 15min / refresh 30 days)
 - **File Storage:** AWS S3 + CloudFront CDN (pre-signed uploads)
-- **Search:** PostgreSQL full-text search + GIN indexes + PostGIS
+- **Search:** _Design intent_ is PostgreSQL full-text search + GIN indexes + PostGIS.
+  **As built (2026-07-22) it is `ILIKE '%term%'`** via Prisma `contains` in
+  `apps/api/src/modules/search/search.service.ts`, with no tsvector/GIN/PostGIS index in the
+  schema. Fine at current volume, full table scan at scale — see handover backlog P2-2.
 
 ## Architecture
 

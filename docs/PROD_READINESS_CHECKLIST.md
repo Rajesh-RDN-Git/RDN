@@ -1,8 +1,39 @@
 # RDN — Production Readiness Checklist
 
+> # ⚠️ SUPERSEDED — HISTORICAL DOCUMENT
+>
+> **RDN went live in production on 2026-07-14.** This checklist was written on 2026-06-21,
+> before launch, and its open questions have since been answered. Do not plan from it.
+>
+> **For current state, use:**
+>
+> - [handover/05 — What is done](./handover/05-STATUS-WHAT-IS-DONE.md)
+> - [handover/06 — Backlog by priority and impact](./handover/06-BACKLOG-PRIORITY-IMPACT.md)
+>
+> **What this document gets wrong, resolved since:**
+>
+> - §0 asks which production infrastructure to use. **Decided: all-AWS.** Terraform applied
+>   2026-07-14; the Railway-plus-Vercel option became the UAT stack, not production.
+> - §1 says AES-256-GCM field encryption is _not implemented_. **It is implemented and live**
+>   — `packages/db/src/field-crypto.ts` and `field-encryption.ts`, with a blind index for
+>   phone lookups.
+> - §2 says the production domain and SSL are missing. **Done** — `rdnetwork.in` with ACM
+>   certificates via Route53.
+> - §3 secrets are in AWS Secrets Manager (`rdn/prod/api-keys`, `rdn/prod/db-credentials`,
+>   `rdn/prod/jwt-secret`). Note that Razorpay, Firebase, SES, and Sentry values are still
+>   absent — tracked in the handover backlog.
+> - §6 says CloudWatch alarms fire into the void. **Fixed** — SNS topic `rdn-prod-alerts`
+>   with a confirmed subscription to rajesh@rdngroups.com.
+> - §8's AES field-encryption task is **complete**.
+>
+> **Still open from this document**, now carried in the handover backlog: an untested backup
+> restore (P1-5), the undecided commission split (BIZ-1), and the undesignated DPO (BIZ-2).
+>
+> Retained for the reasoning it records about how launch decisions were made.
+
 > **Created:** 2026-06-21
 > **Branch at creation:** `chore/uat-prep-stabilization`
-> **Status:** UAT-stage. Est. ~1.5–3 weeks + business decisions to launch.
+> **Status:** SUPERSEDED by go-live on 2026-07-14.
 >
 > Legend: ⛔ hard blocker · ⚠️ should-fix · ✅ done
 >

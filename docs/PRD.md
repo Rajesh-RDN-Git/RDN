@@ -1,9 +1,26 @@
 # RDN — Product Requirements Document
 
 > **Version:** 1.0 (Final)
-> **Last Updated:** 2026-02-22
+> **Last Updated:** 2026-02-22 · **Status banner added 2026-07-22**
+>
+> ### 📍 Build status
+>
+> **RDN has been live in production since 2026-07-14** (www.rdnetwork.in and
+> api.rdnetwork.in, AWS ap-south-1). This PRD remains the authoritative statement of
+> _intent_ — the problem, the model, the roles, and the feature specifications are current
+> and were not rewritten at launch.
+>
+> It does **not** describe what is built. Several Phase 1 features here are complete and
+> live, some are built but inert because a credential or business decision is missing, and
+> all of Phase 2 is unstarted. **Before implementing against any section of this document,
+> check [handover/05 — What is done](./handover/05-STATUS-WHAT-IS-DONE.md).**
+>
+> The one substantive item still undecided from §3 is the commission split between RDN, the
+> dealer, and the RWA. It blocks settlement and payout.
 >
 > Related Documents:
+>
+> - **[Handover package](./handover/00-START-HERE.md)** — current state, backlog, operations
 > - [Technical Architecture](./TECHNICAL_ARCHITECTURE.md)
 > - [Database Schema](./DATABASE_SCHEMA.md)
 > - [Project Structure](./PROJECT_STRUCTURE.md)
@@ -73,15 +90,15 @@ RDN transforms real estate transactions within residential societies by creating
 - **RWA circular distribution** — RWAs inform all residents of RDN availability
 - **Local digital classifieds** — targeted ads in society WhatsApp groups, Facebook community pages
 - **Corporate tie-ups** — partner with relocation firms, HR departments for employee housing (Phase 2)
-- *Note: Paid ads strategy (Google/Meta) to be defined based on budget*
+- _Note: Paid ads strategy (Google/Meta) to be defined based on budget_
 
 ---
 
 ## 5. Phases
 
-| Phase | Scope |
-|-------|-------|
-| **Phase 1** | Core real estate platform — rentals, sales, renewals, verification, basic trust badges, grievance system, CRM, masked communication, notifications, referrals |
+| Phase       | Scope                                                                                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Phase 1** | Core real estate platform — rentals, sales, renewals, verification, basic trust badges, grievance system, CRM, masked communication, notifications, referrals                                                                                                                  |
 | **Phase 2** | Society OS + Intelligence — visitor management, maintenance & dues, community noticeboard, facility booking, vendor management, price heatmaps, commute-based search, full trust scoring algorithm, property comparison, auto-reminder calls, society-level price intelligence |
 
 ---
@@ -176,25 +193,25 @@ Super Admin (RDN) → Property Owner (per listing) / Buyer-Tenant (platform-wide
 
 **Permission Matrix:**
 
-| Action | Super Admin | RWA Admin | Dealer | Owner | Buyer/Tenant |
-|--------|:-----------:|:---------:|:------:|:-----:|:------------:|
-| Onboard RWA | Yes | - | - | - | - |
-| Bulk upload inventory | Yes | - | - | - | - |
-| Verify properties | Yes | - | - | - | - |
-| Assign inventory to dealers | Yes | Yes | - | - | - |
-| Approve/reject listings | Yes | Yes | - | - | - |
-| Approve/reject dealers | Yes | Yes | - | - | - |
-| List a property | Yes | Yes | Yes | Yes | - |
-| View leads (all societies) | Yes | - | - | - | - |
-| View leads (own society) | Yes | Yes | Own only | Own only | - |
-| Chat / Call (masked) | Yes | - | Yes | - | Yes |
-| Generate invoices | Yes | - | - | - | - |
-| View commission reports | Yes | Own society | Own only | - | - |
-| File grievance | Yes | Yes | Yes | Yes | Yes |
-| Resolve grievance | Yes | Own society L2 | - | - | - |
-| Deactivate dealer | Yes | Request only | - | - | - |
-| Browse listings | Yes | Yes | Yes | Yes | Yes (open access) |
-| Export data | Yes | Yes | - | - | - |
+| Action                      | Super Admin |   RWA Admin    |  Dealer  |  Owner   |   Buyer/Tenant    |
+| --------------------------- | :---------: | :------------: | :------: | :------: | :---------------: |
+| Onboard RWA                 |     Yes     |       -        |    -     |    -     |         -         |
+| Bulk upload inventory       |     Yes     |       -        |    -     |    -     |         -         |
+| Verify properties           |     Yes     |       -        |    -     |    -     |         -         |
+| Assign inventory to dealers |     Yes     |      Yes       |    -     |    -     |         -         |
+| Approve/reject listings     |     Yes     |      Yes       |    -     |    -     |         -         |
+| Approve/reject dealers      |     Yes     |      Yes       |    -     |    -     |         -         |
+| List a property             |     Yes     |      Yes       |   Yes    |   Yes    |         -         |
+| View leads (all societies)  |     Yes     |       -        |    -     |    -     |         -         |
+| View leads (own society)    |     Yes     |      Yes       | Own only | Own only |         -         |
+| Chat / Call (masked)        |     Yes     |       -        |   Yes    |    -     |        Yes        |
+| Generate invoices           |     Yes     |       -        |    -     |    -     |         -         |
+| View commission reports     |     Yes     |  Own society   | Own only |    -     |         -         |
+| File grievance              |     Yes     |      Yes       |   Yes    |   Yes    |        Yes        |
+| Resolve grievance           |     Yes     | Own society L2 |    -     |    -     |         -         |
+| Deactivate dealer           |     Yes     |  Request only  |    -     |    -     |         -         |
+| Browse listings             |     Yes     |      Yes       |   Yes    |   Yes    | Yes (open access) |
+| Export data                 |     Yes     |      Yes       |    -     |    -     |         -         |
 
 ---
 
@@ -270,22 +287,22 @@ Super Admin (RDN) → Property Owner (per listing) / Buyer-Tenant (platform-wide
 
 Unified notification framework across all user types:
 
-| Event | In-App | Push | WhatsApp |
-|-------|:------:|:----:|:--------:|
-| New lead received | Yes | Yes | Yes |
-| Lead status change | Yes | Yes | No |
-| Visit scheduled/reminder | Yes | Yes | Yes |
-| Visit reminder (2hr before) | Yes | Yes | Yes |
-| Owner visit approval request | Yes | Yes | Yes |
-| Price drop on saved listing | Yes | Yes | No |
-| New listing matches saved search | Yes | Yes | No |
-| Deal in negotiation | Yes | Yes | No |
-| Deal closed | Yes | Yes | Yes |
-| Commission credited | Yes | Yes | No |
-| Grievance update | Yes | Yes | No |
-| Renewal reminder (60/30 days) | Yes | Yes | Yes |
-| Dealer application status | Yes | Yes | Yes |
-| RWA onboarding status | Yes | Yes | Yes |
+| Event                            | In-App | Push | WhatsApp |
+| -------------------------------- | :----: | :--: | :------: |
+| New lead received                |  Yes   | Yes  |   Yes    |
+| Lead status change               |  Yes   | Yes  |    No    |
+| Visit scheduled/reminder         |  Yes   | Yes  |   Yes    |
+| Visit reminder (2hr before)      |  Yes   | Yes  |   Yes    |
+| Owner visit approval request     |  Yes   | Yes  |   Yes    |
+| Price drop on saved listing      |  Yes   | Yes  |    No    |
+| New listing matches saved search |  Yes   | Yes  |    No    |
+| Deal in negotiation              |  Yes   | Yes  |    No    |
+| Deal closed                      |  Yes   | Yes  |   Yes    |
+| Commission credited              |  Yes   | Yes  |    No    |
+| Grievance update                 |  Yes   | Yes  |    No    |
+| Renewal reminder (60/30 days)    |  Yes   | Yes  |   Yes    |
+| Dealer application status        |  Yes   | Yes  |   Yes    |
+| RWA onboarding status            |  Yes   | Yes  |   Yes    |
 
 - Users can configure notification preferences in Settings
 - WhatsApp requires opt-in during onboarding
@@ -295,6 +312,7 @@ Unified notification framework across all user types:
 **Three-level CRM:**
 
 **RDN Level (Platform-wide):**
+
 - All leads across all societies
 - Filter by city, society, dealer, status, date range
 - Identify stalled leads and intervene
@@ -303,12 +321,14 @@ Unified notification framework across all user types:
 - Lead source tracking (app search, WhatsApp, referral, walk-in)
 
 **RWA Level (Society-wide):**
+
 - All leads within their society
 - Dealer performance comparison
 - Lead response time monitoring
 - Flag slow-responding dealers
 
 **Dealer Level (Assigned leads):**
+
 - Personal CRM inbox
 - Lead status tracking: New → Contacted → Visited → Negotiated → Closed
 - Lead assignment per society
@@ -341,6 +361,7 @@ Unified notification framework across all user types:
 - **Data export** — invoices, reports downloadable as PDF/Excel
 
 **Commission Collection Mechanism:**
+
 - Invoice generated at deal closure
 - Payment collected via: UPI/bank transfer (preferred) or cash to RDN company account
 - Payment terms: due at deal closure, before handover/move-in
@@ -351,12 +372,14 @@ Unified notification framework across all user types:
 ### 7.8 Verification System
 
 **A. Society/RWA Verification**
+
 1. RWA submits registration with society details + RWA certificate
 2. RDN verifies society exists (local records, Google Maps, physical visit if needed)
 3. RDN verifies person is an authorized RWA representative (committee member ID, authorization letter)
 4. Society marked as **Verified** → society page goes live
 
 **B. Dealer Verification (KYC)**
+
 1. Resident submits dealer application with Aadhaar/PAN + proof of residency (society ID, utility bill, flat ownership doc)
 2. RDN verifies identity documents (Aadhaar validation, PAN check)
 3. RDN confirms residency — person actually lives in the society
@@ -364,6 +387,7 @@ Unified notification framework across all user types:
 5. RWA reviews and approves/rejects → dealer goes live after mandatory training
 
 **C. Property Verification**
+
 1. Owner/dealer submits property details + photos
 2. RWA admin approves listing (confirms property exists in society)
 3. RDN team contacts owner and verifies:
@@ -374,19 +398,21 @@ Unified notification framework across all user types:
 4. Property marked as **Verified** → green verification badge on listing
 
 **Verification Statuses (visible on listings):**
+
 - **Pending** — submitted, awaiting review
 - **RWA Approved** — RWA confirmed, RDN verification in progress
 - **Verified** — fully verified by RDN (green badge)
 - **Flagged** — issue found during verification (not visible to public, under review)
 - **Rejected** — verification failed (owner notified with reason)
 
-*Phase 1 uses simple Verified / Not Verified badges. Full trust scoring algorithm moves to Phase 2.*
+_Phase 1 uses simple Verified / Not Verified badges. Full trust scoring algorithm moves to Phase 2._
 
 ### 7.9 Grievance Redressal System
 
 **Who Can File:** Any user — buyer, tenant, owner, dealer, RWA admin, or against RDN itself.
 
 **Filing Process:**
+
 1. User goes to "Support" / "Raise Grievance" in-app
 2. Selects category: Dealer conduct, Property mismatch, Commission dispute, Service quality, Safety concern, Other
 3. Selects related transaction/listing/dealer/society
@@ -394,6 +420,7 @@ Unified notification framework across all user types:
 5. Ticket created with unique ID, SLA clock starts
 
 **Escalation Matrix:**
+
 - **Level 1:** Resident Dealer (if complaint involves their transaction) → 48hr to resolve
 - **Level 2:** RWA Admin (society-level oversight) → 72hr to resolve
 - **Level 3:** RDN Team (final authority)
@@ -401,14 +428,15 @@ Unified notification framework across all user types:
 
 **SLA Timelines:**
 
-| Severity | Response Time | Resolution Target |
-|----------|--------------|-------------------|
-| Critical (safety, fraud, legal) | 4 hours | 24 hours |
-| High (commission dispute, property mismatch) | 12 hours | 72 hours |
-| Medium (service quality, conduct) | 24 hours | 5 business days |
-| Low (general feedback, suggestions) | 48 hours | 10 business days |
+| Severity                                     | Response Time | Resolution Target |
+| -------------------------------------------- | ------------- | ----------------- |
+| Critical (safety, fraud, legal)              | 4 hours       | 24 hours          |
+| High (commission dispute, property mismatch) | 12 hours      | 72 hours          |
+| Medium (service quality, conduct)            | 24 hours      | 5 business days   |
+| Low (general feedback, suggestions)          | 48 hours      | 10 business days  |
 
 **Resolution Process:**
+
 1. Assigned to appropriate level based on category
 2. Investigator reviews: transaction records, chat logs, call logs, visit history
 3. Both parties contacted for their side
@@ -418,6 +446,7 @@ Unified notification framework across all user types:
 7. Final resolution by RDN is binding
 
 **Actions RDN Can Take:**
+
 - Warn, suspend, or permanently deactivate a dealer
 - Issue refunds
 - Correct or remove a listing
@@ -425,6 +454,7 @@ Unified notification framework across all user types:
 - Ban a user for policy violations
 
 **Visibility:**
+
 - Filer: ticket status, assigned handler, SLA countdown, resolution
 - RWA Admin: all grievances in their society, dealer-specific complaints
 - RDN Admin: all grievances platform-wide, SLA compliance, repeat offenders
@@ -604,7 +634,7 @@ Unified notification framework across all user types:
 - Dealer partnership agreement (commission terms, code of conduct)
 - Terms of Service for all user types
 - Dispute resolution policy
-- *All documents provided by RDN team — platform must host and display them*
+- _All documents provided by RDN team — platform must host and display them_
 
 ### 9.2 Regulatory Compliance
 
@@ -655,6 +685,7 @@ Platform must implement the following:
 ### 10.3 Key UI Patterns
 
 **Home / Landing Page**
+
 - Hero search bar with City → Area → Society flow
 - Quick filters: Rent / Buy / Renewal toggle
 - Trending societies and hot listings carousel
@@ -663,6 +694,7 @@ Platform must implement the following:
 - City-wise browsing cards
 
 **Society Profile Page (Key Landing Page)**
+
 - Hero banner with society photos
 - Verified badge (prominent)
 - Quick stats: total units, available listings, avg price, amenities count
@@ -674,6 +706,7 @@ Platform must implement the following:
 - Recent activity feed (anonymized)
 
 **Property Listing Card**
+
 - Primary photo with image count badge
 - Availability status tag (Available Now / From Date)
 - Price prominently displayed
@@ -684,6 +717,7 @@ Platform must implement the following:
 - Swipeable photo gallery on mobile
 
 **Property Detail Page**
+
 - Full photo/video gallery with fullscreen view
 - Price with per-sqft breakdown
 - All property details in organized sections (not a wall of text)
@@ -694,6 +728,7 @@ Platform must implement the following:
 - Enquiry CTA (chat / call) — sticky on mobile
 
 **Search & Filter UX**
+
 - Persistent search bar at top
 - Filter chips (quick toggle on/off)
 - Sort: Price low-high, newest, most viewed, best match
@@ -702,6 +737,7 @@ Platform must implement the following:
 - **Empty state:** "No results. Try expanding your search or browse nearby societies."
 
 **Buyer/Tenant Dashboard**
+
 - Viewed properties (recent)
 - Shortlisted properties with status indicators
 - Scheduled visits (upcoming + past)
@@ -710,6 +746,7 @@ Platform must implement the following:
 - Saved searches with notification toggle
 
 **Dashboard (RWA / Dealer / Admin)**
+
 - Summary cards at top: leads, active listings, closures, earnings
 - Charts: monthly trends, lead funnel, commission breakdown
 - Recent activity feed
@@ -763,6 +800,7 @@ Phase 1 relies heavily on the RDN team for manual operations (verification, bulk
 ## 12. Success Metrics (KPIs)
 
 **Growth Metrics:**
+
 - Number of RWAs onboarded
 - Active resident dealers per society
 - Monthly property listings (rent + sale + renewal)
@@ -770,6 +808,7 @@ Phase 1 relies heavily on the RDN team for manual operations (verification, bulk
 - Buyer/tenant signups and active users
 
 **Business Metrics:**
+
 - **Revenue per society per month** — core unit economics metric
 - **Time to first deal** per new society — measures activation speed
 - **Dealer activation rate** — % of trained dealers who close at least 1 deal
@@ -777,18 +816,21 @@ Phase 1 relies heavily on the RDN team for manual operations (verification, bulk
 - Average deal closure time
 
 **Quality Metrics:**
+
 - User satisfaction (CSAT)
 - **Lead response time** — avg time for dealer to respond to new lead
 - Grievance resolution rate within SLA
 - Verification turnaround time
 
 **Acquisition Metrics:**
+
 - Organic traffic to society/listing pages
 - Referral conversion rate
 - **Cost per buyer/tenant acquisition** (when paid channels are used)
 - Buyer/tenant retention (repeat visits, shortlist usage)
 
 **Revenue Metrics:**
+
 - RWA revenue generated via RDN
 - Commission collected per month
 - Outstanding commission (overdue payments)
@@ -797,9 +839,10 @@ Phase 1 relies heavily on the RDN team for manual operations (verification, bulk
 
 ## 13. Phase 2 Preview (Society OS + Intelligence)
 
-*Not in scope for Phase 1 — documented for future reference*
+_Not in scope for Phase 1 — documented for future reference_
 
 **Society OS:**
+
 - Visitor management system
 - Maintenance & dues management
 - Community noticeboard
@@ -810,6 +853,7 @@ Phase 1 relies heavily on the RDN team for manual operations (verification, bulk
 - Tenant background verification
 
 **Intelligence Features:**
+
 - Full trust scoring algorithm (property, dealer, society, listing scores)
 - Price heatmap — interactive map with rent/sale prices by area
 - Commute-based search — "societies within X mins of [location]"
